@@ -25,6 +25,8 @@ var source_content = ""      # String (path or inline text) OR PackedByteArray
 var source_label: String = ""  # human-readable, for notationInfo
 var _force_data: bool = false
 var _pending: bool = false      # an async engrave is in flight
+var addressable: bool = false
+var measures: Array = []        # [{index, rect:Rect2(normalized), time}]
 var format: String = ""
 var backend: String = ""
 var current_page: int = 1
@@ -98,6 +100,11 @@ func handle(verb: String, args: Array) -> void:
 		"part": part_id = _s(args, 0)
 		"notationinfo": reply_info()
 		"currentpage": reply_current_page()
+		"addressable":
+			addressable = _b(args, 0, true)
+			if not _is_content_empty():
+				_render()
+		"measures": reply_measures()
 
 
 func _set_content(value, force_data: bool) -> void:
@@ -126,9 +133,50 @@ func _render() -> void:
 	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
 		_pending = true
 		page_mat.albedo_color = Color(0.85, 0.85, 0.6, 1.0)  # "engraving" tint
-		ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
+		if addressable and (format == "musicxml" or format == "mei"):
+			ctx.render_queue.submit_addressable(self, source_content, format, current_page, render_options, _force_data)
+		else:
+			ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
 		return
 	_apply_result(Renderer.render(source_content, format, current_page, render_options, _force_data))
+
+
+func _on_addressable_done(texture: Texture2D, p_measures: Array) -> void:
+	_pending = false
+	page_mat.albedo_texture = texture
+	page_mat.albedo_color = Color.WHITE
+	backend = "addressable"
+	page_count = 1
+	page_size = texture.get_size()
+	var aspect := page_size.x / page_size.y if page_size.y > 0 else 1.0
+	page_world = Vector2(PAGE_HEIGHT * aspect, PAGE_HEIGHT)
+	(page_mesh.mesh as QuadMesh).size = page_world
+	measures = p_measures
+	for m in measures:
+		var rid := "m%d" % (int(m.index) + 1)
+		var reg := _ensure_region(rid)
+		reg.rect_norm = m.rect
+		if not reg.bindings.has("click"):
+			reg.bindings["click"] = "/gscore/event/measure"
+	_update_all()
+	if ctx.verbose:
+		print("[GScoreOSC] notation3d '%s' addressable: %d measures, %dx%d px"
+			% [osc_id, measures.size(), int(page_size.x), int(page_size.y)])
+
+
+func reply_measures() -> void:
+	var vals: Array = [osc_id]
+	for m in measures:
+		var r: Rect2 = m.rect
+		vals.append_array([int(m.index) + 1, r.position.x, r.position.y, r.size.x, r.size.y, m.time])
+	ctx.reply("measures", vals)
+
+
+func _measure_u(mi: int, frac: float) -> float:
+	for m in measures:
+		if int(m.index) == mi:
+			return m.rect.position.x + frac * m.rect.size.x
+	return -1.0
 
 
 func _on_render_done(res) -> void:
@@ -168,7 +216,15 @@ func handle_cursor(args: Array) -> void:
 	match cmd:
 		"show": cursor_node.visible = _b(args, 1, true)
 		"pos": cur_u = _f(args, 1); cur_v = _f(args, 2); _update_cursor()
-		"measure", "beat", "time": cur_v = _f(args, 1); _update_cursor()
+		"measure":
+			var mi := int(_f(args, 1, 1)) - 1
+			var mu := _measure_u(mi, _f(args, 2, 0.0))
+			if mu >= 0.0:
+				cur_u = mu
+			else:
+				cur_v = _f(args, 1)
+			_update_cursor()
+		"beat", "time": cur_v = _f(args, 1); _update_cursor()
 		"color": cur_color = _color(args, 1); cursor_mat.albedo_color = cur_color
 		"width": cur_width = maxf(0.005, _f(args, 1, 0.04)); _update_cursor()
 		"map": ctx.timemapper.add_cursor_map(self, args.slice(1))

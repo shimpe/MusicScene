@@ -323,6 +323,25 @@ Clicking a region with an `on click` binding emits, e.g.:
 /score/measure score m1 <u> <v>
 ```
 
+### Addressable notation (auto measure regions)
+
+For MusicXML/MEI via **MuseScore**, gscore can extract real measure positions and make the score
+addressable automatically — no manual rects:
+
+```
+/gscore/scene/<id> addressable 1            # enable, then (re)load a MusicXML source
+/gscore/scene/<id> notation musicxml "res://score.musicxml"   # or notationData musicxml <inline>
+/gscore/scene/<id> measures                  # -> reply measures <id> <n u v w h time> ...
+/gscore/scene/<id>/cursor measure <n> [beatFraction]          # jump cursor to a measure
+```
+
+It renders the full page, reads MuseScore's `.mpos` position export (one batched, async MuseScore
+run), crops to the music, and creates a clickable region `m1…mN` per measure (each emits
+`/gscore/event/measure <id> m<n> <u> <v>` on click). `measures` replies each measure's
+page-normalized rect and time position, so a client can drive cursor-following by sending
+`cursor measure <n>` as the music plays. (v1: MuseScore measure-level; note/Verovio/LilyPond
+addressing is future work.)
+
 ### Notation annotations
 
 Lightweight text/glyph overlays (move/scale with the score):
@@ -618,6 +637,7 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 # notation                                          (see "Music notation")
 /gscore/scene/<id> notation <fmt> <src_or_data> | notationData | notationSource | notationFormat | render | reload
 /gscore/scene/<id> page <n> | nextPage | prevPage | pages | notationInfo
+/gscore/scene/<id> addressable <0|1> | measures        # MuseScore measure positions
 /gscore/scene/<id>/cursor show|pos|color|width|map|measure|beat|time
 /gscore/scene/<id>/region <rid> rect|measure|on|highlight|color
 /gscore/scene/<id>/annotation <aid> text|rect|glyph|color|show|hide|del

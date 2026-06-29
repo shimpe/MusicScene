@@ -570,6 +570,30 @@ You can also drive it from inside Godot (GDScript), e.g. after generating a file
 GScoreOSC.script_runner.run_text('/gscore/scene/score notation svg "user://gen/score.svg"')
 ```
 
+### Addressable scores — clickable measures (MuseScore)
+
+For MusicXML via MuseScore, gscore can make the score **addressable**: it reads MuseScore's measure
+positions, crops to the music, and auto-creates a clickable region per measure.
+
+```python
+s("/gscore/scene/score","addressable",1)                       # enable
+s("/gscore/scene/score","notation","musicxml","res://scores/example.musicxml")
+# ...a moment later (engraving is async)...
+s("/gscore/scene/score","measures")    # <- reply measures score 1 <u v w h time> 2 <...> ...
+```
+
+Each measure becomes region `m1…mN`; clicking one emits `/gscore/event/measure score m<n> <u> <v>`
+(bind your own with `region m3 on click /my/addr`). Drive **cursor following** from your sequencer by
+sending the current measure as the music plays — optionally with a beat fraction within the bar:
+
+```python
+s("/gscore/scene/score/cursor","show",1)
+s("/gscore/scene/score/cursor","measure",3)       # jump cursor to bar 3
+s("/gscore/scene/score/cursor","measure",3,0.5)   # halfway through bar 3
+```
+
+(v1 is MuseScore measure-level; note-level / Verovio / LilyPond addressing is future work.)
+
 ### Cache management
 
 ```python

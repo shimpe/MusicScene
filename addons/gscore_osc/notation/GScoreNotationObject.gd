@@ -23,6 +23,8 @@ var source_content = ""      # String (path or inline text) OR PackedByteArray
 var source_label: String = ""  # human-readable, for notationInfo
 var _force_data: bool = false
 var _pending: bool = false      # an async engrave is in flight
+var addressable: bool = false   # extract measure positions (MuseScore) and make them clickable
+var measures: Array = []        # [{index, rect:Rect2(normalized), time}]
 var format: String = ""
 var backend: String = ""
 var current_page: int = 1
@@ -111,6 +113,12 @@ func handle(verb: String, args: Array) -> void:
 			reply_info()
 		"currentpage":
 			reply_current_page()
+		"addressable":
+			addressable = _b(args, 0, true)
+			if not _is_content_empty():
+				_render()
+		"measures":
+			reply_measures()
 
 
 func _set_content(value, force_data: bool) -> void:
@@ -139,9 +147,52 @@ func _render() -> void:
 	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
 		_pending = true
 		queue_redraw()
-		ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
+		if addressable and (format == "musicxml" or format == "mei"):
+			ctx.render_queue.submit_addressable(self, source_content, format, current_page, render_options, _force_data)
+		else:
+			ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
 		return
 	_apply_result(Renderer.render(source_content, format, current_page, render_options, _force_data))
+
+
+func _on_addressable_done(texture: Texture2D, p_measures: Array) -> void:
+	_pending = false
+	sprite.texture = texture
+	backend = "addressable"
+	page_count = 1
+	page_size = texture.get_size()
+	measures = p_measures
+	_create_measure_regions()
+	_update_geometry()
+	queue_redraw()
+	if ctx.verbose:
+		print("[GScoreOSC] notation '%s' addressable: %d measures, %dx%d px"
+			% [osc_id, measures.size(), int(page_size.x), int(page_size.y)])
+
+
+func _create_measure_regions() -> void:
+	for m in measures:
+		var rid := "m%d" % (int(m.index) + 1)
+		var reg := _ensure_region(rid)
+		reg.set_rect_norm(m.rect)
+		if not reg.bindings.has("click"):
+			reg.bindings["click"] = "/gscore/event/measure"
+
+
+func reply_measures() -> void:
+	var vals: Array = [osc_id]
+	for m in measures:
+		var r: Rect2 = m.rect
+		vals.append_array([int(m.index) + 1, r.position.x, r.position.y, r.size.x, r.size.y, m.time])
+	ctx.reply("measures", vals)
+
+
+## Page-normalized u for measure (0-based) + beat fraction; -1 if unknown.
+func _measure_u(mi: int, frac: float) -> float:
+	for m in measures:
+		if int(m.index) == mi:
+			return m.rect.position.x + frac * m.rect.size.x
+	return -1.0
 
 
 func _on_render_done(res) -> void:
@@ -192,9 +243,18 @@ func handle_cursor(args: Array) -> void:
 			cursor.u = _f(args, 1)
 			cursor.v = _f(args, 2)
 			cursor.queue_redraw()
-		"measure", "beat", "time":
-			# No time/measure map in v1: store v as a passthrough; clients can drive `pos`/`map`.
+		"measure":
+			# With addressable data, jump the cursor to a measure (+ optional beat fraction).
+			var mi := int(_f(args, 1, 1)) - 1
+			var mu := _measure_u(mi, _f(args, 2, 0.0))
+			if mu >= 0.0:
+				cursor.set_u(mu)
+			else:
+				cursor.v = _f(args, 1)
+				cursor.queue_redraw()
+		"beat", "time":
 			cursor.v = _f(args, 1)
+			cursor.queue_redraw()
 		"color":
 			cursor.line_color = _color(args, 1)
 			cursor.queue_redraw()

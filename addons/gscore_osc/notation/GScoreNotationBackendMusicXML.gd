@@ -87,6 +87,32 @@ static func finalize(out_user: String, out_ext: String, page: int, options: Dict
 	return ImageBackend.render(page_content, 1, options)
 
 
+# --- helpers for the addressable pipeline (reuses command/input plumbing) ---
+
+## The engraver executable for a format (first token of the configured command).
+static func engraver_exe(format: String) -> String:
+	var cmd := _command_for(format)
+	if cmd == "":
+		return ""
+	var argv := _tokenize(cmd)
+	return str(argv[0]) if argv.size() > 0 else ""
+
+
+## Absolute path to the engraver input (writes inline content to a temp file if needed).
+static func input_abs_for(content: Dictionary, format: String, options: Dictionary) -> String:
+	Cache.ensure_dir()
+	if content.kind == "path":
+		return _globalize(content.path)
+	var in_user := Cache.path_for(Cache.key(_content_id(content), format, 0, "in", options), _ext_for(format))
+	if not _write_content(in_user, content):
+		return ""
+	return ProjectSettings.globalize_path(in_user)
+
+
+static func content_id(content: Dictionary) -> String:
+	return _content_id(content)
+
+
 # --- command resolution --------------------------------------------------
 
 static func _command_for(format: String) -> String:
