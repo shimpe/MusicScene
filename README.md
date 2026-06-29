@@ -339,8 +339,23 @@ It renders the full page, reads MuseScore's `.mpos` position export (one batched
 run), crops to the music, and creates a clickable region `m1…mN` per measure (each emits
 `/gscore/event/measure <id> m<n> <u> <v>` on click). `measures` replies each measure's
 page-normalized rect and time position, so a client can drive cursor-following by sending
-`cursor measure <n>` as the music plays. (v1: MuseScore measure-level; note/Verovio/LilyPond
-addressing is future work.)
+`cursor measure <n>` as the music plays.
+
+For **LilyPond** the same `addressable 1` gives **note-level** addressing with automatic following:
+gscore injects a Scheme tagger so every note carries its musical moment, renders the point-and-click
+SVG, and extracts each note's time, source `line:char`, and position.
+
+```
+/gscore/scene/<id> addressable 1
+/gscore/scene/<id> notation lilypond "res://score.ly"      # or notationData lilypond <inline>
+/gscore/scene/<id> elements                  # -> reply elements <id> <n when line char u v> ...
+/gscore/scene/<id>/cursor follow 1           # cursor tracks the transport across the notes
+```
+
+Each note becomes region `n0…nK` (clicking emits `/gscore/event/note <id> n<i> <u> <v>`), and with
+`cursor follow 1` + a playing transport the cursor moves note-to-note and emits
+`/gscore/event/note <id> n<i> <when> <line> <char>` as it passes each one — full score-following,
+driven entirely by gscore.
 
 ### Notation annotations
 
@@ -637,8 +652,8 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 # notation                                          (see "Music notation")
 /gscore/scene/<id> notation <fmt> <src_or_data> | notationData | notationSource | notationFormat | render | reload
 /gscore/scene/<id> page <n> | nextPage | prevPage | pages | notationInfo
-/gscore/scene/<id> addressable <0|1> | measures        # MuseScore measure positions
-/gscore/scene/<id>/cursor show|pos|color|width|map|measure|beat|time
+/gscore/scene/<id> addressable <0|1> | measures | elements   # MuseScore measures / LilyPond notes
+/gscore/scene/<id>/cursor show|pos|color|width|map|measure|beat|time|follow
 /gscore/scene/<id>/region <rid> rect|measure|on|highlight|color
 /gscore/scene/<id>/annotation <aid> text|rect|glyph|color|show|hide|del
 /gscore/scene/<id>/regions | /annotations | /notationInfo | /pages | /currentPage

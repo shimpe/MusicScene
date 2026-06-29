@@ -592,7 +592,32 @@ s("/gscore/scene/score/cursor","measure",3)       # jump cursor to bar 3
 s("/gscore/scene/score/cursor","measure",3,0.5)   # halfway through bar 3
 ```
 
-(v1 is MuseScore measure-level; note-level / Verovio / LilyPond addressing is future work.)
+### Following scores — note-level (LilyPond)
+
+For LilyPond, `addressable 1` gives **note-level** addressing and **automatic following**. gscore
+injects a Scheme tagger so each note carries its musical moment, renders LilyPond's point-and-click
+SVG, and extracts every note's time, source `line:char`, and position.
+
+```python
+s("/gscore/scene/score","addressable",1)
+s("/gscore/scene/score","notation","lilypond","res://scores/example.ly")   # or notationData lilypond <inline>
+# ...a moment later...
+s("/gscore/scene/score","elements")   # <- reply elements score 0 <when line char u v> 1 <...> ...
+```
+
+Each note is region `n0…nK` (click → `/gscore/event/note score n<i> <u> <v>`). For a **following
+cursor**, just play the transport:
+
+```python
+s("/gscore/scene/score/cursor","show",1)
+s("/gscore/transport","tempo",120.0)
+s("/gscore/scene/score/cursor","follow",1)   # cursor tracks the transport across the notes
+s("/gscore/transport","play")
+# as it plays you receive: /gscore/event/note score n<i> <when> <line> <char>
+```
+
+The cursor moves note-to-note in sync with the transport and emits a note event as it passes each
+one — driven entirely by gscore (no per-note messages from your client needed).
 
 ### Cache management
 

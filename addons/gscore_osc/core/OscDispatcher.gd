@@ -9,7 +9,7 @@ extends RefCounted
 const NOTATION_VERBS := [
 	"notation", "notationsource", "notationdata", "notationformat", "render", "reload",
 	"page", "nextpage", "prevpage", "pages", "system", "staff", "measure",
-	"part", "notationinfo", "currentpage", "addressable", "measures",
+	"part", "notationinfo", "currentpage", "addressable", "measures", "elements",
 ]
 
 var ctx = null

@@ -23,8 +23,11 @@ var source_content = ""      # String (path or inline text) OR PackedByteArray
 var source_label: String = ""  # human-readable, for notationInfo
 var _force_data: bool = false
 var _pending: bool = false      # an async engrave is in flight
-var addressable: bool = false   # extract measure positions (MuseScore) and make them clickable
-var measures: Array = []        # [{index, rect:Rect2(normalized), time}]
+var addressable: bool = false   # extract measure/note positions and make them clickable
+var measures: Array = []        # [{index, rect:Rect2(normalized), time}]   (MuseScore)
+var elements: Array = []        # [{index, when, line, char, u, v}]          (LilyPond notes)
+var _follow: bool = false       # cursor follows transport across elements
+var _last_passed: int = -1
 var format: String = ""
 var backend: String = ""
 var current_page: int = 1
@@ -119,6 +122,8 @@ func handle(verb: String, args: Array) -> void:
 				_render()
 		"measures":
 			reply_measures()
+		"elements":
+			reply_elements()
 
 
 func _set_content(value, force_data: bool) -> void:
@@ -147,7 +152,7 @@ func _render() -> void:
 	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
 		_pending = true
 		queue_redraw()
-		if addressable and (format == "musicxml" or format == "mei"):
+		if addressable and (format == "musicxml" or format == "mei" or format == "lilypond" or format == "ly"):
 			ctx.render_queue.submit_addressable(self, source_content, format, current_page, render_options, _force_data)
 		else:
 			ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
@@ -193,6 +198,72 @@ func _measure_u(mi: int, frac: float) -> float:
 		if int(m.index) == mi:
 			return m.rect.position.x + frac * m.rect.size.x
 	return -1.0
+
+
+# --- LilyPond note-level addressing + following --------------------------
+
+func _on_elements_done(texture: Texture2D, p_elements: Array) -> void:
+	_pending = false
+	sprite.texture = texture
+	backend = "addressable-ly"
+	page_count = 1
+	page_size = texture.get_size()
+	elements = p_elements
+	_last_passed = -1
+	for e in elements:
+		var rid := "n%d" % int(e.index)
+		var reg := _ensure_region(rid)
+		reg.set_rect_norm(Rect2(e.u - 0.018, e.v - 0.05, 0.036, 0.10))
+		if not reg.bindings.has("click"):
+			reg.bindings["click"] = "/gscore/event/note"
+	_update_geometry()
+	queue_redraw()
+	if ctx.verbose:
+		print("[GScoreOSC] notation '%s' addressable-ly: %d notes, %dx%d px"
+			% [osc_id, elements.size(), int(page_size.x), int(page_size.y)])
+
+
+func reply_elements() -> void:
+	var vals: Array = [osc_id]
+	for e in elements:
+		vals.append_array([int(e.index), e.when, int(e.line), int(e.char), e.u, e.v])
+	ctx.reply("elements", vals)
+
+
+func set_follow(on: bool) -> void:
+	_follow = on
+	_last_passed = -1
+	set_process(on)
+
+
+func _follow_u(when: float) -> float:
+	if elements.is_empty():
+		return cursor.u
+	if when <= elements[0].when:
+		return elements[0].u
+	var last = elements[elements.size() - 1]
+	if when >= last.when:
+		return last.u
+	for i in range(elements.size() - 1):
+		var a = elements[i]
+		var b = elements[i + 1]
+		if when >= a.when and when <= b.when:
+			var span: float = b.when - a.when
+			return lerpf(a.u, b.u, (when - a.when) / span if span > 0.0 else 0.0)
+	return last.u
+
+
+func _process(_delta: float) -> void:
+	if not _follow or ctx == null or ctx.transport == null or not ctx.transport.playing or elements.is_empty():
+		return
+	var when: float = ctx.transport.beat / 4.0   # transport.beat is quarters; data-when is whole notes
+	if _last_passed >= 0 and _last_passed < elements.size() and when < elements[_last_passed].when:
+		_last_passed = -1   # transport rewound
+	cursor.set_u(_follow_u(when))
+	while _last_passed + 1 < elements.size() and elements[_last_passed + 1].when <= when:
+		_last_passed += 1
+		var e = elements[_last_passed]
+		ctx.send_event("/gscore/event/note", [osc_id, "n%d" % int(e.index), e.when, int(e.line), int(e.char)])
 
 
 func _on_render_done(res) -> void:
@@ -263,6 +334,8 @@ func handle_cursor(args: Array) -> void:
 			cursor.queue_redraw()
 		"map":
 			ctx.timemapper.add_cursor_map(self, args.slice(1))
+		"follow":
+			set_follow(_b(args, 1, true))
 		_:
 			ctx.error("bad_arguments", _base_addr() + "/cursor", "Unknown cursor cmd: " + cmd)
 

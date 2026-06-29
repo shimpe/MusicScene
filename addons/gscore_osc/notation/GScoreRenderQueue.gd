@@ -9,6 +9,7 @@ const Renderer := preload("res://addons/gscore_osc/notation/GScoreNotationRender
 const ExternalBackend := preload("res://addons/gscore_osc/notation/GScoreNotationBackendMusicXML.gd")
 const Cache := preload("res://addons/gscore_osc/notation/GScoreNotationCache.gd")
 const Positions := preload("res://addons/gscore_osc/notation/GScoreNotationPositions.gd")
+const LilyPositions := preload("res://addons/gscore_osc/notation/GScoreNotationLilyPositions.gd")
 
 const TIMEOUT_MS := 60000
 
@@ -47,6 +48,9 @@ func submit(notation_obj, raw_content, format: String, page: int, options: Dicti
 ## plus a .mpos position export; on completion the page is cropped to the music and each measure is
 ## returned as a page-normalized rect. v1 supports MuseScore (musicxml/mei).
 func submit_addressable(notation_obj, raw_content, format: String, page: int, options: Dictionary, force_data: bool) -> void:
+	if format == "lilypond" or format == "ly":
+		_submit_lily(notation_obj, raw_content, format, page, options, force_data)
+		return
 	var content := Renderer.normalize(raw_content, format, force_data)
 	var exe := ExternalBackend.engraver_exe(format)
 	if exe == "":
@@ -84,6 +88,67 @@ func submit_addressable(notation_obj, raw_content, format: String, page: int, op
 	})
 
 
+## LilyPond addressable: inject the timing tagger, render cropped SVG, parse note-level positions.
+func _submit_lily(notation_obj, raw_content, format: String, page: int, options: Dictionary, force_data: bool) -> void:
+	var content := Renderer.normalize(raw_content, format, force_data)
+	var exe := ExternalBackend.engraver_exe(format)
+	if exe == "":
+		notation_obj._on_render_failed("addressable needs a LilyPond engraver configured for '%s'" % format)
+		return
+	var ly_text := ""
+	if content.kind == "text":
+		ly_text = content.text
+	elif content.kind == "bytes":
+		ly_text = content.bytes.get_string_from_utf8()
+	else:
+		var ap: String = content.path
+		ly_text = FileAccess.get_file_as_string(ap if (ap.begins_with("res://") or FileAccess.file_exists(ap)) else ProjectSettings.globalize_path(ap))
+	if ly_text.strip_edges() == "":
+		notation_obj._on_render_failed("addressable: empty LilyPond source")
+		return
+
+	var wrapped := LilyPositions.wrap_source(ly_text)
+	Cache.ensure_dir()
+	var key := Cache.key(wrapped, format, page, "lyaddr", options)
+	var in_user := Cache.path_for(key, "ly")
+	var stem_user := Cache.path_for(key, "svg").get_basename()   # cache dir + key (no ext)
+	var cropped_user := stem_user + ".cropped.svg"
+
+	if FileAccess.file_exists(cropped_user):
+		_finish_lily(notation_obj, cropped_user, options)
+		return
+
+	var f := FileAccess.open(in_user, FileAccess.WRITE)
+	if f == null:
+		notation_obj._on_render_failed("addressable: cannot write temp LilyPond")
+		return
+	f.store_string(wrapped)
+	f.close()
+
+	var args := PackedStringArray([
+		"-dbackend=svg", "-dcrop=#t",
+		"-o", ProjectSettings.globalize_path(stem_user), ProjectSettings.globalize_path(in_user),
+	])
+	var pid := OS.create_process(exe, args, false)
+	if pid <= 0:
+		notation_obj._on_render_failed("addressable: could not launch " + exe)
+		return
+	if ctx.verbose:
+		print("[GScoreOSC] analyzing '%s' (lilypond) in background, pid %d" % [notation_obj.osc_id, pid])
+	_jobs.append({
+		"kind": "lyaddr", "pid": pid, "obj": notation_obj,
+		"cropped_user": cropped_user, "options": options, "start": Time.get_ticks_msec(),
+	})
+
+
+func _finish_lily(obj, cropped_user: String, options: Dictionary) -> void:
+	var res := LilyPositions.finalize(cropped_user, options)
+	if res.ok:
+		obj._on_elements_done(res.texture, res.elements)
+	else:
+		obj._on_render_failed(res.error)
+
+
 func _addr_cached(png_user: String, mpos_user: String) -> bool:
 	if not FileAccess.file_exists(mpos_user):
 		return false
@@ -114,6 +179,8 @@ func _process(_delta: float) -> void:
 		_jobs.remove_at(i)
 		if j.get("kind", "engrave") == "addr":
 			_finish_addressable(j.obj, j.png_user, j.mpos_user, j.page)
+		elif j.kind == "lyaddr":
+			_finish_lily(j.obj, j.cropped_user, j.options)
 		else:
 			var res = ExternalBackend.finalize(j.out_user, j.out_ext, j.page, j.options)
 			if res.ok:
