@@ -479,14 +479,32 @@ gscore can shell out to an external engraver to turn symbolic music into pages, 
 
 ```ini
 [gscore_osc]
-notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
+notation/engraver/musicxml="py \"res://tools/mscore_to_score.py\" {input} {output} --page {page} --dpi 200"
 notation/engraver/lilypond="py \"res://tools/ly_to_score.py\" {input} {output} --page {page} --dpi 200"
 notation/engraver/abc="py tools/abc_to_png.py {input} {output}"
 notation/engraver_output="png"   ; what your command writes: "png" (default) or "svg"
 ```
 
 > `res://` / `user://` paths inside an engraver command are resolved automatically, so a bundled
-> wrapper script is portable across machines.
+> wrapper script is portable across machines. **Both MuseScore and LilyPond ship working defaults
+> and wrappers** — if either is installed, the matching format works immediately.
+
+#### MuseScore — works out of the box
+
+This project ships a MuseScore wrapper (`tools/mscore_to_score.py`) and the default `musicxml`
+setting above. With MuseScore 4 installed you can engrave **MusicXML / .mxl / .mscz** immediately —
+from a file or inline:
+
+```python
+# from a file (any format MuseScore imports)
+s("/gscore/scene/score","notation","musicxml","res://scores/example.musicxml")
+# inline, generated at run-time
+s("/gscore/scene/score","notationData","musicxml","<?xml ...><score-partwise> ... </score-partwise>")
+```
+
+The wrapper runs MuseScore with `-T` (trim to the music) and resolves its per-page output naming
+(`out-1.png`). It finds MuseScore on `PATH`, via `$GSCORE_MUSESCORE`, or in
+`C:\Program Files\MuseScore 4\bin`; override with `--mscore "C:/Program Files/MuseScore 4/bin/MuseScore4.exe"`.
 
 #### LilyPond — works out of the box
 
@@ -521,10 +539,11 @@ gscore writes inline source to a temp file, runs your command, caches the page u
 `user://gscore_cache/notation/`, and displays it. The engraver runs **once** per
 (source, format, page) — repeats are cache hits.
 
-**Engraver tips.** MuseScore 4: `MuseScore4 in.musicxml -o out.png`. Verovio:
-`verovio -f musicxml -t png -o {outbase} {input}`. LilyPond is handled by the bundled
-`tools/ly_to_score.py` (above). ABC (and any tool that names its own outputs) is easiest behind a
-small `input output` wrapper — see `tools/ly_to_score.py` / `tools/stub_engraver.py` for the exact
+**Engraver tips.** MuseScore and LilyPond are handled by the bundled wrappers
+(`tools/mscore_to_score.py`, `tools/ly_to_score.py`) — they deal with per-page output naming and
+trimming so you don't have to. For other tools (Verovio `verovio -f musicxml -t png -o {outbase}
+{input}`, ABC via `abcm2ps`/`abc2svg`, etc.), wrap anything that names its own outputs in a small
+`input output` script — see `tools/mscore_to_score.py` / `tools/stub_engraver.py` for the exact
 contract gscore expects.
 
 ### D. The run-time-generation workflow (the common case)
