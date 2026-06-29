@@ -113,8 +113,8 @@ func _render() -> void:
 	(page_mesh.mesh as QuadMesh).size = page_world
 	_update_all()
 	if ctx.verbose:
-		print("[GScoreOSC] notation3d '%s' rendered %s page %d/%d (%s)"
-			% [osc_id, format, current_page, page_count, backend])
+		print("[GScoreOSC] notation3d '%s' rendered %s page %d/%d (%s) %dx%d px"
+			% [osc_id, format, current_page, page_count, backend, int(page_size.x), int(page_size.y)])
 
 
 # --- Cursor --------------------------------------------------------------

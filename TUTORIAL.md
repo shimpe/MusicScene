@@ -485,6 +485,7 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
 | `permission_denied` on bind/call/instantiate | The node/member/scene isn't exposed/whitelisted. Expose it, whitelist it, or enable developer mode. |
 | 3D changes ignored | `gscore_osc/space` is read once at startup — **restart** after changing it. |
 | MusicXML/MEI fails with `load_failed` | Configure an external engraver in `gscore_osc/notation/external_renderer_*`, or pre-render to PNG/SVG. |
+| SVG score not visible | Put the `.svg` under `res://` (it loads via Godot's import — confirm it shows a thumbnail in the FileSystem dock). The page renders at native size centred on the object, so **scale it down** (`/gscore/scene/score scale 0.3`) if it overflows. If the SVG shows no thumbnail, ThorVG can't rasterize it — export to PNG instead. Check the Output panel for a `load_failed` warning. |
 
 ---
 

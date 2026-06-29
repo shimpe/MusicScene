@@ -45,6 +45,5 @@ permissions/instantiate=true
 permissions/call_methods=true
 permissions/set_props=true
 permissions/free_nodes=false
-notation/external_renderer_path=""
 notation/external_renderer_args=""
 logging/verbose=true

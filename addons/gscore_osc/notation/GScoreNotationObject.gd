@@ -119,8 +119,8 @@ func _render() -> void:
 	_update_geometry()
 	queue_redraw()
 	if ctx.verbose:
-		print("[GScoreOSC] notation '%s' rendered %s page %d/%d (%s)"
-			% [osc_id, format, current_page, page_count, backend])
+		print("[GScoreOSC] notation '%s' rendered %s page %d/%d (%s) %dx%d px"
+			% [osc_id, format, current_page, page_count, backend, int(page_size.x), int(page_size.y)])
 
 
 func _update_geometry() -> void:

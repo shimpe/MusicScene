@@ -233,11 +233,17 @@ Notation commands:
 | Format | Backend | Notes |
 |---|---|---|
 | `png` `image` `jpg` `jpeg` `webp` `bmp` | **image** | always available; the canonical v1 backend |
-| `svg` | **svg** | rasterized at runtime via `Image.load_svg_from_string` (verified on 4.7) |
+| `svg` | **svg** | `res://` SVGs use Godot's own import (reliable, matches the editor preview); other paths rasterize at runtime via `Image.load_svg_from_string` |
 | `musicxml` `mei` `guido` `abc` `lilypond` `pdf` | **external** | shells out to a configured engraver → PNG/SVG, cached |
 
 Display any engraved page produced by MuseScore, LilyPond, Verovio, Dorico, Finale or Sibelius
 by exporting to PNG/SVG and pointing the image/svg backend at it.
+
+**SVG tips.** Put the `.svg` under `res://` so Godot imports it — if it shows a thumbnail in the
+FileSystem dock, the notation backend will display it. Notation renders at the page's native pixel
+size centred on the object, so a large page can overflow the screen: scale it down (e.g.
+`/gscore/scene/score scale 0.3`). If a non-`res://` SVG fails at runtime (some engraver SVGs use
+features ThorVG can't rasterize), import it under `res://` or export to PNG.
 
 **Multi-page** raster/SVG: put `{page}` in the source path (e.g. `res://scores/p{page}.png`);
 the page count is probed automatically and `page`/`nextPage`/`prevPage` switch pages.
