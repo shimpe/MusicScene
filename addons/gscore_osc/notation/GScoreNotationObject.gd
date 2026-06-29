@@ -19,7 +19,9 @@ var cursor: GScoreNotationCursor
 var regions: Dictionary = {}        # id -> GScoreNotationRegion
 var annotations: Dictionary = {}    # id -> GScoreNotationAnnotation
 
-var source: String = ""
+var source_content = ""      # String (path or inline text) OR PackedByteArray
+var source_label: String = ""  # human-readable, for notationInfo
+var _force_data: bool = false
 var format: String = ""
 var backend: String = ""
 var current_page: int = 1
@@ -66,11 +68,16 @@ func handle(verb: String, args: Array) -> void:
 	match verb:
 		"notation":
 			format = _s(args, 0)
-			source = _s(args, 1)
+			_set_content(args[1] if args.size() > 1 else "", false)
 			current_page = 1
 			_render()
 		"notationsource":
-			source = _s(args, 0)
+			_set_content(args[0] if args.size() > 0 else "", false)
+			_render()
+		"notationdata":
+			format = _s(args, 0)
+			_set_content(args[1] if args.size() > 1 else "", true)
+			current_page = 1
 			_render()
 		"notationformat":
 			format = _s(args, 0)
@@ -105,10 +112,29 @@ func handle(verb: String, args: Array) -> void:
 			reply_current_page()
 
 
+func _set_content(value, force_data: bool) -> void:
+	source_content = value
+	_force_data = force_data
+	if value is PackedByteArray:
+		source_label = "<bytes:%d>" % value.size()
+	else:
+		var sv := String(value)
+		if sv.length() <= 120 and not sv.contains("\n") and not sv.contains("<"):
+			source_label = sv
+		else:
+			source_label = "<inline %s, %d chars>" % [format, sv.length()]
+
+
+func _is_content_empty() -> bool:
+	if source_content is PackedByteArray:
+		return source_content.is_empty()
+	return String(source_content) == ""
+
+
 func _render() -> void:
-	if source == "" or format == "":
+	if _is_content_empty() or format == "":
 		return
-	var res = Renderer.render(source, format, current_page, render_options)
+	var res = Renderer.render(source_content, format, current_page, render_options, _force_data)
 	if not res.ok:
 		ctx.error("load_failed", _base_addr() + "/notation", res.error)
 		return
@@ -277,7 +303,7 @@ func _ensure_annotation(aid: String) -> GScoreNotationAnnotation:
 # =========================================================================
 
 func reply_info() -> void:
-	ctx.reply("notationInfo", [osc_id, format, source, backend, page_count])
+	ctx.reply("notationInfo", [osc_id, format, source_label, backend, page_count])
 
 func reply_pages() -> void:
 	ctx.reply("pages", [osc_id, page_count])

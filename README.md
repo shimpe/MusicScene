@@ -217,8 +217,9 @@ given physics, clicked, and queried like anything else.
 Notation commands:
 
 ```
-/gscore/scene/<id> notation <format> <source>
-/gscore/scene/<id> notationSource <source>
+/gscore/scene/<id> notation <format> <source_or_data>   # file path OR inline data (auto-detected)
+/gscore/scene/<id> notationData <format> <data>         # force inline text/blob-bytes data
+/gscore/scene/<id> notationSource <source_or_data>
 /gscore/scene/<id> notationFormat <format>
 /gscore/scene/<id> render | reload
 /gscore/scene/<id> page <n> | nextPage | prevPage | pages
@@ -239,6 +240,16 @@ Notation commands:
 Display any engraved page produced by MuseScore, LilyPond, Verovio, Dorico, Finale or Sibelius
 by exporting to PNG/SVG and pointing the image/svg backend at it.
 
+**Runtime-generated scores** (the default for many setups) are first-class — a `source` may be:
+
+- a **file path** (`res://`, `user://`, or absolute) written at run-time;
+- **inline data** sent over OSC — an SVG/MusicXML/LilyPond/ABC **string**, or raster **bytes** as
+  an OSC blob (use `notationData` to force, or just send markup/blob and it's auto-detected);
+- **symbolic music** that gscore engraves on the fly via a configured external engraver (below).
+
+See the tutorial's [Displaying scores](TUTORIAL.md#displaying-scores--every-source-option) section
+for every form with examples.
+
 **SVG tips.** Put the `.svg` under `res://` so Godot imports it — if it shows a thumbnail in the
 FileSystem dock, the notation backend will display it. Notation renders at the page's native pixel
 size centred on the object, so a large page can overflow the screen: scale it down (e.g.
@@ -248,11 +259,16 @@ features ThorVG can't rasterize), import it under `res://` or export to PNG.
 **Multi-page** raster/SVG: put `{page}` in the source path (e.g. `res://scores/p{page}.png`);
 the page count is probed automatically and `page`/`nextPage`/`prevPage` switch pages.
 
-**External engraver** configuration (Project Settings → `gscore_osc/notation/`):
+**External engraver** configuration (Project Settings → `gscore_osc/notation/`). Set a per-format
+command (preferred) or the generic fallback; works for a file path or inline symbolic data (gscore
+writes inline source to a temp file, runs the command, and caches the output):
 
 ```
-external_renderer_path  e.g. "C:/Program Files/MuseScore 4/bin/MuseScore4.exe"
-external_renderer_args  e.g. "{input} -o {output}"      tokens: {input} {output} {format} {page}
+engraver/musicxml   e.g. "\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
+engraver/lilypond   e.g. "py tools/ly_to_png.py {input} {output}"
+engraver/abc        e.g. "py tools/abc_to_png.py {input} {output}"
+engraver_output     "png" (default) | "svg"          tokens: {input} {output} {outbase} {outdir} {format} {page}
+external_renderer_path + external_renderer_args       generic fallback for any symbolic format
 ```
 
 Rendered pages are cached under `user://gscore_cache/notation/`:
@@ -587,7 +603,7 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 /gscore/scene/<id> map <t0> <t1> <prop> <from> <to>
 
 # notation                                          (see "Music notation")
-/gscore/scene/<id> notation <fmt> <src> | notationSource | notationFormat | render | reload
+/gscore/scene/<id> notation <fmt> <src_or_data> | notationData | notationSource | notationFormat | render | reload
 /gscore/scene/<id> page <n> | nextPage | prevPage | pages | notationInfo
 /gscore/scene/<id>/cursor show|pos|color|width|map|measure|beat|time
 /gscore/scene/<id>/region <rid> rect|measure|on|highlight|color

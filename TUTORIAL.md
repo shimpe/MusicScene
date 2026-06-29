@@ -14,6 +14,7 @@ client.
 - [3. Smoke test: ping](#3-smoke-test-ping)
 - [4. Getting started in 2D](#4-getting-started-in-2d)
 - [5. Getting started in 3D](#5-getting-started-in-3d)
+- [Displaying scores — every source option](#displaying-scores--every-source-option)
 - [6. Driving it from a `.gscore` script](#6-driving-it-from-a-gscore-script)
 - [7. Connecting from Max / Pd / SuperCollider](#7-connecting-from-max--pd--supercollider)
 - [8. Permissions & safety](#8-permissions--safety)
@@ -394,6 +395,152 @@ Set `gscore_osc/space = "2d"` (and choose a `Node2D` main scene) and restart. Sa
 2D rendering.
 
 ---
+
+## Displaying scores — every source option
+
+The PNG examples above are just one way to get a score onto a notation object. A score source can
+be a **file path**, **inline data sent over OSC**, or **symbolic music that gscore engraves at
+run-time** — all through the same commands (works identically in 2D and 3D):
+
+```
+/gscore/scene/<id> notation <format> <source_or_data>   # path OR inline data (auto-detected)
+/gscore/scene/<id> notationData <format> <data>         # force inline data (text or blob bytes)
+/gscore/scene/<id> notationSource <source_or_data>      # change source, keep format
+/gscore/scene/<id> render | reload                       # re-render current source
+/gscore/scene/<id> page <n> | nextPage | prevPage | pages
+/gscore/scene/<id> notationInfo                          # <- reply notationInfo <id> <fmt> <src> <backend> <pages>
+```
+
+Formats: **`png` `jpg` `webp` `bmp`** (raster) · **`svg`** · **`musicxml` `mei` `lilypond` `abc`**
+(symbolic — these need an engraver, see C). `source_or_data` is treated as a **file path** unless
+it looks like data (starts with markup `<…`, contains newlines, or is an OSC blob); use
+`notationData` to force the inline interpretation.
+
+### A. Raster images (PNG / JPG / WEBP / BMP)
+
+The most robust option — always displays.
+
+```python
+s("/gscore/scene/score","notation","png","res://scores/page1.png")   # bundled
+s("/gscore/scene/score","notation","png","user://out/page1.png")     # written at run-time
+s("/gscore/scene/score","notation","png","D:/scores/page1.png")      # absolute path
+```
+
+**Multi-page**: put `{page}` in the path; gscore probes how many exist.
+
+```python
+s("/gscore/scene/score","notation","png","res://scores/p{page}.png")
+s("/gscore/scene/score","nextPage")
+s("/gscore/scene/score","pages")     # <- reply pages score <count>
+```
+
+**Raw bytes over OSC** (a generated image, no file on disk) — send the PNG bytes as an OSC **blob**.
+Mind the UDP datagram cap (~64 KB), so this suits small images / per-system updates:
+
+```python
+# minimal blob-aware send (extends gosc.py):
+def osc_blob_msg(addr, *args):
+    tt, payload = ",", b""
+    for a in args:
+        if isinstance(a, (bytes, bytearray)):
+            b = bytes(a); tt += "b"
+            payload += struct.pack(">i", len(b)) + b + b"\x00"*((4-len(b)%4)%4)
+        elif isinstance(a, float): tt += "f"; payload += struct.pack(">f", a)
+        elif isinstance(a, int):   tt += "i"; payload += struct.pack(">i", a)
+        else: tt += "s"; payload += _ostr(str(a))
+    return _ostr(addr) + _ostr(tt) + payload
+
+png = open("measure.png","rb").read()
+_send.sendto(osc_blob_msg("/gscore/scene/score","notation","png",png), (HOST, SEND_PORT))
+```
+
+### B. SVG
+
+```python
+# bundled under res:// — Godot imports it (best reliability; shows a FileSystem thumbnail)
+s("/gscore/scene/score","notation","svg","res://scores/score.svg")
+# a file written at run-time (rasterized via Godot's ThorVG)
+s("/gscore/scene/score","notation","svg","user://gen/score.svg")
+# an inline SVG STRING generated at run-time (e.g. Verovio in your client) — no file needed
+svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300">...</svg>'
+s("/gscore/scene/score","notation","svg",svg)
+```
+
+The page renders at native pixel size centred on the object — **scale it down if it overflows**:
+`s("/gscore/scene/score","scale",0.3)`. If a runtime SVG fails to rasterize (some engraver SVGs
+use features ThorVG can't handle), import it under `res://` or render to PNG.
+
+### C. Symbolic music (MusicXML / MEI / LilyPond / ABC) — gscore runs the engraver
+
+gscore can shell out to an external engraver to turn symbolic music into pages, then display and
+**cache** the result. Configure a per-format command in *Project Settings*
+(`gscore_osc/notation/engraver/<format>`), using these tokens: `{input} {output} {outbase}
+{outdir} {format} {page}`. Quote paths that contain spaces.
+
+```ini
+[gscore_osc]
+notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
+notation/engraver/lilypond="py tools/ly_to_png.py {input} {output}"
+notation/engraver/abc="py tools/abc_to_png.py {input} {output}"
+notation/engraver_output="png"   ; what your command writes: "png" (default) or "svg"
+```
+
+(Or set the generic fallback `notation/external_renderer_path` + `notation/external_renderer_args`
+used for any symbolic format.) Then point at a file **or send inline source**:
+
+```python
+# from a file
+s("/gscore/scene/score","notation","musicxml","user://flute.musicxml")
+# inline, generated at run-time
+xml = '<?xml version="1.0"?><score-partwise> ... </score-partwise>'
+s("/gscore/scene/score","notationData","musicxml",xml)
+```
+
+gscore writes inline source to a temp file, runs your command, caches the page under
+`user://gscore_cache/notation/`, and displays it. The engraver runs **once** per
+(source, format, page) — repeats are cache hits.
+
+**Engraver tips.** MuseScore 4: `MuseScore4 in.musicxml -o out.png`. Verovio:
+`verovio -f musicxml -t png -o {outbase} {input}`. LilyPond and ABC name their own output files, so
+wrap them in a 2-arg `input output` script (see `tools/stub_engraver.py` for the shape — it's the
+exact contract gscore expects).
+
+### D. The run-time-generation workflow (the common case)
+
+Pick by score size and tooling:
+
+1. **File + path** (no size limit, best for full pages): your generator writes
+   `user://gen/score.(svg|png)`, then `notation svg "user://gen/score.svg"`. Regenerate and call
+   `render`/`reload` (or send `notation` again) to refresh.
+2. **Inline data over OSC** (no temp file; small/medium or per-measure): `notation svg <svg-string>`
+   or `notationData musicxml <xml>`. Watch the ~64 KB UDP cap.
+3. **gscore engraves symbolic data** (you push MusicXML/LilyPond/ABC, gscore renders): configure
+   the engraver (C), then `notation musicxml <path-or-inline>`.
+
+You can also drive it from inside Godot (GDScript), e.g. after generating a file:
+
+```gdscript
+GScoreOSC.script_runner.run_text('/gscore/scene/score notation svg "user://gen/score.svg"')
+```
+
+### Cache management
+
+```python
+s("/gscore/notation/cache","info")    # <- reply notation/cache info <count> <bytes> <dir>
+s("/gscore/notation/cache","clear")
+```
+
+### Quick reference — source forms
+
+| You have… | Command |
+|---|---|
+| Bundled PNG/SVG | `notation png "res://scores/x.png"` · `notation svg "res://scores/x.svg"` |
+| A file written at run-time | `notation png "user://…"` / absolute path |
+| Multi-page raster | `notation png "res://scores/p{page}.png"` + `nextPage` |
+| A generated SVG string | `notation svg "<svg…>"` |
+| Generated image bytes | OSC blob: `notation png <bytes>` |
+| Symbolic music (file) | configure engraver, `notation musicxml "user://x.musicxml"` |
+| Symbolic music (inline) | `notationData musicxml "<…>"` |
 
 ## 6. Driving it from a `.gscore` script
 

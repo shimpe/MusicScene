@@ -7,7 +7,7 @@ extends RefCounted
 ##   /gscore/scene/<id>/<subsystem> ...       subsystem is part of the address
 
 const NOTATION_VERBS := [
-	"notation", "notationsource", "notationformat", "render", "reload",
+	"notation", "notationsource", "notationdata", "notationformat", "render", "reload",
 	"page", "nextpage", "prevpage", "pages", "system", "staff", "measure",
 	"part", "notationinfo", "currentpage",
 ]
