@@ -1,12 +1,12 @@
 extends Node
 ## Events manager. Routes /on /off /payload /signal, owns Godot signal->OSC bindings, and
-## handles mouse/touch interaction by hit-testing registered objects and notation regions.
-## Physics/area events are stored as GScoreEventBinding on the object (wired by the physics
-## adapter); input events are stored as lightweight dicts on the object.
+## handles mouse/touch interaction. Picking is delegated to ctx.spatial (2D hit-test or 3D camera
+## ray), so this manager is dimension-agnostic. Physics/area events are stored as
+## GScoreEventBinding on the object (wired by the physics adapter); input events are stored as
+## lightweight dicts.
 
 const EventBinding := preload("res://addons/gscore_osc/events/GScoreEventBinding.gd")
 const SignalBinding := preload("res://addons/gscore_osc/events/GScoreSignalBinding.gd")
-const InputUtil := preload("res://addons/gscore_osc/events/GScoreInputEvents.gd")
 
 const INPUT_EVENTS := ["click", "down", "up", "drag", "enter", "leave"]
 
@@ -63,7 +63,6 @@ func handle_signal(obj, args: Array) -> void:
 	if sig == "" or target == "":
 		ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/signal", "Need <signal> <target>")
 		return
-	# Replace any existing binding for this signal.
 	if obj.signal_bindings.has(sig):
 		obj.signal_bindings[sig].disconnect_signal()
 	var sb = SignalBinding.new()
@@ -94,7 +93,7 @@ func _parse_options(b, options: Array) -> void:
 		i += 2
 
 
-# --- Input ---------------------------------------------------------------
+# --- Input (dimension-agnostic via ctx.spatial.pick_hits) ----------------
 
 func _input(event: InputEvent) -> void:
 	if ctx == null:
@@ -102,84 +101,62 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index != MOUSE_BUTTON_LEFT:
 			return
-		var gpos: Vector2 = ctx.get_global_mouse_position()
-		var npos: Vector2 = ctx.mapper.point_from_pixels(gpos, ctx.mapper.app_mode)
+		var hits: Array = ctx.spatial.pick_hits(event.position)
 		if event.pressed:
-			_pressed = _hits(gpos)
-			for h in _pressed:
-				_emit_input(h, "down", npos, gpos)
+			_pressed = hits
+			for h in hits:
+				_emit_input(h, "down")
 		else:
-			var ups := _hits(gpos)
-			for h in ups:
-				_emit_input(h, "up", npos, gpos)
+			for h in hits:
+				_emit_input(h, "up")
 			for h in _pressed:
-				if _same_hit_present(ups, h):
-					_emit_input(h, "click", npos, gpos)
+				if _same_hit_present(hits, h):
+					_emit_input(h, "click")
 			_pressed = []
 	elif event is InputEventMouseMotion:
-		var gpos: Vector2 = ctx.get_global_mouse_position()
-		var npos: Vector2 = ctx.mapper.point_from_pixels(gpos, ctx.mapper.app_mode)
+		var hits: Array = ctx.spatial.pick_hits(event.position)
 		if not _pressed.is_empty():
 			for h in _pressed:
-				_emit_input(h, "drag", npos, gpos)
-		_update_hover(gpos, npos)
+				_emit_input(h, "drag")
+		_update_hover(hits)
 
 
-func _hits(gpos: Vector2) -> Array:
-	var out: Array = []
-	for id in ctx.registry.list_ids():
-		var obj = ctx.registry.get_object(id)
-		if obj == null:
-			continue
-		if obj.notation != null:
-			for reg in obj.notation.hit_test_regions(gpos):
-				out.append({"type": "region", "obj": obj, "region": reg})
-		if not obj.input_bindings.is_empty() and InputUtil.object_hit(obj, gpos):
-			out.append({"type": "obj", "obj": obj})
-	return out
-
-
-func _emit_input(h: Dictionary, event: String, npos: Vector2, gpos: Vector2) -> void:
+func _emit_input(h: Dictionary, event: String) -> void:
 	if h.type == "obj":
 		var obj = h.obj
 		if obj.input_bindings.has(event):
-			ctx.send_event(obj.input_bindings[event]["address"], [obj.osc_id, npos.x, npos.y])
-		ctx.send_event("/gscore/event/input", [event, obj.osc_id, npos.x, npos.y])
+			ctx.send_event(obj.input_bindings[event]["address"], [obj.osc_id, h.nx, h.ny])
+		ctx.send_event("/gscore/event/input", [event, obj.osc_id, h.nx, h.ny])
 	elif h.type == "region":
 		var obj = h.obj
 		var reg = h.region
-		var uv := _region_uv(obj, gpos)
 		if reg.bindings.has(event):
-			ctx.send_event(reg.bindings[event], [obj.osc_id, reg.region_id, uv.x, uv.y])
-		ctx.send_event("/gscore/event/input",
-			[event, obj.osc_id + "/" + reg.region_id, uv.x, uv.y])
+			ctx.send_event(reg.bindings[event], [obj.osc_id, reg.region_id, h.u, h.v])
+		ctx.send_event("/gscore/event/input", [event, obj.osc_id + "/" + reg.region_id, h.u, h.v])
 
 
-func _region_uv(obj, gpos: Vector2) -> Vector2:
-	var n = obj.notation
-	var local: Vector2 = n.to_local(gpos)
-	if n.page_size.x <= 0 or n.page_size.y <= 0:
-		return Vector2.ZERO
-	return Vector2(local.x / n.page_size.x + 0.5, local.y / n.page_size.y + 0.5)
-
-
-func _update_hover(gpos: Vector2, npos: Vector2) -> void:
-	for id in ctx.registry.list_ids():
-		var obj = ctx.registry.get_object(id)
-		if obj == null or obj.input_bindings.is_empty():
-			continue
-		var hit := InputUtil.object_hit(obj, gpos)
-		var was: bool = _hover.get(id, false)
-		if hit and not was:
+func _update_hover(hits: Array) -> void:
+	var present := {}
+	for h in hits:
+		if h.type == "obj":
+			present[h.obj.osc_id] = h
+	# entered
+	for id in present.keys():
+		if not _hover.get(id, false):
 			_hover[id] = true
+			var h = present[id]
+			var obj = h.obj
 			if obj.input_bindings.has("enter"):
-				ctx.send_event(obj.input_bindings["enter"]["address"], [obj.osc_id, npos.x, npos.y])
-			ctx.send_event("/gscore/event/input", ["enter", obj.osc_id, npos.x, npos.y])
-		elif not hit and was:
+				ctx.send_event(obj.input_bindings["enter"]["address"], [obj.osc_id, h.nx, h.ny])
+			ctx.send_event("/gscore/event/input", ["enter", obj.osc_id, h.nx, h.ny])
+	# left
+	for id in _hover.keys().duplicate():
+		if _hover[id] and not present.has(id):
 			_hover[id] = false
-			if obj.input_bindings.has("leave"):
-				ctx.send_event(obj.input_bindings["leave"]["address"], [obj.osc_id, npos.x, npos.y])
-			ctx.send_event("/gscore/event/input", ["leave", obj.osc_id, npos.x, npos.y])
+			var obj = ctx.registry.get_object(id)
+			if obj != null and obj.input_bindings.has("leave"):
+				ctx.send_event(obj.input_bindings["leave"]["address"], [obj.osc_id, 0.0, 0.0])
+			ctx.send_event("/gscore/event/input", ["leave", id, 0.0, 0.0])
 
 
 func _same_hit_present(arr: Array, h: Dictionary) -> bool:

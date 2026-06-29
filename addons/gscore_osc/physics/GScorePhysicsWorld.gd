@@ -6,13 +6,12 @@ extends RefCounted
 ## settings, and "physics enable 0 / pause 1" cleanly freezes managed bodies.
 
 const Adapter := preload("res://addons/gscore_osc/physics/GScorePhysicsAdapter.gd")
-const Collider := preload("res://addons/gscore_osc/physics/GScoreColliderBuilder.gd")
 
 var ctx = null
 
 var enabled: bool = false
 var paused: bool = false
-var gravity_norm: Vector2 = Vector2.ZERO   # in physics coord units
+var gravity_norm: Vector3 = Vector3.ZERO   # in physics coord units (z used in 3D)
 var debug: bool = false
 var layer_names: Dictionary = {}           # number -> name
 
@@ -39,7 +38,7 @@ func handle_global(args: Array) -> void:
 			paused = _b(args, 1, true)
 			_apply_freeze_state()
 		"gravity":
-			gravity_norm = Vector2(_f(args, 1), _f(args, 2))
+			gravity_norm = Vector3(_f(args, 1), _f(args, 2), _f(args, 3))
 		"coord":
 			var mode := String(args[1]) if args.size() > 1 else ""
 			if ctx.mapper.is_valid_mode(mode):
@@ -97,10 +96,10 @@ func handle_object(obj, args: Array) -> void:
 		"friction": a.set_friction(_f(args, 1, 0.0))
 		"bounce": a.set_bounce(_f(args, 1, 0.0))
 		"damping": a.set_damping(_f(args, 1, 0.0), _f(args, 2, 0.0))
-		"velocity": a.set_velocity(_f(args, 1), _f(args, 2))
+		"velocity": a.set_velocity(_f(args, 1), _f(args, 2), _f(args, 3))
 		"angularvelocity", "angularVelocity": a.set_angular_velocity(_f(args, 1))
-		"force": a.apply_force(_f(args, 1), _f(args, 2))
-		"impulse": a.apply_impulse(_f(args, 1), _f(args, 2))
+		"force": a.apply_force(_f(args, 1), _f(args, 2), _f(args, 3))
+		"impulse": a.apply_impulse(_f(args, 1), _f(args, 2), _f(args, 3))
 		"torque": a.apply_torque(_f(args, 1))
 		"lockrotation", "lockRotation": a.set_lock_rotation(_b(args, 1, true))
 		"freeze": a.set_freeze(_b(args, 1, true))
@@ -119,12 +118,14 @@ func handle_collider(obj, args: Array) -> void:
 	var a = obj.physics_adapter
 	var cmd := String(args[0]) if args.size() > 0 else ""
 	match cmd:
-		"auto": a.set_collider(Collider.auto(a.visual, ctx.mapper, ctx.mapper.physics_mode))
-		"rect": a.set_collider(Collider.rect(_f(args, 1, 0.1), _f(args, 2, 0.1), ctx.mapper, ctx.mapper.physics_mode))
-		"circle": a.set_collider(Collider.circle(_f(args, 1, 0.05), ctx.mapper, ctx.mapper.physics_mode))
-		"polygon": a.set_collider(Collider.polygon(args.slice(1), ctx.mapper, ctx.mapper.physics_mode))
+		"auto": a.set_collider("auto", [])
+		"rect": a.set_collider("rect", args.slice(1))
+		"circle": a.set_collider("circle", args.slice(1))
+		"polygon": a.set_collider("polygon", args.slice(1))
+		"box": a.set_collider("box", args.slice(1))
+		"sphere": a.set_collider("sphere", args.slice(1))
 		"disabled": a.set_collider_disabled(_b(args, 1, true))
-		"offset": a.set_collider_offset(_f(args, 1), _f(args, 2))
+		"offset": a.set_collider_offset(_f(args, 1), _f(args, 2), _f(args, 3))
 		_:
 			ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/collider",
 				"Unknown collider cmd: " + cmd)
@@ -156,9 +157,9 @@ func physics_step(delta: float) -> void:
 			_adapters.remove_at(i)
 	if not is_simulating():
 		return
-	var g_px: Vector2 = ctx.mapper.vector_to_pixels(gravity_norm.x, gravity_norm.y, ctx.mapper.physics_mode)
+	var g_world = ctx.spatial.gravity_world(gravity_norm.x, gravity_norm.y, gravity_norm.z, ctx.mapper.physics_mode)
 	for a in _adapters:
-		a.physics_step(delta, g_px)
+		a.physics_step(delta, g_world)
 
 
 func _apply_freeze_state() -> void:

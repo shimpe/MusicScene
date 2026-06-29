@@ -3,7 +3,6 @@ extends RefCounted
 ## owns notation-global concerns (the render cache). Keeps notation routing out of the
 ## dispatcher and out of GScoreObject.
 
-const NotationObject := preload("res://addons/gscore_osc/notation/GScoreNotationObject.gd")
 const Cache := preload("res://addons/gscore_osc/notation/GScoreNotationCache.gd")
 
 var ctx = null
@@ -13,9 +12,9 @@ func _init(p_ctx) -> void:
 	ctx = p_ctx
 
 
-## Wire a freshly created/registered notation object.
+## Wire a freshly created/registered notation object (2D or 3D).
 func attach(obj) -> void:
-	if obj.node is NotationObject:
+	if ctx.spatial.is_notation(obj.node):
 		obj.notation = obj.node
 		obj.node.setup(ctx, obj.osc_id)
 
@@ -23,7 +22,7 @@ func attach(obj) -> void:
 func _notation(obj):
 	if obj.notation != null:
 		return obj.notation
-	if obj.node is NotationObject:
+	if ctx.spatial.is_notation(obj.node):
 		attach(obj)
 		return obj.notation
 	ctx.error("unsupported_type", "/gscore/scene/" + obj.osc_id,

@@ -33,18 +33,7 @@ func add_cursor_map(notation, args: Array) -> void:
 			"Need <t0> <t1> <property> <from> <to>")
 		return
 	var prop := String(args[2])
-	var setter := func(val):
-		match prop:
-			"x":
-				notation.cursor.set_u(val)
-			"y":
-				notation.cursor.v = val
-				notation.cursor.queue_redraw()
-			"opacity":
-				var c: Color = notation.cursor.line_color
-				c.a = val
-				notation.cursor.line_color = c
-				notation.cursor.queue_redraw()
+	var setter := func(val): notation.set_cursor_property(prop, val)
 	_append(args, setter, notation, "node")
 
 

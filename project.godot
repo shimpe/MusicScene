@@ -12,13 +12,13 @@ config_version=5
 
 config/name="MusicScene — gscore_osc"
 config/description="OSC-controlled INScore-inspired interactive music-score / world system."
-run/main_scene="res://addons/gscore_osc/examples/ExampleMain.tscn"
+run/main_scene="res://addons/gscore_osc/examples/ExampleMain3D.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-GScoreOSC="*res://addons/gscore_osc/nodes/GScoreRoot.gd"
+GScoreOSC="*uid://bi0bofnnp72f4"
 
 [display]
 
@@ -32,6 +32,7 @@ enabled=PackedStringArray("res://addons/gscore_osc/plugin.cfg")
 
 [gscore_osc]
 
+space="3d"
 network/listen_port=7400
 network/send_host="127.0.0.1"
 network/send_port=7401

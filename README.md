@@ -9,11 +9,12 @@ collision-driven OSC emission, binding to existing nodes, PackedScene instantiat
 methods/properties/signals over OSC, and first-class music-notation display**.
 
 Built as a Godot addon at `addons/gscore_osc/`. Pure GDScript. Targets **Godot 4.7** (uses
-stable Godot 4.x APIs).
+stable Godot 4.x APIs). **Works in both 2D and 3D** — selectable via the `gscore_osc/space`
+project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-and-3d)).
 
-> Status: the vertical slice and the full v1 API are implemented and verified headlessly against
-> Godot 4.7 — see [Verifying](#verifying). `10/10` OSC acceptance checks pass, plus codec, SVG
-> and signal-forwarding self-tests.
+> Status: the full v1 API is implemented and verified headlessly against Godot 4.7 in **both 2D
+> and 3D** — see [Verifying](#verifying). `10/10` OSC acceptance checks pass in each mode, plus
+> codec, SVG and signal-forwarding self-tests. The project ships defaulting to **3D**.
 
 ---
 
@@ -73,10 +74,14 @@ The addon is wired to run **out of the box**:
 
 1. Open the project in Godot 4.7. The plugin is enabled and the `GScoreOSC` autoload is
    registered in `project.godot`.
-2. Press **Play**. `ExampleMain.tscn` runs, the OSC server starts, and the bundled
-   `example_score.gscore` plays automatically (a score page, a red cursor sweep, a highlighted
-   measure region, and a bouncing note that emits OSC on impact).
+2. Press **Play**. The project defaults to **3D** (`ExampleMain3D.tscn`): the OSC server starts,
+   a Camera3D is auto-created, and `example_score_3d.gscore` plays automatically — a notation
+   page on a quad in world space, a red cursor sweep, a highlighted measure region, and a note
+   that falls onto a floor and emits OSC on impact.
 3. Send `/gscore/ping` from any OSC client → you get `/gscore/pong`.
+
+To run the **2D** example instead, set `gscore_osc/space = "2d"` and the main scene to
+`ExampleMain.tscn` (Project Settings), or drop an `override.cfg` with those values.
 
 To use it in your own project: copy `addons/gscore_osc/` in, enable the **gscore_osc** plugin in
 *Project → Project Settings → Plugins* (this installs the `GScoreOSC` autoload). Configuration
@@ -91,6 +96,25 @@ A placeholder engraved page (`res://scores/page1.png`) is included. To regenerat
 ```
 
 ---
+
+## Dimensions: 2D and 3D
+
+The whole framework runs in either **2D** or **3D**, chosen once at boot by the project setting
+`gscore_osc/space` (`"2d"` | `"3d"`, default `"3d"`). The OSC API is identical; only the spatial
+behaviour differs, behind a backend (`GScoreSpatial2D` / `GScoreSpatial3D`):
+
+| | 2D | 3D |
+|---|---|---|
+| objects | `Node2D` primitives (`_draw`) | `MeshInstance3D` (rect→quad, circle→sphere, line), `Sprite3D`, `Label3D` |
+| physics | `RigidBody2D`/`StaticBody2D`/`Area2D` | `RigidBody3D`/`StaticBody3D`/`Area3D` |
+| colliders | `rect`, `circle`, `polygon` | `box`/`rect`, `sphere`/`circle`, `auto` |
+| notation | textured node in 2D | textured **quad in world space** (placed/rotated in 3D) |
+| camera | none needed | auto-created `Camera3D` if the scene has none |
+| picking | 2D hit-test | camera ray vs object AABB / notation quad plane |
+
+Everything else — OSC server, dispatcher, registry, object wrapper, events, signals, transport,
+script runner, permissions — is shared. `pos`/`scale`/`velocity`/`gravity`/etc. simply accept an
+extra `z` in 3D (e.g. `pos x y z`, `gravity 0 -0.6 0`).
 
 ## Ports / networking
 
@@ -131,8 +155,14 @@ Physics has its own independent mode:
 /gscore/physics coord normalized|pixels|world
 ```
 
+In **3D** (`space = "3d"`), normalized space is x/y/z ∈ `[-1,1]` (y-up, +z toward the camera)
+mapped to a world cube of half-extent 5 units; `world` mode uses raw Godot units, and `pixels`
+falls back to world. Commands take an optional z (`pos x y z`, `scale sx sy sz`,
+`gravity gx gy gz`); a single `rotate <deg>` spins in-plane about Z, `rotate x y z` sets full
+Euler degrees.
+
 **Notation-internal** coordinates (cursor `pos`, region/annotation `rect`) are always `[0,1]`
-over the page rect, top-left origin, y-down.
+over the page rect, top-left origin, y-down (same in 2D and 3D).
 
 ---
 
@@ -270,6 +300,13 @@ Lightweight text/glyph overlays (move/scale with the score):
 
 > Glyphs render as text. Bundle a SMuFL music font and set it on `ThemeDB` for real glyphs.
 
+### Notation in 3D
+
+With `space = "3d"` a notation object renders its page on a textured **QuadMesh in world space**;
+`pos x y z` / `rotate x y z` / `scale` place and orient it freely, and the cursor, regions and
+annotations are 3D children on the quad surface (so they move/scale/rotate with it). Region click
+events use a camera ray ↔ quad-plane intersection. The OSC commands are identical to 2D.
+
 ### Notation as a physics object
 
 Notation objects accept physics like anything else:
@@ -366,11 +403,12 @@ Per object (`static → StaticBody2D`, `rigid → RigidBody2D`, `area → Area2D
 /gscore/scene/<id>/physics layer <n_or_name> | mask <n_or_name> [...]
 ```
 
-Colliders:
+Colliders (2D: `rect`/`circle`/`polygon`; 3D: `box`/`rect`→box, `sphere`/`circle`→sphere):
 
 ```
 /gscore/scene/<id>/collider rect <w> <h> | circle <r> | polygon <x1> <y1> ... | auto
-/gscore/scene/<id>/collider disabled <0|1> | offset <x> <y>
+/gscore/scene/<id>/collider box <w> <h> [d] | sphere <r>          # 3D
+/gscore/scene/<id>/collider disabled <0|1> | offset <x> <y> [z]
 ```
 
 Events:
@@ -597,6 +635,11 @@ py tools/osc_test.py
 - `velocityAbove/Below`, `yAbove/Below`, `bindTransform` and physics `debug` are functional but
   minimal; `collisionStay`/`areaStay`/`positionEnter`/`positionExit` are not implemented in v1.
 - OSC over UDP only (no TCP); no variables in the script runner.
+- The 2D/3D mode is global per run (`gscore_osc/space`), chosen at boot — not per-object, and not
+  switchable at runtime.
+- In 3D: `pixels` coord mode falls back to world units; click picking uses the object's axis-
+  aligned bounding box (not exact mesh geometry); a single `Camera3D` is auto-created only if the
+  scene has none.
 - A bound RigidBody2D with non-zero `gravity_scale` will receive both Godot's gravity and
   gscore's applied gravity — set its `gravity_scale` to 0, or use OSC-created bodies.
 - SVG rasterization depends on the Godot build's SVG module (present in standard 4.7 builds).
@@ -610,15 +653,19 @@ addons/gscore_osc/
   plugin.cfg, plugin.gd
   core/      OscServer  OscPacket  OscDispatcher  GScoreRegistry  GScoreObject
              GScoreFactory  GScorePermissions  GScoreCoordinateMapper  GScorePrimitive2D
+             GScoreSpatial2D  GScoreSpatial3D          # spatial backends (2D / 3D)
   notation/  GScoreNotation(Object|Renderer|RenderResult|Cache|Region|Cursor|Annotation)
+             GScoreNotationObject3D  GScoreNotationRegion3D   # 3D notation
              GScoreNotationBackend(Image|Svg|MusicXML)
   physics/   GScorePhysicsWorld  GScorePhysicsAdapter  GScoreColliderBuilder  GScoreCollisionEvents
   events/    GScoreEvents  GScoreEventBinding  GScoreSignalBinding  GScoreInputEvents
   transport/ GScoreTransport  GScoreTimeMapper
   script/    GScoreScriptRunner
   nodes/     GScoreRoot  OscExposable
-  examples/  ExampleMain.tscn  ExamplePhysicalNote.tscn  ExampleNotationScore.tscn  example_score.gscore
-osc_spawnable/PhysicalNote.tscn        # whitelisted spawnable
+  examples/  ExampleMain.tscn / .gd          (2D)   example_score.gscore
+             ExampleMain3D.tscn / .gd        (3D)   example_score_3d.gscore
+             ExamplePhysicalNote.tscn  ExampleNotationScore.tscn / .gd
+osc_spawnable/PhysicalNote.tscn  PhysicalNote3D.tscn   # whitelisted spawnables
 scores/page1.png                       # placeholder engraved page
 tools/  osc_test.py  gen_assets.gd  test_internals.gd
 ```

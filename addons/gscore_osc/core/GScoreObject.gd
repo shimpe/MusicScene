@@ -1,10 +1,9 @@
 extends RefCounted
 ## Wraps one Godot Node behind a stable OSC identity and applies the generic command surface
-## (transforms, style, visibility, queries, controlled property/method access). Type-specific
-## behaviour (physics, notation, events, signals) is attached by the respective managers and
-## stored here as opaque references, keeping this wrapper focused.
-
-const Mapper := preload("res://addons/gscore_osc/core/GScoreCoordinateMapper.gd")
+## (transforms, style, visibility, queries, controlled property/method access). Dimension-specific
+## work (positioning, scale, primitives, physics) is delegated to ctx.spatial so the same wrapper
+## serves both 2D and 3D. Type-specific behaviour (physics, notation, events, signals) is attached
+## by the respective managers and stored here as opaque references.
 
 # Identity
 var osc_id: String = ""
@@ -25,9 +24,9 @@ var allow_free: bool = false
 # Attached helpers (set by subsystem managers)
 var physics_adapter = null
 var notation = null
-var signal_bindings: Dictionary = {}   # godot_signal -> GScoreSignalBinding
-var event_bindings: Dictionary = {}     # event -> GScoreEventBinding
-var input_bindings: Dictionary = {}     # input event -> {address, payload}
+var signal_bindings: Dictionary = {}
+var event_bindings: Dictionary = {}
+var input_bindings: Dictionary = {}
 
 
 func _init(p_id: String, p_node: Node, p_ctx) -> void:
@@ -60,17 +59,17 @@ func apply_command(cmd: String, args: Array) -> void:
 		"del": ctx.registry.delete(osc_id)
 		"unbind": ctx.registry.unbind(osc_id)
 		"free": ctx.registry.free_object(osc_id)
-		"pos": _set_pos(_argf(args, 0), _argf(args, 1))
-		"x": _set_axis(0, _argf(args, 0))
-		"y": _set_axis(1, _argf(args, 0))
-		"z": _set_z(_argf(args, 0))
-		"size": _set_size(_argf(args, 0), _argf(args, 1))
-		"width": _set_size(_argf(args, 0), _current_size_norm().y)
-		"height": _set_size(_current_size_norm().x, _argf(args, 0))
+		"pos": ctx.spatial.set_position(node, _argf(args, 0), _argf(args, 1), _argf(args, 2), _mode())
+		"x": ctx.spatial.set_axis(node, 0, _argf(args, 0), _mode())
+		"y": ctx.spatial.set_axis(node, 1, _argf(args, 0), _mode())
+		"z": ctx.spatial.set_axis(node, 2, _argf(args, 0), _mode())
+		"size": ctx.spatial.set_size(node, _argf(args, 0), _argf(args, 1), _mode())
+		"width": ctx.spatial.set_size(node, _argf(args, 0), ctx.spatial.get_size_norm(node, _mode()).y, _mode())
+		"height": ctx.spatial.set_size(node, ctx.spatial.get_size_norm(node, _mode()).x, _argf(args, 0), _mode())
 		"scale": _set_scale(args)
-		"rotate", "rotation": _set_rotation(_argf(args, 0))
-		"opacity": _set_opacity(_argf(args, 0))
-		"color": _set_color(args)
+		"rotate", "rotation": ctx.spatial.set_rotation(node, args, _mode())
+		"opacity": ctx.spatial.set_opacity(node, _argf(args, 0))
+		"color": ctx.spatial.set_color(node, _args_color(args, 0))
 		"text": _set_text(_args_str(args, 0))
 		"prop": _set_prop(args)
 		"getprop": _get_prop(_args_str(args, 0))
@@ -87,111 +86,24 @@ func apply_command(cmd: String, args: Array) -> void:
 
 
 # =========================================================================
-# Transforms / style
+# Transforms / style (delegated to the spatial backend)
 # =========================================================================
 
 func _set_visible(v: bool) -> void:
-	if node is CanvasItem:
+	if "visible" in node:
 		node.visible = v
-	elif "visible" in node:
-		node.visible = v
-
-
-func _set_pos(x: float, y: float) -> void:
-	_apply_pos_px(ctx.mapper.point_to_pixels(x, y, _mode()))
-
-
-func _set_axis(axis: int, value: float) -> void:
-	var cur := _current_pos_norm()
-	if axis == 0:
-		cur.x = value
-	else:
-		cur.y = value
-	_apply_pos_px(ctx.mapper.point_to_pixels(cur.x, cur.y, _mode()))
-
-
-func _apply_pos_px(px: Vector2) -> void:
-	if node is Node2D:
-		node.global_position = px
-	elif node is Control:
-		node.set_global_position(px)
-	elif node.has_method("set_global_position"):
-		node.set_global_position(px)
-
-
-func _current_pos_norm() -> Vector2:
-	var px := Vector2.ZERO
-	if node is Node2D:
-		px = node.global_position
-	elif node is Control:
-		px = node.global_position
-	return ctx.mapper.point_from_pixels(px, _mode())
-
-
-func _set_z(value: float) -> void:
-	if node is CanvasItem:
-		node.z_index = int(value)
-
-
-func _set_size(w: float, h: float) -> void:
-	var wpx: float = ctx.mapper.length_x_to_pixels(w, _mode())
-	var hpx: float = ctx.mapper.length_y_to_pixels(h, _mode())
-	if node.has_method("gscore_set_size"):
-		node.gscore_set_size(wpx, hpx)
-	elif node is Sprite2D:
-		var spr := node as Sprite2D
-		if spr.texture != null:
-			var t := spr.texture.get_size()
-			if t.x > 0 and t.y > 0:
-				spr.scale = Vector2(wpx / t.x, hpx / t.y)
-	elif node is Control:
-		var ctrl := node as Control
-		ctrl.custom_minimum_size = Vector2(wpx, hpx)
-		ctrl.size = Vector2(wpx, hpx)
-
-
-func _current_size_norm() -> Vector2:
-	# Best-effort current size in the current coord units; used by width/height partial updates.
-	var px := Vector2(80, 80)
-	if node is Sprite2D:
-		var spr := node as Sprite2D
-		if spr.texture != null:
-			px = spr.texture.get_size() * spr.scale
-	elif node.has_method("gscore_get_bounds"):
-		px = node.gscore_get_bounds().size
-	elif node is Control:
-		px = (node as Control).size
-	if _mode() == "normalized":
-		var vp: Vector2 = ctx.mapper.viewport_size()
-		return Vector2(px.x / (vp.x * 0.5), px.y / (vp.y * 0.5))
-	return px
 
 
 func _set_scale(args: Array) -> void:
+	if args.is_empty():
+		return
 	var sx := _argf(args, 0, 1.0)
-	var sy := _argf(args, 1, sx) if args.size() > 1 else sx
-	if "scale" in node:
-		node.scale = Vector2(sx, sy)
-
-
-func _set_rotation(degrees: float) -> void:
-	if "rotation" in node:
-		node.rotation = deg_to_rad(degrees)
-
-
-func _set_opacity(a: float) -> void:
-	if node is CanvasItem:
-		var m: Color = node.modulate
-		m.a = clampf(a, 0.0, 1.0)
-		node.modulate = m
-
-
-func _set_color(args: Array) -> void:
-	var c := _args_color(args, 0)
-	if node.has_method("gscore_set_color"):
-		node.gscore_set_color(c)
-	elif node is CanvasItem:
-		node.modulate = c
+	if args.size() == 1:
+		ctx.spatial.set_scale(node, sx, sx, sx)
+	elif args.size() == 2:
+		ctx.spatial.set_scale(node, sx, _argf(args, 1, 1.0), 1.0)
+	else:
+		ctx.spatial.set_scale(node, sx, _argf(args, 1, 1.0), _argf(args, 2, 1.0))
 
 
 func _set_text(t: String) -> void:
@@ -261,31 +173,31 @@ func _query_get(args: Array) -> void:
 
 
 func _generic_get(prop: String):
+	var p = ctx.spatial.get_position_norm(node, _mode())
 	match prop:
-		"pos": return _current_pos_norm()
-		"x": return _current_pos_norm().x
-		"y": return _current_pos_norm().y
-		"z": return node.z_index if node is CanvasItem else 0
-		"rotation": return rad_to_deg(node.rotation) if "rotation" in node else 0.0
-		"scale": return node.scale if "scale" in node else Vector2.ONE
-		"opacity": return node.modulate.a if node is CanvasItem else 1.0
-		"visible": return node.visible if node is CanvasItem else true
+		"pos": return p
+		"x": return p.x
+		"y": return p.y
+		"z": return (p.z if typeof(p) == TYPE_VECTOR3 else 0.0)
+		"rotation": return ctx.spatial.get_rotation_deg(node)
+		"scale": return ctx.spatial.get_scale(node)
+		"opacity": return ctx.spatial.get_opacity(node)
+		"visible": return node.visible if "visible" in node else true
 		"type": return type_hint
 		"text": return node.text if "text" in node else ""
 		_: return null
 
 
 func _dump() -> void:
-	var p := _current_pos_norm()
-	var values := [
-		osc_id, type_hint, ownership,
-		"pos", p.x, p.y,
-		"visible", (node.visible if node is CanvasItem else true),
-		"opacity", (node.modulate.a if node is CanvasItem else 1.0),
-		"rotation", (rad_to_deg(node.rotation) if "rotation" in node else 0.0),
-		"node", str(node.get_path()) if node.is_inside_tree() else node.name,
+	var p = ctx.spatial.get_position_norm(node, _mode())
+	var values := [osc_id, type_hint, ownership, "pos"]
+	values.append_array(_flatten(p))
+	values.append_array([
+		"visible", (node.visible if "visible" in node else true),
+		"opacity", ctx.spatial.get_opacity(node),
+		"node", str(node.get_path()) if node.is_inside_tree() else String(node.name),
 		"class", node.get_class(),
-	]
+	])
 	ctx.reply("dump", values)
 
 
@@ -308,7 +220,7 @@ func reply_capabilities() -> void:
 
 
 func _is_physics_node() -> bool:
-	return node is PhysicsBody2D or node is Area2D or node is RigidBody2D
+	return node is PhysicsBody2D or node is Area2D or node is PhysicsBody3D or node is Area3D
 
 
 # =========================================================================
@@ -341,15 +253,10 @@ func _args_str(args: Array, i: int, def: String = "") -> String:
 
 
 func _args_color(args: Array, start: int) -> Color:
-	var r := _argf(args, start, 1.0)
-	var g := _argf(args, start + 1, 1.0)
-	var b := _argf(args, start + 2, 1.0)
-	var a := _argf(args, start + 3, 1.0)
-	return Color(r, g, b, a)
+	return Color(_argf(args, start, 1.0), _argf(args, start + 1, 1.0),
+		_argf(args, start + 2, 1.0), _argf(args, start + 3, 1.0))
 
 
-## Build a single value from trailing OSC args: 1->scalar/string, 2->Vector2, 3->Vector3,
-## 4->Color. Strings pass through untouched.
 func _coerce_value(rest: Array):
 	if rest.is_empty():
 		return null
@@ -369,7 +276,6 @@ func _coerce_value(rest: Array):
 		_: return rest
 
 
-## Flatten common Variant types into a flat Array of OSC-encodable scalars.
 func _flatten(v) -> Array:
 	match typeof(v):
 		TYPE_NIL: return []

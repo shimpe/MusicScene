@@ -160,6 +160,21 @@ func handle_cursor(args: Array) -> void:
 			ctx.error("bad_arguments", _base_addr() + "/cursor", "Unknown cursor cmd: " + cmd)
 
 
+## Used by the time mapper for cursor maps (x|y|opacity).
+func set_cursor_property(prop: String, val: float) -> void:
+	match prop:
+		"x":
+			cursor.set_u(val)
+		"y":
+			cursor.v = val
+			cursor.queue_redraw()
+		"opacity":
+			var c: Color = cursor.line_color
+			c.a = val
+			cursor.line_color = c
+			cursor.queue_redraw()
+
+
 # =========================================================================
 # Regions
 # =========================================================================

@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="SphereShape3D" id="Shape_1"]
+radius = 0.3
+
+[sub_resource type="SphereMesh" id="Mesh_1"]
+radius = 0.3
+height = 0.6
+
+[node name="PhysicalNote3D" type="RigidBody3D"]
+gravity_scale = 0.0
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_1")
+
+[node name="Collider" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_1")

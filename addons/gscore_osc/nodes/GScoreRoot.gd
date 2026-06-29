@@ -1,13 +1,18 @@
-extends Node2D
+extends Node
 ## Central gscore_osc controller, installed as the `GScoreOSC` autoload. Owns and wires every
 ## subsystem, parents OSC-created objects, runs the per-frame clocks, and exposes the reply/error
 ## helpers used across the codebase as `ctx.*`.
+##
+## The dimension is chosen by gscore_osc/space ("2d" | "3d"): ctx.spatial is a GScoreSpatial2D or
+## GScoreSpatial3D, and all dimension-specific work goes through it. Everything else is shared.
 
 const OscServer := preload("res://addons/gscore_osc/core/OscServer.gd")
 const OscDispatcher := preload("res://addons/gscore_osc/core/OscDispatcher.gd")
 const GScoreRegistry := preload("res://addons/gscore_osc/core/GScoreRegistry.gd")
 const GScorePermissions := preload("res://addons/gscore_osc/core/GScorePermissions.gd")
 const GScoreCoordinateMapper := preload("res://addons/gscore_osc/core/GScoreCoordinateMapper.gd")
+const GScoreSpatial2D := preload("res://addons/gscore_osc/core/GScoreSpatial2D.gd")
+const GScoreSpatial3D := preload("res://addons/gscore_osc/core/GScoreSpatial3D.gd")
 const GScorePhysicsWorld := preload("res://addons/gscore_osc/physics/GScorePhysicsWorld.gd")
 const GScoreEvents := preload("res://addons/gscore_osc/events/GScoreEvents.gd")
 const GScoreNotation := preload("res://addons/gscore_osc/notation/GScoreNotation.gd")
@@ -21,19 +26,22 @@ var dispatcher = null
 var registry = null
 var permissions = null
 var mapper = null
+var spatial = null
 var physics_world = null
 var events = null
 var notation = null
 var transport = null
 var timemapper = null
 var script_runner = null
-var objects_root: Node2D = null
+var objects_root: Node = null
 
+var space: String = "2d"
 var verbose: bool = true
 
 
 func _ready() -> void:
 	verbose = bool(_setting("logging/verbose", true))
+	space = String(_setting("space", "2d")).to_lower()
 
 	mapper = GScoreCoordinateMapper.new()
 	mapper.host = self
@@ -47,8 +55,9 @@ func _ready() -> void:
 	permissions.call_methods = bool(_setting("permissions/call_methods", true))
 	permissions.set_props = bool(_setting("permissions/set_props", true))
 	permissions.free_nodes = bool(_setting("permissions/free_nodes", false))
-	# Sensible default spawnable location so the instantiate example works out of the box.
 	permissions.allow_prefix("res://osc_spawnable/")
+
+	spatial = GScoreSpatial3D.new(self) if space == "3d" else GScoreSpatial2D.new(self)
 
 	registry = GScoreRegistry.new(self)
 	physics_world = GScorePhysicsWorld.new(self)
@@ -58,8 +67,7 @@ func _ready() -> void:
 	script_runner = GScoreScriptRunner.new(self)
 	dispatcher = OscDispatcher.new(self)
 
-	objects_root = Node2D.new()
-	objects_root.name = "Objects"
+	objects_root = spatial.create_objects_root()
 	add_child(objects_root)
 
 	events = GScoreEvents.new()
@@ -79,16 +87,17 @@ func _ready() -> void:
 			String(_setting("network/send_host", "127.0.0.1")),
 			int(_setting("network/send_port", 7401)))
 
-	# Auto-bind exposed nodes once the running scene is in the tree.
+	# Defer until the running scene is in the tree: auto-bind exposed nodes and (3D) add a
+	# camera only if the scene didn't provide one.
 	await get_tree().process_frame
 	await get_tree().process_frame
+	spatial.ensure_camera()
 	registry.auto_bind_exposed()
 	if verbose:
-		print("[GScoreOSC] ready. Send /gscore/ping to test.")
+		print("[GScoreOSC] ready (space=%s). Send /gscore/ping to test." % space)
 
 
 func _exit_tree() -> void:
-	# Tear down cleanly so RefCounted cycles (object<->adapter, cursor-map lambdas) don't leak.
 	if registry != null:
 		registry.clear()
 	if timemapper != null:

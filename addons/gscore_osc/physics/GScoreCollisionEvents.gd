@@ -1,7 +1,8 @@
 extends RefCounted
-## Turns Godot physics callbacks into OSC. Builds the canonical event-data dictionary, applies
-## the matching GScoreEventBinding (intensity threshold, cooldown/rate, filters, payload), sends
-## to the bound target, and always emits the canonical /gscore/event/physics message.
+## Turns Godot physics callbacks into OSC. Dimension-agnostic: positions/velocities/masses are
+## read through ctx.spatial, so the same logic serves 2D and 3D. Builds the canonical event-data
+## dictionary, applies the matching GScoreEventBinding (threshold, cooldown/rate, filters,
+## payload), sends to the bound target, and always emits canonical /gscore/event/physics.
 
 const PHYSICS_EVENTS := [
 	"collisionEnter", "collisionExit", "areaEnter", "areaExit", "sleep", "wake",
@@ -11,7 +12,6 @@ const PHYSICS_EVENTS := [
 static func emit(ctx, obj, event: String, other: Node) -> void:
 	var data := _build_data(ctx, obj, event, other)
 
-	# Canonical broadcast for every physics event.
 	ctx.send_event("/gscore/event/physics", [
 		event, data["self"], data["other"], data["intensity"],
 		data["x"], data["y"], data["vx"], data["vy"],
@@ -26,13 +26,11 @@ static func emit(ctx, obj, event: String, other: Node) -> void:
 	ctx.send_event(binding.target, binding.build_args(data))
 
 
-## Per-frame threshold events (velocityAbove/Below, yAbove/Below). Uses the binding's
-## min_intensity as the threshold and edge-detects to avoid spamming.
 static func check_continuous(ctx, obj) -> void:
 	if obj.event_bindings.is_empty():
 		return
 	var node = obj.node
-	if not (node is Node2D):
+	if not (node is Node2D or node is Node3D):
 		return
 	var data := _build_data(ctx, obj, "continuous", null)
 	var speed: float = data["speed"]
@@ -53,54 +51,44 @@ static func check_continuous(ctx, obj) -> void:
 		b.state = cond
 
 
-static func _build_data(ctx, obj, event: String, other: Node) -> Dictionary:
+static func _build_data(ctx, obj, _event: String, other: Node) -> Dictionary:
 	var node = obj.node
 	var pmode: String = ctx.mapper.physics_mode
-	var pos_px: Vector2 = (node as Node2D).global_position if node is Node2D else Vector2.ZERO
-	var pos_norm: Vector2 = ctx.mapper.point_from_pixels(pos_px, pmode)
+	var sp = ctx.spatial
 
-	var vel_px := Vector2.ZERO
-	var ang_vel := 0.0
-	var mass := 1.0
-	if node is RigidBody2D:
-		var rb := node as RigidBody2D
-		vel_px = rb.linear_velocity
-		ang_vel = rb.angular_velocity
-		mass = rb.mass
-	var vel_norm: Vector2 = ctx.mapper.vector_from_pixels(vel_px, pmode)
+	var pos_w = sp.body_global_position(node)
+	var pos_norm: Vector3 = sp.point_to_norm(pos_w, pmode)
+	var vel_w = sp.body_get_velocity(node)
+	var vel_norm: Vector3 = sp.vector_to_norm(vel_w, pmode)
 	var speed := vel_norm.length()
+	var mass: float = sp.body_get_mass(node)
 
 	var other_id := ""
-	var other_px := pos_px
+	var other_w = pos_w
 	if other != null:
 		other_id = ctx.registry.id_for_node(other)
 		if other_id == "":
 			other_id = String(other.name)
-		if other is Node2D:
-			other_px = (other as Node2D).global_position
+		other_w = sp.body_global_position(other)
 
-	var normal := pos_px - other_px
-	var n := normal.normalized() if normal.length() > 0.0 else Vector2.ZERO
+	var normal = pos_w - other_w
+	var n = normal.normalized() if normal.length() > 0.0 else normal
+	var nz: float = n.z if typeof(n) == TYPE_VECTOR3 else 0.0
 
 	return {
 		"self": obj.osc_id,
 		"other": other_id,
-		"x": pos_norm.x,
-		"y": pos_norm.y,
-		"worldx": pos_px.x,
-		"worldy": pos_px.y,
-		"vx": vel_norm.x,
-		"vy": vel_norm.y,
-		"speed": speed,
-		"relativespeed": speed,
+		"x": pos_norm.x, "y": pos_norm.y, "z": pos_norm.z,
+		"worldx": pos_w.x, "worldy": pos_w.y, "worldz": pos_w.z if typeof(pos_w) == TYPE_VECTOR3 else 0.0,
+		"vx": vel_norm.x, "vy": vel_norm.y, "vz": vel_norm.z,
+		"speed": speed, "relativespeed": speed,
 		"intensity": speed,
 		"impulse": speed * mass,
-		"normalx": n.x,
-		"normaly": -n.y,
+		"normalx": n.x, "normaly": -n.y, "normalz": nz,
 		"time": float(Time.get_ticks_msec()) / 1000.0,
 		"beat": ctx.transport.beat if ctx.transport != null else 0.0,
 		"mass": mass,
-		"angle": rad_to_deg((node as Node2D).rotation) if node is Node2D else 0.0,
-		"angularvelocity": ang_vel,
+		"angle": sp.body_angle(node),
+		"angularvelocity": sp.body_angular_velocity(node),
 		"layer": "",
 	}
