@@ -50,6 +50,6 @@ notation/external_renderer_args=""
 notation/engraver_output="png"
 notation/engraver/musicxml=""
 notation/engraver/mei=""
-notation/engraver/lilypond=""
+notation/engraver/lilypond="py \"res://tools/ly_to_score.py\" {input} {output} --page {page} --dpi 200"
 notation/engraver/abc=""
 logging/verbose=true

@@ -480,10 +480,31 @@ gscore can shell out to an external engraver to turn symbolic music into pages, 
 ```ini
 [gscore_osc]
 notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
-notation/engraver/lilypond="py tools/ly_to_png.py {input} {output}"
+notation/engraver/lilypond="py \"res://tools/ly_to_score.py\" {input} {output} --page {page} --dpi 200"
 notation/engraver/abc="py tools/abc_to_png.py {input} {output}"
 notation/engraver_output="png"   ; what your command writes: "png" (default) or "svg"
 ```
+
+> `res://` / `user://` paths inside an engraver command are resolved automatically, so a bundled
+> wrapper script is portable across machines.
+
+#### LilyPond — works out of the box
+
+This project ships a ready-to-use LilyPond wrapper (`tools/ly_to_score.py`) and the default setting
+above, so if LilyPond is installed you can engrave immediately — from a `.ly` file or inline:
+
+```python
+# from a .ly file
+s("/gscore/scene/score","notation","lilypond","res://scores/example.ly")
+# inline, generated at run-time (send the LilyPond source as the data)
+ly = '\\version "2.24.0"\n{ \\clef treble c\'4 d\' e\' f\' | g\'1 \\bar "|." }'
+s("/gscore/scene/score","notationData","lilypond",ly)
+```
+
+The wrapper runs LilyPond with `-dcrop` (tight bounding box, no A4 whitespace) and copies the page
+to gscore. It finds LilyPond on `PATH`, via `$GSCORE_LILYPOND`, or in `C:\Program Files\lilypond-*`;
+to point at a specific binary, append `--lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"`
+to the command. Set `engraver_output="svg"` and a `.svg` wrapper output to get vector instead of PNG.
 
 (Or set the generic fallback `notation/external_renderer_path` + `notation/external_renderer_args`
 used for any symbolic format.) Then point at a file **or send inline source**:
@@ -501,9 +522,10 @@ gscore writes inline source to a temp file, runs your command, caches the page u
 (source, format, page) — repeats are cache hits.
 
 **Engraver tips.** MuseScore 4: `MuseScore4 in.musicxml -o out.png`. Verovio:
-`verovio -f musicxml -t png -o {outbase} {input}`. LilyPond and ABC name their own output files, so
-wrap them in a 2-arg `input output` script (see `tools/stub_engraver.py` for the shape — it's the
-exact contract gscore expects).
+`verovio -f musicxml -t png -o {outbase} {input}`. LilyPond is handled by the bundled
+`tools/ly_to_score.py` (above). ABC (and any tool that names its own outputs) is easiest behind a
+small `input output` wrapper — see `tools/ly_to_score.py` / `tools/stub_engraver.py` for the exact
+contract gscore expects.
 
 ### D. The run-time-generation workflow (the common case)
 

@@ -91,6 +91,9 @@ static func _build_argv(template: String, input: String, output: String, format:
 			.replace("{outdir}", outdir) \
 			.replace("{format}", format) \
 			.replace("{page}", str(page))
+		# Let commands reference bundled tools portably (e.g. a res:// wrapper script).
+		if s.begins_with("res://") or s.begins_with("user://"):
+			s = ProjectSettings.globalize_path(s)
 		if s != "":
 			argv.append(s)
 	return argv

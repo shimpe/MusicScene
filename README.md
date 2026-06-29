@@ -265,11 +265,17 @@ writes inline source to a temp file, runs the command, and caches the output):
 
 ```
 engraver/musicxml   e.g. "\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
-engraver/lilypond   e.g. "py tools/ly_to_png.py {input} {output}"
+engraver/lilypond   bundled wrapper: py "res://tools/ly_to_score.py" {input} {output} --page {page} --dpi 200
 engraver/abc        e.g. "py tools/abc_to_png.py {input} {output}"
 engraver_output     "png" (default) | "svg"          tokens: {input} {output} {outbase} {outdir} {format} {page}
 external_renderer_path + external_renderer_args       generic fallback for any symbolic format
 ```
+
+`res://`/`user://` paths in a command are resolved automatically (so bundled wrapper scripts are
+portable). **LilyPond works out of the box**: the project ships `tools/ly_to_score.py` and the
+default setting above — it auto-detects LilyPond (PATH / `$GSCORE_LILYPOND` / `C:\Program
+Files\lilypond-*`) and crops to the music. Then `notation lilypond "res://scores/example.ly"` or
+`notationData lilypond "<…ly source…>"` just works.
 
 Rendered pages are cached under `user://gscore_cache/notation/`:
 
