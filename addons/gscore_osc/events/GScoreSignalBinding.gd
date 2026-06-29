@@ -61,10 +61,10 @@ func _emit(sig_args: Array) -> void:
 	else:
 		out = []
 		for tok in payload_spec:
-			if String(tok) == "args":
+			if str(tok) == "args":
 				out.append_array(_sanitize(sig_args))
 			else:
-				out.append(_token(String(tok), sig_args))
+				out.append(_token(str(tok), sig_args))
 	ctx.send_event(target, out)
 
 

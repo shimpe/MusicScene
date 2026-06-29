@@ -188,7 +188,7 @@ func create_primitive(type: String, args: Array) -> Node:
 		"text":
 			var l := Label3D.new(); l.name = "Text"
 			if args.size() > 0:
-				l.text = String(args[0])
+				l.text = str(args[0])
 			l.font_size = 96
 			l.pixel_size = 0.01
 			l.double_sided = true
@@ -217,9 +217,9 @@ func create_primitive(type: String, args: Array) -> Node:
 			sp.double_sided = true
 			sp.shaded = false
 			if args.size() > 0:
-				var tex := _load_texture(String(args[0]))
+				var tex := _load_texture(str(args[0]))
 				if tex == null:
-					ctx.error("load_failed", "/gscore/scene", "Could not load image: " + String(args[0]))
+					ctx.error("load_failed", "/gscore/scene", "Could not load image: " + str(args[0]))
 				else:
 					sp.texture = tex
 			return sp

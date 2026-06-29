@@ -45,7 +45,7 @@ static func render(content, format: String, page: int, options: Dictionary = {},
 static func _normalize(content, f: String, force_data: bool) -> Dictionary:
 	if content is PackedByteArray:
 		return {"kind": "bytes", "path": "", "text": "", "bytes": content}
-	var s := String(content)
+	var s := str(content)
 	if not force_data and _looks_like_path(s):
 		return {"kind": "path", "path": s.replace("\\", "/"), "text": "", "bytes": PackedByteArray()}
 	# Inline content. Textual formats keep it as text; a raster format with a non-path string is a

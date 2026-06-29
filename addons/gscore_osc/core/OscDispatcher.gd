@@ -89,7 +89,7 @@ func _handle_info() -> void:
 # --- App -----------------------------------------------------------------
 
 func _handle_app(rest, args: Array) -> void:
-	var key := String(rest[0]) if rest.size() > 0 else ""
+	var key := str(rest[0]) if rest.size() > 0 else ""
 	match key:
 		"coord":
 			var mode := _s(args, 0)
@@ -145,7 +145,7 @@ func _handle_bind_all(args: Array) -> void:
 
 
 func _handle_assets(rest, args: Array) -> void:
-	var key := String(rest[0]) if rest.size() > 0 else ""
+	var key := str(rest[0]) if rest.size() > 0 else ""
 	match key:
 		"allowScene", "allowscene": ctx.permissions.allow_scene(_s(args, 0))
 		"allowPrefix", "allowprefix": ctx.permissions.allow_prefix(_s(args, 0))
@@ -162,7 +162,7 @@ func _handle_notation_global(rest, args: Array) -> void:
 
 
 func _handle_script(rest, args: Array) -> void:
-	var key := String(rest[0]) if rest.size() > 0 else ""
+	var key := str(rest[0]) if rest.size() > 0 else ""
 	match key:
 		"run": ctx.script_runner.run_text(_s(args, 0))
 		"load": ctx.script_runner.run_file(_s(args, 0))
@@ -189,8 +189,8 @@ func _handle_scene(rest, args: Array) -> void:
 			_reply_tree()
 			return
 
-	var id := String(rest[0])
-	var sub := String(rest[1]) if rest.size() > 1 else ""
+	var id := str(rest[0])
+	var sub := str(rest[1]) if rest.size() > 1 else ""
 
 	if sub == "":
 		_handle_scene_object(id, args)
@@ -281,7 +281,7 @@ func _segments(address: String) -> PackedStringArray:
 
 
 func _s(args: Array, i: int, def: String = "") -> String:
-	return String(args[i]) if i < args.size() else def
+	return str(args[i]) if i < args.size() else def
 
 
 func _f(args: Array, i: int, def: float = 0.0) -> float:

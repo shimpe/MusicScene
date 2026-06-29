@@ -121,7 +121,7 @@ func _set_prop(args: Array) -> void:
 	if args.is_empty():
 		ctx.error("bad_arguments", osc_path + "/prop", "Missing property name")
 		return
-	var prop := String(args[0])
+	var prop := str(args[0])
 	if not ctx.permissions.can_set_property(exposed_properties, prop):
 		ctx.error("permission_denied", osc_path + "/prop", "Property not exposed: " + prop)
 		return
@@ -143,7 +143,7 @@ func _call_method(args: Array) -> void:
 	if args.is_empty():
 		ctx.error("bad_arguments", osc_path + "/call", "Missing method name")
 		return
-	var method := String(args[0])
+	var method := str(args[0])
 	if not ctx.permissions.can_call_method(exposed_methods, method):
 		ctx.error("permission_denied", osc_path + "/call", "Method not OSC-exposed: " + method)
 		return
@@ -249,7 +249,7 @@ func _arg_bool(args: Array, i: int, def: bool = false) -> bool:
 
 
 func _args_str(args: Array, i: int, def: String = "") -> String:
-	return String(args[i]) if i < args.size() else def
+	return str(args[i]) if i < args.size() else def
 
 
 func _args_color(args: Array, start: int) -> Color:

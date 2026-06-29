@@ -22,7 +22,7 @@ func add_map(obj, args: Array) -> void:
 		ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/map",
 			"Need <t0> <t1> <property> <from> <to>")
 		return
-	var prop := String(args[2])
+	var prop := str(args[2])
 	var setter := func(val): obj.apply_command(prop, [val])
 	_append(args, setter, obj, "obj")
 
@@ -32,7 +32,7 @@ func add_cursor_map(notation, args: Array) -> void:
 		ctx.error("bad_arguments", "/gscore/scene/" + notation.osc_id + "/cursor/map",
 			"Need <t0> <t1> <property> <from> <to>")
 		return
-	var prop := String(args[2])
+	var prop := str(args[2])
 	var setter := func(val): notation.set_cursor_property(prop, val)
 	_append(args, setter, notation, "node")
 

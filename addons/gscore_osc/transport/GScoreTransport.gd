@@ -14,7 +14,7 @@ func _init(p_ctx) -> void:
 
 
 func handle(args: Array) -> void:
-	var cmd := String(args[0]) if args.size() > 0 else ""
+	var cmd := str(args[0]) if args.size() > 0 else ""
 	match cmd:
 		"play":
 			playing = true

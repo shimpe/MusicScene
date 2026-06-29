@@ -146,7 +146,7 @@ func create_primitive(type: String, args: Array) -> Node:
 		"text":
 			var p := Primitive.new(); p.kind = Primitive.Kind.TEXT; p.name = "Text"
 			if args.size() > 0:
-				p.text = String(args[0])
+				p.text = str(args[0])
 			return p
 		"rect":
 			var p := Primitive.new(); p.kind = Primitive.Kind.RECT; p.name = "Rect"; p.size = Vector2(120, 80)
@@ -168,9 +168,9 @@ func create_primitive(type: String, args: Array) -> Node:
 		"image", "sprite":
 			var s := Sprite2D.new(); s.name = "Sprite"; s.centered = true
 			if args.size() > 0:
-				var tex := _load_texture(String(args[0]))
+				var tex := _load_texture(str(args[0]))
 				if tex == null:
-					ctx.error("load_failed", "/gscore/scene", "Could not load image: " + String(args[0]))
+					ctx.error("load_failed", "/gscore/scene", "Could not load image: " + str(args[0]))
 				else:
 					s.texture = tex
 			return s

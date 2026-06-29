@@ -118,7 +118,7 @@ func _set_content(value, force_data: bool) -> void:
 	if value is PackedByteArray:
 		source_label = "<bytes:%d>" % value.size()
 	else:
-		var sv := String(value)
+		var sv := str(value)
 		if sv.length() <= 120 and not sv.contains("\n") and not sv.contains("<"):
 			source_label = sv
 		else:
@@ -128,7 +128,7 @@ func _set_content(value, force_data: bool) -> void:
 func _is_content_empty() -> bool:
 	if source_content is PackedByteArray:
 		return source_content.is_empty()
-	return String(source_content) == ""
+	return str(source_content) == ""
 
 
 func _render() -> void:
@@ -358,7 +358,7 @@ func _draw() -> void:
 # --- arg helpers ---------------------------------------------------------
 
 func _s(args: Array, i: int, def: String = "") -> String:
-	return String(args[i]) if i < args.size() else def
+	return str(args[i]) if i < args.size() else def
 
 func _f(args: Array, i: int, def: float = 0.0) -> float:
 	if i < args.size():

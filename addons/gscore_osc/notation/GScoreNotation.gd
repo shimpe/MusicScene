@@ -85,7 +85,7 @@ func reply_current_page(obj) -> void:
 
 
 func handle_cache(args: Array) -> void:
-	var cmd := String(args[0]) if args.size() > 0 else ""
+	var cmd := str(args[0]) if args.size() > 0 else ""
 	match cmd:
 		"clear":
 			var removed := Cache.clear()

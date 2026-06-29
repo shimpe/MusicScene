@@ -29,7 +29,7 @@ func is_simulating() -> bool:
 # --- Global commands -----------------------------------------------------
 
 func handle_global(args: Array) -> void:
-	var cmd := String(args[0]) if args.size() > 0 else ""
+	var cmd := str(args[0]) if args.size() > 0 else ""
 	match cmd:
 		"enable":
 			enabled = _b(args, 1, true)
@@ -40,7 +40,7 @@ func handle_global(args: Array) -> void:
 		"gravity":
 			gravity_norm = Vector3(_f(args, 1), _f(args, 2), _f(args, 3))
 		"coord":
-			var mode := String(args[1]) if args.size() > 1 else ""
+			var mode := str(args[1]) if args.size() > 1 else ""
 			if ctx.mapper.is_valid_mode(mode):
 				ctx.mapper.physics_mode = mode
 			else:
@@ -58,7 +58,7 @@ func handle_global(args: Array) -> void:
 
 func handle_layer(args: Array) -> void:
 	var num := int(_f(args, 0, 0))
-	var name := String(args[1]) if args.size() > 1 else ""
+	var name := str(args[1]) if args.size() > 1 else ""
 	if num >= 1:
 		layer_names[num] = name
 
@@ -67,7 +67,7 @@ func layer_bit(value) -> int:
 	# Accept a layer number or a registered layer name.
 	if value is int or value is float:
 		return 1 << (int(value) - 1)
-	var s := String(value)
+	var s := str(value)
 	if s.is_valid_int():
 		return 1 << (s.to_int() - 1)
 	for num in layer_names.keys():
@@ -79,9 +79,9 @@ func layer_bit(value) -> int:
 # --- Per-object routing --------------------------------------------------
 
 func handle_object(obj, args: Array) -> void:
-	var cmd := String(args[0]) if args.size() > 0 else ""
+	var cmd := str(args[0]) if args.size() > 0 else ""
 	if cmd == "enable":
-		var kind := String(args[1]) if args.size() > 1 else "rigid"
+		var kind := str(args[1]) if args.size() > 1 else "rigid"
 		_ensure_adapter(obj).enable(kind)
 		_apply_freeze_state()
 		return
@@ -116,7 +116,7 @@ func handle_collider(obj, args: Array) -> void:
 		# Allow defining a collider then enabling; create a default rigid adapter lazily.
 		_ensure_adapter(obj)
 	var a = obj.physics_adapter
-	var cmd := String(args[0]) if args.size() > 0 else ""
+	var cmd := str(args[0]) if args.size() > 0 else ""
 	match cmd:
 		"auto": a.set_collider("auto", [])
 		"rect": a.set_collider("rect", args.slice(1))

@@ -23,9 +23,9 @@ func set_option(key: String, value) -> void:
 		"minintensity": min_intensity = float(value)
 		"cooldown": cooldown = float(value)
 		"maxrate": max_rate = float(value)
-		"layer": layer_filter = String(value)
-		"other": other_filter = String(value)
-		"mode": mode = String(value)
+		"layer": layer_filter = str(value)
+		"other": other_filter = str(value)
+		"mode": mode = str(value)
 
 
 func should_emit(intensity: float, now: float, other_id: String, layer: String) -> bool:
@@ -53,7 +53,7 @@ func build_args(data: Dictionary) -> Array:
 	var fields: Array = payload if not payload.is_empty() else DEFAULT_FIELDS
 	var out: Array = []
 	for f in fields:
-		var key := String(f).to_lower()
+		var key := str(f).to_lower()
 		out.append(data[key] if data.has(key) else 0)
 	return out
 

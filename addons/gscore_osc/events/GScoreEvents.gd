@@ -22,8 +22,8 @@ func setup(p_ctx) -> void:
 # --- Registration --------------------------------------------------------
 
 func handle_on(obj, args: Array) -> void:
-	var event := String(args[0]) if args.size() > 0 else ""
-	var target := String(args[1]) if args.size() > 1 else ""
+	var event := str(args[0]) if args.size() > 0 else ""
+	var target := str(args[1]) if args.size() > 1 else ""
 	if event == "" or target == "":
 		ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/on", "Need <event> <target>")
 		return
@@ -40,7 +40,7 @@ func handle_on(obj, args: Array) -> void:
 
 
 func handle_off(obj, args: Array) -> void:
-	var event := String(args[0]) if args.size() > 0 else ""
+	var event := str(args[0]) if args.size() > 0 else ""
 	if event in INPUT_EVENTS:
 		obj.input_bindings.erase(event)
 	else:
@@ -48,7 +48,7 @@ func handle_off(obj, args: Array) -> void:
 
 
 func handle_payload(obj, args: Array) -> void:
-	var event := String(args[0]) if args.size() > 0 else ""
+	var event := str(args[0]) if args.size() > 0 else ""
 	var fields := args.slice(1)
 	if event in INPUT_EVENTS:
 		if obj.input_bindings.has(event):
@@ -58,8 +58,8 @@ func handle_payload(obj, args: Array) -> void:
 
 
 func handle_signal(obj, args: Array) -> void:
-	var sig := String(args[0]) if args.size() > 0 else ""
-	var target := String(args[1]) if args.size() > 1 else ""
+	var sig := str(args[0]) if args.size() > 0 else ""
+	var target := str(args[1]) if args.size() > 1 else ""
 	if sig == "" or target == "":
 		ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/signal", "Need <signal> <target>")
 		return
@@ -71,7 +71,7 @@ func handle_signal(obj, args: Array) -> void:
 	sb.signal_name = sig
 	sb.target = target
 	var options := args.slice(2)
-	if options.size() > 0 and String(options[0]) == "payload":
+	if options.size() > 0 and str(options[0]) == "payload":
 		sb.payload_spec = options.slice(1)
 	if sb.connect_signal():
 		obj.signal_bindings[sig] = sb
@@ -89,7 +89,7 @@ func detach_object(obj) -> void:
 func _parse_options(b, options: Array) -> void:
 	var i := 0
 	while i + 1 < options.size():
-		b.set_option(String(options[i]), options[i + 1])
+		b.set_option(str(options[i]), options[i + 1])
 		i += 2
 
 
