@@ -1,0 +1,41 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/gscore_osc/nodes/OscExposable.gd" id="1"]
+[ext_resource type="Script" path="res://addons/gscore_osc/examples/ExampleMain.gd" id="2"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("2")
+
+[node name="Stage" type="Node2D" parent="."]
+
+[node name="Actors" type="Node2D" parent="Stage"]
+
+[node name="ExistingBall" type="Node2D" parent="Stage/Actors"]
+position = Vector2(1040, 320)
+
+[node name="Visual" type="Polygon2D" parent="Stage/Actors/ExistingBall"]
+color = Color(0.4, 0.7, 1, 1)
+polygon = PackedVector2Array(-26, -26, 26, -26, 26, 26, -26, 26)
+
+[node name="OscExposable" type="Node" parent="Stage/Actors/ExistingBall"]
+script = ExtResource("1")
+osc_id = "existingBall"
+osc_auto_bind = false
+
+[node name="PlayButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 244.0
+offset_bottom = 64.0
+text = "Press me (signal demo)"
+
+[node name="OscExposable" type="Node" parent="PlayButton"]
+script = ExtResource("1")
+osc_id = "button"
+
+[node name="Info" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 80.0
+offset_right = 760.0
+offset_bottom = 160.0
+text = "gscore_osc demo — OSC in udp:7400, replies/events udp:7401. Send /gscore/ping or load example_score.gscore. See README.md."

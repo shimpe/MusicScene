@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_note"]
+radius = 22.0
+
+[node name="PhysicalNote" type="RigidBody2D"]
+gravity_scale = 0.0
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.95, 0.55, 0.45, 1)
+polygon = PackedVector2Array(22, 0, 15.56, 15.56, 0, 22, -15.56, 15.56, -22, 0, -15.56, -15.56, 0, -22, 15.56, -15.56)
+
+[node name="Collider" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_note")
