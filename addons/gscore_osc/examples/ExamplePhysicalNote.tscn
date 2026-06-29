@@ -1,14 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://c8a85xfjj0ohf"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_note"]
 radius = 22.0
 
-[node name="PhysicalNote" type="RigidBody2D"]
+[node name="PhysicalNote" type="RigidBody2D" unique_id=1820610293]
 gravity_scale = 0.0
 
-[node name="Visual" type="Polygon2D" parent="."]
+[node name="Visual" type="Polygon2D" parent="." unique_id=791442731]
 color = Color(0.95, 0.55, 0.45, 1)
 polygon = PackedVector2Array(22, 0, 15.56, 15.56, 0, 22, -15.56, 15.56, -22, 0, -15.56, -15.56, 0, -22, 15.56, -15.56)
 
-[node name="Collider" type="CollisionShape2D" parent="."]
+[node name="Collider" type="CollisionShape2D" parent="." unique_id=834667561]
 shape = SubResource("CircleShape2D_note")

@@ -16,6 +16,9 @@ project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-a
 > and 3D** — see [Verifying](#verifying). `10/10` OSC acceptance checks pass in each mode, plus
 > codec, SVG and signal-forwarding self-tests. The project ships defaulting to **3D**.
 
+> **New here?** Start with the step-by-step **[TUTORIAL.md](TUTORIAL.md)** — it walks through using
+> the addon in a fresh project, in both 2D and 3D, with a copy-paste OSC client.
+
 ---
 
 ## Table of contents
