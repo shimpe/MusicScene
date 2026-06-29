@@ -56,8 +56,15 @@ static func render(content: Dictionary, format: String, page: int, options: Dict
 		if code != 0:
 			return Result.make_error(BACKEND,
 				"Engraver exit %d (%s): %s" % [code, exe, "\n".join(out_lines).left(240)])
-		if not Cache.has(out_user):
-			return Result.make_error(BACKEND, "Engraver produced no output page: " + out_user)
+		# Engravers (LilyPond/MuseScore) name their own outputs; find the real file and
+		# normalise it to out_user so the cache hits next time.
+		var produced := _resolve_output(out_user, out_ext, page)
+		if produced == "":
+			return Result.make_error(BACKEND,
+				"Engraver ran but produced no recognizable %s page (looked for %s and .cropped / -page%d / -%d / -1 variants). Output: %s"
+				% [out_ext, out_user, page, page, "\n".join(out_lines).left(200)])
+		if produced != out_user:
+			_copy_file(produced, out_user)
 
 	# Display the produced page.
 	var page_content := {"kind": "path", "path": out_user, "text": "", "bytes": PackedByteArray()}
@@ -155,6 +162,39 @@ static func _ext_for(format: String) -> String:
 		"guido": return "gmn"
 		"pdf": return "pdf"
 	return "txt"
+
+
+## Engravers append their own suffixes (LilyPond: ".cropped"; MuseScore: "-1"). Given the wanted
+## out_user (e.g. .../<hash>.png), return whichever variant the engraver actually wrote.
+static func _resolve_output(out_user: String, ext: String, page: int) -> String:
+	# Prefer the tightly-cropped variant (LilyPond writes both <base>.cropped.png AND a full-page
+	# <base>.png), then the exact target, then per-page suffixes (MuseScore writes <base>-1.png).
+	var stem := out_user.get_basename()
+	var variants := [
+		"%s.cropped.%s" % [stem, ext],
+		out_user,
+		"%s-page%d.%s" % [stem, page, ext],
+		"%s-%d.%s" % [stem, page, ext],
+		"%s-page1.%s" % [stem, ext],
+		"%s-1.%s" % [stem, ext],
+	]
+	for v in variants:
+		if FileAccess.file_exists(v):
+			return v
+	return ""
+
+
+static func _copy_file(src: String, dst: String) -> void:
+	var f := FileAccess.open(src, FileAccess.READ)
+	if f == null:
+		return
+	var data := f.get_buffer(f.get_length())
+	f.close()
+	var o := FileAccess.open(dst, FileAccess.WRITE)
+	if o == null:
+		return
+	o.store_buffer(data)
+	o.close()
 
 
 static func _globalize(path: String) -> String:

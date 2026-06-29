@@ -264,19 +264,20 @@ command (preferred) or the generic fallback; works for a file path or inline sym
 writes inline source to a temp file, runs the command, and caches the output):
 
 ```
-engraver/musicxml   bundled wrapper: py "res://tools/mscore_to_score.py" {input} {output} --page {page} --dpi 200
-engraver/lilypond   bundled wrapper: py "res://tools/ly_to_score.py" {input} {output} --page {page} --dpi 200
-engraver/abc        e.g. "py tools/abc_to_png.py {input} {output}"
+engraver/musicxml   "C:/Program Files/MuseScore 4/bin/MuseScore4.exe" {input} -o {output} -T 10 -r 200
+engraver/lilypond   "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe" --png -dcrop=#t -dresolution=200 -o {outbase} {input}
+engraver/abc        e.g. "abcm2ps {input} -O {outbase}"
 engraver_output     "png" (default) | "svg"          tokens: {input} {output} {outbase} {outdir} {format} {page}
 external_renderer_path + external_renderer_args       generic fallback for any symbolic format
 ```
 
-`res://`/`user://` paths in a command are resolved automatically (so bundled wrapper scripts are
-portable). **MuseScore and LilyPond work out of the box** — the project ships
-`tools/mscore_to_score.py` / `tools/ly_to_score.py` and the default settings above. They
-auto-detect the engraver (PATH / `$GSCORE_MUSESCORE` / `$GSCORE_LILYPOND` / standard install dirs)
-and trim/crop to the music. Then `notation musicxml "res://scores/example.musicxml"`,
-`notation lilypond "res://scores/example.ly"`, or the inline `notationData` form just work.
+**Call the engraver directly** — no helper script. gscore finds the file the engraver actually wrote
+(`{output}` plus the usual `.cropped` / `-page{N}` / `-N` variants LilyPond/MuseScore emit) and
+caches it, so you normally just set the engraver's path. Quote paths with spaces; `res://`/`user://`
+in a command are resolved too. **LilyPond and MuseScore ship working defaults** — set your install
+path and `notation musicxml/lilypond "<path-or-inline>"` (or `notationData`) works. Portable,
+auto-detecting wrappers are also bundled (`tools/ly_to_score.py`, `tools/mscore_to_score.py`).
+(MuseScore 4 can crash on a cold headless start; results are cached, so a retry succeeds.)
 
 Rendered pages are cached under `user://gscore_cache/notation/`:
 

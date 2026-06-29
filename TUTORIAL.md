@@ -479,21 +479,26 @@ gscore can shell out to an external engraver to turn symbolic music into pages, 
 
 ```ini
 [gscore_osc]
-notation/engraver/musicxml="py \"res://tools/mscore_to_score.py\" {input} {output} --page {page} --dpi 200"
-notation/engraver/lilypond="py \"res://tools/ly_to_score.py\" {input} {output} --page {page} --dpi 200"
-notation/engraver/abc="py tools/abc_to_png.py {input} {output}"
+notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output} -T 10 -r 200"
+notation/engraver/lilypond="\"C:/Program Files/lilypond-2.25.81/bin/lilypond.exe\" --png -dcrop=#t -dresolution=200 -o {outbase} {input}"
+notation/engraver/abc="abcm2ps {input} -O {outbase}"
 notation/engraver_output="png"   ; what your command writes: "png" (default) or "svg"
 ```
 
-> `res://` / `user://` paths inside an engraver command are resolved automatically, so a bundled
-> wrapper script is portable across machines. **Both MuseScore and LilyPond ship working defaults
-> and wrappers** — if either is installed, the matching format works immediately.
+> **Call the engraver directly** — no helper script needed. gscore automatically finds the file the
+> engraver actually wrote (it looks for `{output}` plus the common `.cropped`, `-page{N}` and `-N`
+> variants that LilyPond/MuseScore produce), so you usually only need to set the engraver's path.
+> Quote paths that contain spaces. `res://`/`user://` paths are resolved too, so a bundled wrapper
+> script (`tools/ly_to_score.py`, `tools/mscore_to_score.py`) is a portable, auto-detecting
+> alternative if you'd rather not hard-code the engraver path.
+>
+> This project ships **working defaults for LilyPond and MuseScore** — if either is installed, the
+> matching format works immediately (set your install path).
 
 #### MuseScore — works out of the box
 
-This project ships a MuseScore wrapper (`tools/mscore_to_score.py`) and the default `musicxml`
-setting above. With MuseScore 4 installed you can engrave **MusicXML / .mxl / .mscz** immediately —
-from a file or inline:
+With MuseScore 4 installed and the default `musicxml` setting above (point it at your MuseScore
+binary), engrave **MusicXML / .mxl / .mscz** immediately — from a file or inline:
 
 ```python
 # from a file (any format MuseScore imports)
@@ -502,27 +507,28 @@ s("/gscore/scene/score","notation","musicxml","res://scores/example.musicxml")
 s("/gscore/scene/score","notationData","musicxml","<?xml ...><score-partwise> ... </score-partwise>")
 ```
 
-The wrapper runs MuseScore with `-T` (trim to the music) and resolves its per-page output naming
-(`out-1.png`). It finds MuseScore on `PATH`, via `$GSCORE_MUSESCORE`, or in
-`C:\Program Files\MuseScore 4\bin`; override with `--mscore "C:/Program Files/MuseScore 4/bin/MuseScore4.exe"`.
+MuseScore is called directly with `-T` (trim to the music); gscore picks up its `out-1.png` page
+automatically. (Prefer auto-detecting the binary? Use the bundled `tools/mscore_to_score.py`
+wrapper instead.) Note: MuseScore 4 occasionally crashes on a cold start under headless automation —
+since rendered pages are cached, a retry succeeds and repeats are instant.
 
 #### LilyPond — works out of the box
 
-This project ships a ready-to-use LilyPond wrapper (`tools/ly_to_score.py`) and the default setting
-above, so if LilyPond is installed you can engrave immediately — from a `.ly` file or inline:
+With LilyPond installed and the default setting above (point it at your `lilypond` binary), engrave
+immediately — from a `.ly` file or inline (send the LilyPond source as the data):
 
 ```python
 # from a .ly file
 s("/gscore/scene/score","notation","lilypond","res://scores/example.ly")
-# inline, generated at run-time (send the LilyPond source as the data)
-ly = '\\version "2.24.0"\n{ \\clef treble c\'4 d\' e\' f\' | g\'1 \\bar "|." }'
+# inline / runtime-generated — read the source from a file or build it (mind backslash escaping!)
+ly = open("snippet.ly", encoding="utf-8").read()
 s("/gscore/scene/score","notationData","lilypond",ly)
 ```
 
-The wrapper runs LilyPond with `-dcrop` (tight bounding box, no A4 whitespace) and copies the page
-to gscore. It finds LilyPond on `PATH`, via `$GSCORE_LILYPOND`, or in `C:\Program Files\lilypond-*`;
-to point at a specific binary, append `--lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"`
-to the command. Set `engraver_output="svg"` and a `.svg` wrapper output to get vector instead of PNG.
+The default command runs LilyPond with `-dcrop=#t` (tight bounding box, no A4 whitespace); LilyPond
+writes `…cropped.png`, which gscore prefers automatically. For **SVG** output use
+`-dbackend=svg … -o {outbase} {input}` and set `engraver_output="svg"`. (Prefer auto-detecting the
+binary? Use the bundled `tools/ly_to_score.py` wrapper instead.)
 
 (Or set the generic fallback `notation/external_renderer_path` + `notation/external_renderer_args`
 used for any symbolic format.) Then point at a file **or send inline source**:

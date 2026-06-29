@@ -48,8 +48,8 @@ permissions/free_nodes=false
 notation/external_renderer_path=""
 notation/external_renderer_args=""
 notation/engraver_output="png"
-notation/engraver/musicxml="py \"res://tools/mscore_to_score.py\" {input} {output} --page {page} --dpi 200"
+notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output} -T 10 -r 200"
 notation/engraver/mei=""
-notation/engraver/lilypond="py \"res://tools/ly_to_score.py\" {input} {output} --page {page} --dpi 200"
+notation/engraver/lilypond="\"C:/Program Files/lilypond-2.25.81/bin/lilypond.exe\" --png -dcrop=#t -dresolution=200 -o {outbase} {input}"
 notation/engraver/abc=""
 logging/verbose=true
