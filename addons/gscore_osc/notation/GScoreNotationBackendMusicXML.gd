@@ -57,7 +57,8 @@ static func prepare(content: Dictionary, format: String, page: int, options: Dic
 			return {"ok": false, "error": "Could not write temp engraver input: " + in_user}
 		input_abs = ProjectSettings.globalize_path(in_user)
 
-	var out_ext := str(_setting("notation/engraver_output", "png"))
+	# Output format may be per-engraver (MuseScore -> png, Verovio -> svg).
+	var out_ext := str(_setting("notation/engraver_output/" + format, _setting("notation/engraver_output", "png")))
 	var out_user := Cache.path_for(Cache.key(cid, format, page, BACKEND, options), out_ext)
 	if Cache.has(out_user):
 		return {"ok": true, "cached": true, "out_user": out_user, "out_ext": out_ext}
@@ -111,6 +112,16 @@ static func input_abs_for(content: Dictionary, format: String, options: Dictiona
 
 static func content_id(content: Dictionary) -> String:
 	return _content_id(content)
+
+
+## The configured engraver command for a format (used to pick the addressable engine).
+static func engraver_command(format: String) -> String:
+	return _command_for(format)
+
+
+## Build the engraver argv (tokens substituted, res:// resolved); public for the addressable paths.
+static func build_argv(template: String, input: String, output: String, format: String, page: int) -> PackedStringArray:
+	return _build_argv(template, input, output, format, page)
 
 
 # --- command resolution --------------------------------------------------

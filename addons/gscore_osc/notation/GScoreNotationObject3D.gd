@@ -137,7 +137,7 @@ func _render() -> void:
 	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
 		_pending = true
 		page_mat.albedo_color = Color(0.85, 0.85, 0.6, 1.0)  # "engraving" tint
-		if addressable and (format == "musicxml" or format == "mei" or format == "lilypond" or format == "ly"):
+		if addressable:
 			ctx.render_queue.submit_addressable(self, source_content, format, current_page, render_options, _force_data)
 		else:
 			ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)

@@ -264,11 +264,13 @@ command (preferred) or the generic fallback; works for a file path or inline sym
 writes inline source to a temp file, runs the command, and caches the output):
 
 ```
-engraver/musicxml   "C:/Program Files/MuseScore 4/bin/MuseScore4.exe" {input} -o {output} -T 10 -r 200
-engraver/lilypond   "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe" --png -dcrop=#t -dresolution=200 -o {outbase} {input}
-engraver/abc        e.g. "abcm2ps {input} -O {outbase}"
-engraver_output     "png" (default) | "svg"          tokens: {input} {output} {outbase} {outdir} {format} {page}
-external_renderer_path + external_renderer_args       generic fallback for any symbolic format
+engraver/musicxml      "C:/Program Files/MuseScore 4/bin/MuseScore4.exe" {input} -o {output} -T 10 -r 200
+engraver/lilypond      "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe" --png -dcrop=#t -dresolution=200 -o {outbase} {input}
+engraver/mei           py "res://tools/verovio_render.py" {input} {output} --page {page}      (pip install verovio)
+engraver/abc           py "res://tools/verovio_render.py" {input} {output} --page {page}
+engraver_output        "png" (default) | "svg"        tokens: {input} {output} {outbase} {outdir} {format} {page}
+engraver_output/<fmt>  per-format override (e.g. .../mei = "svg")
+external_renderer_path + external_renderer_args        generic fallback for any symbolic format
 ```
 
 Engraving runs **asynchronously** — the engraver is launched in the background (`OS.create_process`)
@@ -356,6 +358,13 @@ Each note becomes region `n0…nK` (clicking emits `/gscore/event/note <id> n<i>
 `cursor follow 1` + a playing transport the cursor moves note-to-note and emits
 `/gscore/event/note <id> n<i> <when> <line> <char>` as it passes each one — full score-following,
 driven entirely by gscore.
+
+**Verovio** (for MEI/ABC, `pip install verovio`) gives the same note-level addressing + following and
+is the cleanest source: its SVG tags every note with a stable id and `renderToTimemap()` provides
+each note's exact time, so no source-tagging is needed. Configure `engraver/mei` (and `abc`) to the
+bundled `tools/verovio_render.py` (the default), then `addressable 1` + `notation mei "…"` →
+`elements`, note hotspots, and `cursor follow 1` work just like LilyPond. (Verovio also reads
+MusicXML, so you can point `engraver/musicxml` at it instead of MuseScore if you prefer.)
 
 ### Notation annotations
 
@@ -700,8 +709,9 @@ py tools/osc_test.py
 
 ## Known limitations
 
-- Notation regions are defined manually in v1; auto-generating them from engraver bounding boxes
-  is a future extension. `system`/`staff`/`measure`/`part` are stored but have no geometry yet.
+- Manual notation regions are still supported, and addressable regions are auto-generated from
+  engraver output: measures (MuseScore) and notes (LilyPond / Verovio), with cursor following.
+  `system`/`staff`/`part` addressing is not auto-generated yet.
 - Symbolic formats (MusicXML/MEI/…) require an external engraver configured in project settings;
   there is no in-engine engraving.
 - The lightweight `glyphs` backend is a stub (returns a clear error).

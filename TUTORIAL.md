@@ -619,6 +619,17 @@ s("/gscore/transport","play")
 The cursor moves note-to-note in sync with the transport and emits a note event as it passes each
 one — driven entirely by gscore (no per-note messages from your client needed).
 
+The same works for **MEI / ABC via Verovio** (`pip install verovio`; it's the default engraver for
+those). Verovio is the cleanest option — its SVG has stable note ids and a timemap with exact
+timing, so addressing + following need no tagging tricks:
+
+```python
+s("/gscore/scene/score","addressable",1)
+s("/gscore/scene/score","notation","mei","res://scores/example.mei")
+s("/gscore/scene/score","elements")
+s("/gscore/scene/score/cursor","follow",1); s("/gscore/transport","play")
+```
+
 ### Cache management
 
 ```python

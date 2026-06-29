@@ -10,6 +10,7 @@ const ExternalBackend := preload("res://addons/gscore_osc/notation/GScoreNotatio
 const Cache := preload("res://addons/gscore_osc/notation/GScoreNotationCache.gd")
 const Positions := preload("res://addons/gscore_osc/notation/GScoreNotationPositions.gd")
 const LilyPositions := preload("res://addons/gscore_osc/notation/GScoreNotationLilyPositions.gd")
+const VerovioPositions := preload("res://addons/gscore_osc/notation/GScoreNotationVerovioPositions.gd")
 
 const TIMEOUT_MS := 60000
 
@@ -48,7 +49,12 @@ func submit(notation_obj, raw_content, format: String, page: int, options: Dicti
 ## plus a .mpos position export; on completion the page is cropped to the music and each measure is
 ## returned as a page-normalized rect. v1 supports MuseScore (musicxml/mei).
 func submit_addressable(notation_obj, raw_content, format: String, page: int, options: Dictionary, force_data: bool) -> void:
-	if format == "lilypond" or format == "ly":
+	# Pick the addressable engine from the configured engraver command (or the format).
+	var cmd_l := ExternalBackend.engraver_command(format).to_lower()
+	if cmd_l.contains("verovio"):
+		_submit_verovio(notation_obj, raw_content, format, page, options, force_data)
+		return
+	if format == "lilypond" or format == "ly" or cmd_l.contains("lilypond"):
 		_submit_lily(notation_obj, raw_content, format, page, options, force_data)
 		return
 	var content := Renderer.normalize(raw_content, format, force_data)
@@ -149,6 +155,49 @@ func _finish_lily(obj, cropped_user: String, options: Dictionary) -> void:
 		obj._on_render_failed(res.error)
 
 
+## Verovio addressable: run the wrapper to produce SVG + timemap, then join them into note elements.
+func _submit_verovio(notation_obj, raw_content, format: String, page: int, options: Dictionary, force_data: bool) -> void:
+	var content := Renderer.normalize(raw_content, format, force_data)
+	var input_abs := ExternalBackend.input_abs_for(content, format, options)
+	if input_abs == "":
+		notation_obj._on_render_failed("verovio: could not prepare input")
+		return
+	Cache.ensure_dir()
+	var key := Cache.key(ExternalBackend.content_id(content), format, page, "vrv", options)
+	var svg_user := Cache.path_for(key, "svg")
+	var tm_user := Cache.path_for(key, "json")
+
+	if FileAccess.file_exists(svg_user) and FileAccess.file_exists(tm_user):
+		_finish_verovio(notation_obj, svg_user, tm_user, options)
+		return
+
+	var cmd := ExternalBackend.engraver_command(format)
+	var argv := ExternalBackend.build_argv(cmd, input_abs, ProjectSettings.globalize_path(svg_user), format, page)
+	argv.append("--timemap")
+	argv.append(ProjectSettings.globalize_path(tm_user))
+	if argv.is_empty():
+		notation_obj._on_render_failed("verovio: empty command")
+		return
+	var pid := OS.create_process(argv[0], argv.slice(1), false)
+	if pid <= 0:
+		notation_obj._on_render_failed("verovio: could not launch " + argv[0])
+		return
+	if ctx.verbose:
+		print("[GScoreOSC] analyzing '%s' (%s/verovio) in background, pid %d" % [notation_obj.osc_id, format, pid])
+	_jobs.append({
+		"kind": "vrv", "pid": pid, "obj": notation_obj,
+		"svg_user": svg_user, "tm_user": tm_user, "options": options, "start": Time.get_ticks_msec(),
+	})
+
+
+func _finish_verovio(obj, svg_user: String, tm_user: String, options: Dictionary) -> void:
+	var res := VerovioPositions.finalize(svg_user, tm_user, options)
+	if res.ok:
+		obj._on_elements_done(res.texture, res.elements)
+	else:
+		obj._on_render_failed(res.error)
+
+
 func _addr_cached(png_user: String, mpos_user: String) -> bool:
 	if not FileAccess.file_exists(mpos_user):
 		return false
@@ -181,6 +230,8 @@ func _process(_delta: float) -> void:
 			_finish_addressable(j.obj, j.png_user, j.mpos_user, j.page)
 		elif j.kind == "lyaddr":
 			_finish_lily(j.obj, j.cropped_user, j.options)
+		elif j.kind == "vrv":
+			_finish_verovio(j.obj, j.svg_user, j.tm_user, j.options)
 		else:
 			var res = ExternalBackend.finalize(j.out_user, j.out_ext, j.page, j.options)
 			if res.ok:

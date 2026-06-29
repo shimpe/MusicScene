@@ -48,8 +48,10 @@ permissions/free_nodes=false
 notation/external_renderer_path=""
 notation/external_renderer_args=""
 notation/engraver_output="png"
+notation/engraver_output/mei="svg"
+notation/engraver_output/abc="svg"
 notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output} -T 10 -r 200"
-notation/engraver/mei=""
+notation/engraver/mei="py \"res://tools/verovio_render.py\" {input} {output} --page {page}"
 notation/engraver/lilypond="\"C:/Program Files/lilypond-2.25.81/bin/lilypond.exe\" --png -dcrop=#t -dresolution=200 -o {outbase} {input}"
-notation/engraver/abc=""
+notation/engraver/abc="py \"res://tools/verovio_render.py\" {input} {output} --page {page}"
 logging/verbose=true
