@@ -29,7 +29,7 @@ static func backend_for(format: String) -> String:
 ## force_data: when true, a String content is treated as inline text rather than a path.
 static func render(content, format: String, page: int, options: Dictionary = {}, force_data: bool = false):
 	var f := format.to_lower()
-	var c := _normalize(content, f, force_data)
+	var c := normalize(content, f, force_data)
 	if f in RASTER_FORMATS:
 		return ImageBackend.render(c, page, options)
 	if f == "svg":
@@ -42,7 +42,7 @@ static func render(content, format: String, page: int, options: Dictionary = {},
 
 
 ## Returns {kind: "path"|"text"|"bytes", path, text, bytes}.
-static func _normalize(content, f: String, force_data: bool) -> Dictionary:
+static func normalize(content, f: String, force_data: bool) -> Dictionary:
 	if content is PackedByteArray:
 		return {"kind": "bytes", "path": "", "text": "", "bytes": content}
 	var s := str(content)

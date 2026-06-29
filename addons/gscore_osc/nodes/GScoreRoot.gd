@@ -16,6 +16,7 @@ const GScoreSpatial3D := preload("res://addons/gscore_osc/core/GScoreSpatial3D.g
 const GScorePhysicsWorld := preload("res://addons/gscore_osc/physics/GScorePhysicsWorld.gd")
 const GScoreEvents := preload("res://addons/gscore_osc/events/GScoreEvents.gd")
 const GScoreNotation := preload("res://addons/gscore_osc/notation/GScoreNotation.gd")
+const GScoreRenderQueue := preload("res://addons/gscore_osc/notation/GScoreRenderQueue.gd")
 const GScoreTransport := preload("res://addons/gscore_osc/transport/GScoreTransport.gd")
 const GScoreTimeMapper := preload("res://addons/gscore_osc/transport/GScoreTimeMapper.gd")
 const GScoreScriptRunner := preload("res://addons/gscore_osc/script/GScoreScriptRunner.gd")
@@ -30,6 +31,7 @@ var spatial = null
 var physics_world = null
 var events = null
 var notation = null
+var render_queue = null
 var transport = null
 var timemapper = null
 var script_runner = null
@@ -74,6 +76,11 @@ func _ready() -> void:
 	events.name = "Events"
 	events.setup(self)
 	add_child(events)
+
+	render_queue = GScoreRenderQueue.new()
+	render_queue.name = "RenderQueue"
+	render_queue.setup(self)
+	add_child(render_queue)
 
 	server = OscServer.new()
 	server.name = "OscServer"

@@ -24,6 +24,7 @@ var annotations: Dictionary = {}  # id -> Label3D
 var source_content = ""      # String (path or inline text) OR PackedByteArray
 var source_label: String = ""  # human-readable, for notationInfo
 var _force_data: bool = false
+var _pending: bool = false      # an async engrave is in flight
 var format: String = ""
 var backend: String = ""
 var current_page: int = 1
@@ -121,7 +122,27 @@ func _is_content_empty() -> bool:
 func _render() -> void:
 	if _is_content_empty() or format == "":
 		return
-	var res = Renderer.render(source_content, format, current_page, render_options, _force_data)
+	# External engravers run async (non-blocking) via the render queue; fast backends stay sync.
+	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
+		_pending = true
+		page_mat.albedo_color = Color(0.85, 0.85, 0.6, 1.0)  # "engraving" tint
+		ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
+		return
+	_apply_result(Renderer.render(source_content, format, current_page, render_options, _force_data))
+
+
+func _on_render_done(res) -> void:
+	_pending = false
+	_apply_result(res)
+
+
+func _on_render_failed(err: String) -> void:
+	_pending = false
+	page_mat.albedo_color = Color(0.97, 0.97, 0.95, 1.0)
+	ctx.error("load_failed", _base() + "/notation", err)
+
+
+func _apply_result(res) -> void:
 	if not res.ok:
 		ctx.error("load_failed", _base() + "/notation", res.error)
 		return

@@ -271,6 +271,11 @@ engraver_output     "png" (default) | "svg"          tokens: {input} {output} {o
 external_renderer_path + external_renderer_args       generic fallback for any symbolic format
 ```
 
+Engraving runs **asynchronously** — the engraver is launched in the background (`OS.create_process`)
+and polled, so the app stays responsive (verified: ~2 ms OSC latency during a multi-second
+MuseScore render). The notation object shows an "engraving…" placeholder and swaps the page in when
+ready; results are cached so repeats are instant.
+
 **Call the engraver directly** — no helper script. gscore finds the file the engraver actually wrote
 (`{output}` plus the usual `.cropped` / `-page{N}` / `-N` variants LilyPond/MuseScore emit) and
 caches it, so you normally just set the engraver's path. Quote paths with spaces; `res://`/`user://`

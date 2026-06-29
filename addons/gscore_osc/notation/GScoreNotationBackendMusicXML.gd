@@ -21,52 +21,66 @@ const SvgBackend := preload("res://addons/gscore_osc/notation/GScoreNotationBack
 const BACKEND := "external"
 
 
+## Synchronous render (blocks until the engraver finishes). Used by the sync Renderer path.
 static func render(content: Dictionary, format: String, page: int, options: Dictionary = {}):
+	var prep := prepare(content, format, page, options)
+	if not prep.ok:
+		return Result.make_error(BACKEND, prep.error)
+	if not prep.cached:
+		var out_lines: Array = []
+		var code := OS.execute(prep.exe, prep.args, out_lines, true)
+		if code != 0:
+			return Result.make_error(BACKEND,
+				"Engraver exit %d (%s): %s" % [code, prep.exe, "\n".join(out_lines).left(240)])
+	return finalize(prep.out_user, prep.out_ext, page, options)
+
+
+## Prepare an engraver job WITHOUT running it (writes any inline input, builds the command).
+## Returns {ok, error?, cached, out_user, out_ext, exe, args}. The caller runs exe/args (sync via
+## OS.execute, or async via OS.create_process) then calls finalize().
+static func prepare(content: Dictionary, format: String, page: int, options: Dictionary = {}) -> Dictionary:
 	var cmd_tmpl := _command_for(format)
 	if cmd_tmpl == "":
-		return Result.make_error(BACKEND,
+		return {"ok": false, "error":
 			"No engraver configured for '%s'. Set gscore_osc/notation/engraver/%s (or pre-render to PNG/SVG)."
-			% [format, format])
+			% [format, format]}
 
 	Cache.ensure_dir()
 	var cid := _content_id(content)
 
-	# Resolve the input file (write inline content to a temp file in the cache).
 	var input_abs := ""
 	if content.kind == "path":
 		input_abs = _globalize(content.path)
 	else:
 		var in_user := Cache.path_for(Cache.key(cid, format, 0, "in", options), _ext_for(format))
 		if not _write_content(in_user, content):
-			return Result.make_error(BACKEND, "Could not write temp engraver input: " + in_user)
+			return {"ok": false, "error": "Could not write temp engraver input: " + in_user}
 		input_abs = ProjectSettings.globalize_path(in_user)
 
 	var out_ext := str(_setting("notation/engraver_output", "png"))
 	var out_user := Cache.path_for(Cache.key(cid, format, page, BACKEND, options), out_ext)
+	if Cache.has(out_user):
+		return {"ok": true, "cached": true, "out_user": out_user, "out_ext": out_ext}
+
 	var out_abs := ProjectSettings.globalize_path(out_user)
+	var argv := _build_argv(cmd_tmpl, input_abs, out_abs, format, page)
+	if argv.is_empty():
+		return {"ok": false, "error": "Empty engraver command for: " + format}
+	return {
+		"ok": true, "cached": false, "out_user": out_user, "out_ext": out_ext,
+		"exe": argv[0], "args": argv.slice(1),
+	}
 
-	if not Cache.has(out_user):
-		var argv := _build_argv(cmd_tmpl, input_abs, out_abs, format, page)
-		if argv.is_empty():
-			return Result.make_error(BACKEND, "Empty engraver command for: " + format)
-		var exe: String = argv[0]
-		var args := argv.slice(1)
-		var out_lines: Array = []
-		var code := OS.execute(exe, args, out_lines, true)
-		if code != 0:
-			return Result.make_error(BACKEND,
-				"Engraver exit %d (%s): %s" % [code, exe, "\n".join(out_lines).left(240)])
-		# Engravers (LilyPond/MuseScore) name their own outputs; find the real file and
-		# normalise it to out_user so the cache hits next time.
-		var produced := _resolve_output(out_user, out_ext, page)
-		if produced == "":
-			return Result.make_error(BACKEND,
-				"Engraver ran but produced no recognizable %s page (looked for %s and .cropped / -page%d / -%d / -1 variants). Output: %s"
-				% [out_ext, out_user, page, page, "\n".join(out_lines).left(200)])
-		if produced != out_user:
-			_copy_file(produced, out_user)
 
-	# Display the produced page.
+## After the engraver has run, locate its output, normalise it to out_user, and load the page.
+static func finalize(out_user: String, out_ext: String, page: int, options: Dictionary = {}):
+	var produced := _resolve_output(out_user, out_ext, page)
+	if produced == "":
+		return Result.make_error(BACKEND,
+			"Engraver ran but produced no recognizable %s page (looked for %s and .cropped / -page%d / -%d / -1 variants)."
+			% [out_ext, out_user, page, page])
+	if produced != out_user:
+		_copy_file(produced, out_user)
 	var page_content := {"kind": "path", "path": out_user, "text": "", "bytes": PackedByteArray()}
 	if out_ext == "svg":
 		return SvgBackend.render(page_content, 1, options)

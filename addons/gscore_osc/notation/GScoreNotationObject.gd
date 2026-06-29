@@ -22,6 +22,7 @@ var annotations: Dictionary = {}    # id -> GScoreNotationAnnotation
 var source_content = ""      # String (path or inline text) OR PackedByteArray
 var source_label: String = ""  # human-readable, for notationInfo
 var _force_data: bool = false
+var _pending: bool = false      # an async engrave is in flight
 var format: String = ""
 var backend: String = ""
 var current_page: int = 1
@@ -134,7 +135,27 @@ func _is_content_empty() -> bool:
 func _render() -> void:
 	if _is_content_empty() or format == "":
 		return
-	var res = Renderer.render(source_content, format, current_page, render_options, _force_data)
+	# External engravers run async (non-blocking) via the render queue; fast backends stay sync.
+	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
+		_pending = true
+		queue_redraw()
+		ctx.render_queue.submit(self, source_content, format, current_page, render_options, _force_data)
+		return
+	_apply_result(Renderer.render(source_content, format, current_page, render_options, _force_data))
+
+
+func _on_render_done(res) -> void:
+	_pending = false
+	_apply_result(res)
+
+
+func _on_render_failed(err: String) -> void:
+	_pending = false
+	queue_redraw()
+	ctx.error("load_failed", _base_addr() + "/notation", err)
+
+
+func _apply_result(res) -> void:
 	if not res.ok:
 		ctx.error("load_failed", _base_addr() + "/notation", res.error)
 		return
@@ -350,9 +371,9 @@ func _draw() -> void:
 	draw_rect(r, Color(0.2, 0.2, 0.2, 0.6), false, 2.0)
 	var font := ThemeDB.fallback_font
 	if font != null:
+		var label := "engraving %s…" % format if _pending else "notation: %s" % (osc_id if osc_id != "" else "(empty)")
 		draw_string(font, Vector2(-page_size.x * 0.5 + 16, -page_size.y * 0.5 + 36),
-			"notation: %s" % (osc_id if osc_id != "" else "(empty)"),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.3, 0.3, 0.3))
+			label, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.3, 0.3, 0.3))
 
 
 # --- arg helpers ---------------------------------------------------------
