@@ -14,6 +14,7 @@ client.
 - [3. Smoke test: ping](#3-smoke-test-ping)
 - [4. Getting started in 2D](#4-getting-started-in-2d)
 - [5. Getting started in 3D](#5-getting-started-in-3d)
+- [Physical notation: joints](#physical-notation-joints)
 - [Displaying scores — every source option](#displaying-scores--every-source-option)
 - [6. Driving it from a `.gscore` script](#6-driving-it-from-a-gscore-script)
 - [7. Connecting from Max / Pd / SuperCollider](#7-connecting-from-max--pd--supercollider)
@@ -421,6 +422,86 @@ s("/gscore/scene/ball/on", "click", "/hit/ball")
 
 Set `gscore_osc/space = "2d"` (and choose a `Node2D` main scene) and restart. Same OSC scripts,
 2D rendering.
+
+---
+
+## Physical notation: joints
+
+Joints constrain physics bodies into strings, hinges, and springs. They live in their own namespace,
+`/gscore/joint/<id>`, with their own id space. Both endpoints must be scene objects with physics
+enabled; at least one must be non-static.
+
+```
+s("/gscore/joint/<id>", "new", "<type>", "<a>", "<b>")
+s("/gscore/joint/<id>", "<property>", <args...>)
+s("/gscore/joint/<id>", "del")
+```
+
+**Types are native per space** (set via `gscore_osc/space`):
+
+| | 2D | 3D |
+|---|---|---|
+| types | `pin`, `spring`/`dampedSpring`, `groove`, `distance` | `pin`, `hinge`, `slider`, `coneTwist`, `generic6dof` |
+
+**Properties** (each applies where the joint supports it; otherwise a logged no-op):
+
+| verb | meaning |
+|---|---|
+| `stiffness <0..1>` / `damping <0..1>` | spring feel (normalized, mapped per backend) |
+| `restLength <norm>` | spring equilibrium length (normalized, coord-mapped) |
+| `limit <lower> <upper>` | angular joints: **degrees**; linear (slider/groove): **norm length** |
+| `motor <speed> <torque>` | 2D `pin`: target velocity (torque is a no-op in 2D). 3D `hinge`: target velocity + torque→max impulse |
+| `axis <x> <y> <z>` | 3D working axis for `hinge`/`slider`/`coneTwist` (default A→B) |
+| `dof <linX..angZ\|lin\|ang\|all>` | `generic6dof` only — selects which DOF later params target |
+| `breakForce <0..1>` | snaps the joint when overstretched; emits `/gscore/event/jointBreak <id> <a> <b>` |
+| `del` | remove the joint |
+
+Queries: `/gscore/joint/<id> info`, `/gscore/joints list`.
+
+### 2D example — a note hanging from a string
+
+```
+s("/gscore/scene/anchor", "new", "circle")
+s("/gscore/scene/anchor/physics", "enable", "static")
+s("/gscore/scene/anchor", "pos", 0.0, 0.6, 0.0)
+
+s("/gscore/scene/note", "new", "circle")
+s("/gscore/scene/note/physics", "enable", "rigid")
+s("/gscore/scene/note", "pos", 0.0, 0.0, 0.0)
+
+s("/gscore/joint/string1", "new", "dampedSpring", "anchor", "note")
+s("/gscore/joint/string1", "stiffness", 0.8)
+s("/gscore/joint/string1", "damping", 0.1)
+s("/gscore/joint/string1", "restLength", 0.4)
+
+s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
+s("/gscore/physics", "enable", 1)     # the note bobs on the spring
+```
+
+### 3D example — a swinging hinge
+
+```
+s("/gscore/scene/post", "new", "circle")
+s("/gscore/scene/post/physics", "enable", "static")
+s("/gscore/scene/post", "pos", 0.0, 0.5, 0.0)
+
+s("/gscore/scene/arm", "new", "circle")
+s("/gscore/scene/arm/physics", "enable", "rigid")
+s("/gscore/scene/arm", "pos", 0.2, 0.5, 0.0)
+
+s("/gscore/joint/hinge1", "new", "hinge", "post", "arm")
+s("/gscore/joint/hinge1", "axis", 0, 0, 1)          # swing in the XY plane
+s("/gscore/joint/hinge1", "limit", -60, 60)         # degrees
+s("/gscore/joint/hinge1", "motor", 2.0, 0.5)        # speed, torque
+
+s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
+s("/gscore/physics", "enable", 1)
+```
+
+> **Notes on fidelity:** `breakForce` is an *overstretch* proxy, not Newtons — Godot exposes no joint
+> reaction force, so it snaps when the endpoints are pulled too far apart (most useful on
+> spring/distance/slider joints; a rigid `pin` effectively never snaps). In 2D, `motor`'s torque
+> argument is ignored (Godot's 2D pin motor has no max impulse); it *is* honoured by the 3D hinge.
 
 ---
 
