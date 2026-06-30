@@ -589,6 +589,12 @@ func overlapping_others(node: Node) -> Array:
 	return []
 
 
+func colliding_others(node: Node) -> Array:
+	if node is RigidBody3D:
+		return (node as RigidBody3D).get_colliding_bodies()
+	return []
+
+
 func layer_names_for(node: Node) -> PackedStringArray:
 	var out := PackedStringArray()
 	if node is CollisionObject3D:

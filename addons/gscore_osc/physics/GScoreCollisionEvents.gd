@@ -64,6 +64,20 @@ static func check_continuous(ctx, obj) -> void:
 				ctx.emitter.emit(sb.target, sb.build_args(odata), sb.mode, sb.quantize_grid)
 		sb.prune_others(active)
 
+	var cb = obj.event_bindings.get("collisionStay")
+	if cb != null:
+		var c_active := {}
+		for other in ctx.spatial.colliding_others(node):
+			if not is_instance_valid(other):
+				continue
+			var cdata := _build_data(ctx, obj, "collisionStay", other)
+			var coid := str(cdata["other"])
+			c_active[coid] = true
+			if cb.should_emit_other(cdata["intensity"], cdata["time"], coid, cdata["layer"]):
+				cb.mark_other(coid, cdata["time"])
+				ctx.emitter.emit(cb.target, cb.build_args(cdata), cb.mode, cb.quantize_grid)
+		cb.prune_others(c_active)
+
 
 static func _build_data(ctx, obj, _event: String, other: Node) -> Dictionary:
 	var node = obj.node

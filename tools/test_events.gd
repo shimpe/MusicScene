@@ -59,7 +59,27 @@ func _process(_d: float) -> bool:
 		sch.emit("/imm", [9], "immediate", 0.0)
 		check(sch._queued.is_empty() and sch._bundle.is_empty() and sch._quantized.is_empty(), "immediate bypasses all buffers")
 		check(sch._next_grid(1.5, 0.0) == 1.5, "_next_grid grid=0 returns beat")
-	if _f == 12:
+	if _f == 14:
+		osc.dispatcher.dispatch("/gscore/scene/floor", ["new", "rect"])
+		osc.dispatcher.dispatch("/gscore/scene/floor/physics", ["enable", "static"])
+		osc.dispatcher.dispatch("/gscore/scene/floor/collider", ["rect", 1.0, 0.1])
+		osc.dispatcher.dispatch("/gscore/scene/floor", ["pos", 0.0, -0.3, 0.0])   # collider top at y=-0.25
+		osc.dispatcher.dispatch("/gscore/scene/dropball", ["new", "circle"])
+		osc.dispatcher.dispatch("/gscore/scene/dropball/physics", ["enable", "rigid"])
+		osc.dispatcher.dispatch("/gscore/scene/dropball/collider", ["circle", 0.08])
+		osc.dispatcher.dispatch("/gscore/scene/dropball", ["pos", 0.0, -0.18, 0.0])  # bottom y=-0.26: touching/overlapping the floor top
+		osc.dispatcher.dispatch("/gscore/scene/dropball/on", ["collisionStay", "/synth/sustain", "maxRate", 30])
+		osc.dispatcher.dispatch("/gscore/physics", ["gravity", 0.0, -1.0, 0.0])
+		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+	if _f == 16:
+		var ball = osc.registry.get_object("dropball")
+		check(osc.spatial.colliding_others(ball.physics_adapter.body) != null, "colliding_others callable")
+	if _f == 36:
+		var ball = osc.registry.get_object("dropball")
+		var cb = ball.event_bindings.get("collisionStay")
+		check(cb != null, "collisionStay binding registered")
+		check(cb != null and cb._last_emit_other.has("floor"), "collisionStay emitted for the resting contact")
+	if _f == 40:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false
