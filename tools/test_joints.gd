@@ -84,6 +84,10 @@ func _process(_d: float) -> bool:
 		var g = osc.joints._joints.get("j_generic6dof")
 		check(g != null and g.node is Generic6DOFJoint3D, "3D generic6dof created")
 		check(g != null and bool(g.node.get("linear_spring_y/enabled")), "generic6dof linY spring enabled via dof")
+	if _f == 28:
+		# smoke: the OSC-arg form of the list query must not hit the error branch
+		osc.joints.handle_global([], ["list"])
+		check(true, "joints list (OSC-arg form) dispatched without crash")
 	if _f == 30:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true

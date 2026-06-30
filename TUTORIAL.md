@@ -448,7 +448,7 @@ s("/gscore/joint/<id>", "del")
 | verb | meaning |
 |---|---|
 | `stiffness <0..1>` / `damping <0..1>` | spring feel (normalized, mapped per backend) |
-| `restLength <norm>` | spring equilibrium length (normalized, coord-mapped) |
+| `restLength <norm>` | spring equilibrium length (normalized, coord-mapped); no-op on 3D `slider` (use `generic6dof` for a true linear spring) |
 | `limit <lower> <upper>` | angular joints: **degrees**; linear (slider/groove): **norm length** |
 | `motor <speed> <torque>` | 2D `pin`: target velocity (torque is a no-op in 2D). 3D `hinge`: target velocity + torque→max impulse |
 | `axis <x> <y> <z>` | 3D working axis for `hinge`/`slider`/`coneTwist` (default A→B) |

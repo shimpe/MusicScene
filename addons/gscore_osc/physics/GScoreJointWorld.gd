@@ -22,9 +22,10 @@ func has(id: String) -> bool:
 
 # --- Routing -------------------------------------------------------------
 
-func handle_global(rest, _args: Array) -> void:
-	# /gscore/joints list
-	if rest.size() > 0 and str(rest[0]) == "list":
+func handle_global(rest, args: Array) -> void:
+	# /gscore/joints list  — accept both path-tail form and OSC-arg form
+	var query: String = str(rest[0]).to_lower() if rest.size() > 0 else (str(args[0]).to_lower() if args.size() > 0 else "")
+	if query == "list":
 		var values: Array = []
 		for id in list_ids():
 			values.append(id)
@@ -98,6 +99,9 @@ func _create(id: String, args: Array) -> void:
 		# stiff-spring preset: near-rigid rod at the initial separation
 		ctx.spatial.joint_set_param(node, jtype, "stiffness", [1.0], "all", ctx.mapper.physics_mode)
 		ctx.spatial.joint_set_param(node, jtype, "damping", [0.8], "all", ctx.mapper.physics_mode)
+	if jtype == "spring":
+		# low-damping preset: distinguishes spring from dampedSpring (which keeps engine default)
+		ctx.spatial.joint_set_param(node, jtype, "damping", [0.1], "all", ctx.mapper.physics_mode)
 	if ctx.verbose:
 		print("[GScoreOSC] joint '%s' (%s) %s <-> %s" % [id, jtype, a_id, b_id])
 

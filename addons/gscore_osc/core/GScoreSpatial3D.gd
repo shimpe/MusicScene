@@ -644,11 +644,7 @@ func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, acti
 				return true
 		"restlength":
 			if joint is SliderJoint3D:
-				var d := to_native_length(_pf(args, 0, 0.1), mode)
-				var s := joint as SliderJoint3D
-				s.set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_LOWER, -d)
-				s.set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_UPPER, d)
-				return true
+				return false  # SliderJoint3D has no spring; restLength is a no-op (use generic6dof for a true linear spring)
 		"limit":
 			if joint is HingeJoint3D:
 				var h := joint as HingeJoint3D

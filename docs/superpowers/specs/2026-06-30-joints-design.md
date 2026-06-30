@@ -114,7 +114,7 @@ consequence of an explicit `scene/<id> free`, which the client already knows abo
 |---|---|---|
 | `pin` | `PinJoint3D` | ball joint (3 rotational DOF free); params via bias/damping/impulse_clamp |
 | `hinge` | `HingeJoint3D` | 1 rotational DOF; `motor` (speed + torque→max impulse, **real**), `limit` (degrees), `axis` |
-| `slider` | `SliderJoint3D` | 1 linear DOF; `limit` (norm length), linear spring via `stiffness`/`damping`/`restLength`, `axis` |
+| `slider` | `SliderJoint3D` | 1 linear DOF with limits; `stiffness`/`damping` tune the limit compliance; for a true linear spring-to-equilibrium use `generic6dof`. `restLength` is a no-op. `axis` |
 | `coneTwist` | `ConeTwistJoint3D` | ball with swing/twist limits; `limit` → swing_span/twist_span (degrees), `stiffness`/`damping` → softness/relaxation |
 | `generic6dof` | `Generic6DOFJoint3D` | full per-axis control via the `dof` selector (see §6.6) |
 
@@ -136,7 +136,8 @@ Normalized; mapped per backend to native ranges via documented constants, e.g.
 
 - 2D `DampedSpringJoint2D`: `stiffness_native = lerp(MIN, MAX, v)` chosen so `0.8` is firm-but-springy
   and `1.0` is near-rigid; `damping_native` similar.
-- 3D `SliderJoint3D` / `Generic6DOFJoint3D` spring: `*_spring_stiffness` / `*_spring_damping`.
+- 3D `SliderJoint3D`: `stiffness` → `PARAM_LINEAR_LIMIT_SOFTNESS` (limit compliance analog); `damping` → `PARAM_LINEAR_LIMIT_DAMPING`. No spring params exist on this joint.
+- 3D `Generic6DOFJoint3D` spring: `*_spring_stiffness` / `*_spring_damping`.
 - 3D `ConeTwistJoint3D`: maps to `softness` / `relaxation`.
 
 Mapping constants live in one documented block in each backend. No-op (logged) on joint types

@@ -28,6 +28,8 @@ func _mode() -> String:
 func apply(verb: String, args: Array) -> bool:
 	match verb:
 		"dof":
+			if jtype != "generic6dof":
+				return false   # logged no-op via the world's verbose message
 			active_dof = str(args[0]).to_lower() if args.size() > 0 else "all"
 			return true
 		"breakforce":
