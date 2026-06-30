@@ -619,5 +619,132 @@ func joint_separation(_joint: Node, body_a: Node, body_b: Node) -> float:
 func to_native_length(norm: float, mode: String) -> float:
 	return length_to_world(norm, mode)
 
-func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, _active_dof: String, mode: String) -> bool:
+const J3D_STIFF_MAX := 200.0
+const J3D_DAMP_MAX := 30.0
+
+func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, active_dof: String, mode: String) -> bool:
+	if joint is Generic6DOFJoint3D:
+		return _g6dof_param(joint as Generic6DOFJoint3D, key, args, active_dof, mode)
+	match key:
+		"stiffness":
+			var v := clampf(_pf(args, 0, 0.0), 0.0, 1.0)
+			if joint is SliderJoint3D:
+				(joint as SliderJoint3D).set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_SOFTNESS, lerp(1.0, 0.1, v))
+				return true
+			if joint is ConeTwistJoint3D:
+				(joint as ConeTwistJoint3D).set_param(ConeTwistJoint3D.PARAM_SOFTNESS, lerp(1.0, 0.1, v))
+				return true
+		"damping":
+			var v := clampf(_pf(args, 0, 0.0), 0.0, 1.0)
+			if joint is SliderJoint3D:
+				(joint as SliderJoint3D).set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_DAMPING, v * J3D_DAMP_MAX)
+				return true
+			if joint is ConeTwistJoint3D:
+				(joint as ConeTwistJoint3D).set_param(ConeTwistJoint3D.PARAM_RELAXATION, lerp(1.0, 0.1, v))
+				return true
+		"restlength":
+			if joint is SliderJoint3D:
+				var d := to_native_length(_pf(args, 0, 0.1), mode)
+				var s := joint as SliderJoint3D
+				s.set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_LOWER, -d)
+				s.set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_UPPER, d)
+				return true
+		"limit":
+			if joint is HingeJoint3D:
+				var h := joint as HingeJoint3D
+				h.set_flag(HingeJoint3D.FLAG_USE_LIMIT, true)
+				h.set_param(HingeJoint3D.PARAM_LIMIT_LOWER, deg_to_rad(_pf(args, 0, 0.0)))
+				h.set_param(HingeJoint3D.PARAM_LIMIT_UPPER, deg_to_rad(_pf(args, 1, 0.0)))
+				return true
+			if joint is SliderJoint3D:
+				var s := joint as SliderJoint3D
+				s.set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_LOWER, to_native_length(_pf(args, 0, 0.0), mode))
+				s.set_param(SliderJoint3D.PARAM_LINEAR_LIMIT_UPPER, to_native_length(_pf(args, 1, 0.0), mode))
+				return true
+			if joint is ConeTwistJoint3D:
+				var c := joint as ConeTwistJoint3D
+				c.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN, deg_to_rad(_pf(args, 0, 0.0)))
+				c.set_param(ConeTwistJoint3D.PARAM_TWIST_SPAN, deg_to_rad(_pf(args, 1, 0.0)))
+				return true
+		"motor":
+			if joint is HingeJoint3D:
+				var h := joint as HingeJoint3D
+				h.set_flag(HingeJoint3D.FLAG_ENABLE_MOTOR, true)
+				h.set_param(HingeJoint3D.PARAM_MOTOR_TARGET_VELOCITY, _pf(args, 0, 0.0))
+				h.set_param(HingeJoint3D.PARAM_MOTOR_MAX_IMPULSE, clampf(_pf(args, 1, 0.0), 0.0, 1.0) * J3D_STIFF_MAX)
+				return true
+		"axis":
+			var dir := Vector3(_pf(args, 0, 1.0), _pf(args, 1, 0.0), _pf(args, 2, 0.0))
+			if dir.length() > 0.0001 and joint is Node3D:
+				var x_axis := dir.normalized()
+				var up := Vector3.UP if absf(x_axis.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
+				var z_axis := x_axis.cross(up).normalized()
+				var y_axis := z_axis.cross(x_axis).normalized()
+				var n := joint as Node3D
+				n.global_transform = Transform3D(Basis(x_axis, y_axis, z_axis), n.global_position)
+				return true
 	return false
+
+func _g6dof_param(j: Generic6DOFJoint3D, key: String, args: Array, dof: String, mode: String) -> bool:
+	var linear := dof in ["linx", "liny", "linz", "lin", "all", ""]
+	var angular := dof in ["angx", "angy", "angz", "ang", "all", ""]
+	if not linear and not angular:
+		return false
+	var axis_idx := {"linx": 0, "liny": 1, "linz": 2, "angx": 0, "angy": 1, "angz": 2}.get(dof, -1)
+	var axes := [0, 1, 2] if axis_idx < 0 else [axis_idx]
+	match key:
+		"limit":
+			for ax in axes:
+				if linear:
+					_g6_set_flag(j, "linear_limit", ax, true)
+					_g6_set(j, "linear_limit", ax, "lower_distance", to_native_length(_pf(args, 0, 0.0), mode))
+					_g6_set(j, "linear_limit", ax, "upper_distance", to_native_length(_pf(args, 1, 0.0), mode))
+				if angular:
+					_g6_set_flag(j, "angular_limit", ax, true)
+					_g6_set(j, "angular_limit", ax, "lower_angle", deg_to_rad(_pf(args, 0, 0.0)))
+					_g6_set(j, "angular_limit", ax, "upper_angle", deg_to_rad(_pf(args, 1, 0.0)))
+			return true
+		"stiffness":
+			var v := clampf(_pf(args, 0, 0.0), 0.0, 1.0) * J3D_STIFF_MAX
+			for ax in axes:
+				if linear:
+					_g6_set_flag(j, "linear_spring", ax, true)
+					_g6_set(j, "linear_spring", ax, "stiffness", v)
+				if angular:
+					_g6_set_flag(j, "angular_spring", ax, true)
+					_g6_set(j, "angular_spring", ax, "stiffness", v)
+			return true
+		"damping":
+			var v := clampf(_pf(args, 0, 0.0), 0.0, 1.0) * J3D_DAMP_MAX
+			for ax in axes:
+				if linear:
+					_g6_set_flag(j, "linear_spring", ax, true)
+					_g6_set(j, "linear_spring", ax, "damping", v)
+				if angular:
+					_g6_set_flag(j, "angular_spring", ax, true)
+					_g6_set(j, "angular_spring", ax, "damping", v)
+			return true
+		"restlength":
+			var d := to_native_length(_pf(args, 0, 0.0), mode)
+			for ax in axes:
+				if linear:
+					_g6_set_flag(j, "linear_spring", ax, true)
+					_g6_set(j, "linear_spring", ax, "equilibrium_point", d)
+			return true
+		"motor":
+			for ax in axes:
+				if angular:
+					_g6_set_flag(j, "angular_motor", ax, true)
+					_g6_set(j, "angular_motor", ax, "target_velocity", _pf(args, 0, 0.0))
+					_g6_set(j, "angular_motor", ax, "force_limit", clampf(_pf(args, 1, 0.0), 0.0, 1.0) * J3D_STIFF_MAX)
+			return true
+	return false
+
+func _g6_axis_name(ax: int) -> String:
+	return ["x", "y", "z"][ax]
+
+func _g6_set(j: Generic6DOFJoint3D, group: String, ax: int, prop: String, value) -> void:
+	j.set("%s_%s/%s" % [group, _g6_axis_name(ax), prop], value)
+
+func _g6_set_flag(j: Generic6DOFJoint3D, group: String, ax: int, value: bool) -> void:
+	j.set("%s_%s/enabled" % [group, _g6_axis_name(ax)], value)

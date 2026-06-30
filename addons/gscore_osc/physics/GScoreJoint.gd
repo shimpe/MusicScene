@@ -20,3 +20,34 @@ func _init(p_ctx, p_id: String) -> void:
 
 func is_valid() -> bool:
 	return is_instance_valid(node) and is_instance_valid(body_a) and is_instance_valid(body_b)
+
+func _mode() -> String:
+	return ctx.mapper.physics_mode
+
+## Apply a property verb. Returns false (logged no-op) when the joint type doesn't support it.
+func apply(verb: String, args: Array) -> bool:
+	match verb:
+		"dof":
+			active_dof = str(args[0]).to_lower() if args.size() > 0 else "all"
+			return true
+		"breakforce":
+			break_force = _f(args, 0, 0.0)
+			return true
+		"restlength":
+			var ok: bool = ctx.spatial.joint_set_param(node, jtype, "restlength", args, active_dof, _mode())
+			if ok and args.size() > 0:
+				rest_separation = ctx.spatial.to_native_length(_f(args, 0, 0.0), _mode())
+			return ok
+		"stiffness", "damping", "limit", "motor", "axis":
+			return ctx.spatial.joint_set_param(node, jtype, verb, args, active_dof, _mode())
+		_:
+			return false
+
+func _f(args: Array, i: int, def: float) -> float:
+	if i < args.size():
+		var a = args[i]
+		if a is float or a is int:
+			return float(a)
+		if a is String and a.is_valid_float():
+			return float(a)
+	return def

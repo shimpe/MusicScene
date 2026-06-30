@@ -42,7 +42,19 @@ func _process(_d: float) -> bool:
 		var jn = osc.joints._joints.get("string1")
 		check(jn != null and is_instance_valid(jn.node), "joint node is valid")
 		check(jn != null and jn.node.get_parent() == osc.objects_root, "joint parented under objects_root")
-	if _f == 14:
+	if _f == 13:
+		osc.dispatcher.dispatch("/gscore/joint/string1", ["restlength", 0.5])
+		osc.dispatcher.dispatch("/gscore/joint/string1", ["stiffness", 0.7])
+		osc.dispatcher.dispatch("/gscore/joint/string1", ["damping", 0.2])
+	if _f == 16:
+		var jn = osc.joints._joints.get("string1")
+		check(jn != null and jn.rest_separation > 0.0, "restLength updated rest_separation")
+		if osc.spatial.is_3d():
+			check(jn.node is SliderJoint3D, "3D spring type is SliderJoint3D")
+		else:
+			check(jn.node is DampedSpringJoint2D, "2D spring type is DampedSpringJoint2D")
+			check((jn.node as DampedSpringJoint2D).stiffness > 50.0, "2D stiffness mapped (0.7 -> >50)")
+	if _f == 20:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

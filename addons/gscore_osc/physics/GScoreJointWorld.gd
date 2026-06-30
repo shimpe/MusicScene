@@ -46,8 +46,12 @@ func handle(id: String, args: Array) -> void:
 	match verb:
 		"del", "delete":
 			_remove(id)
+		"info":
+			ctx.reply("joint/info", [id, j.jtype, j.obj_a.osc_id, j.obj_b.osc_id, j.break_force, j.active_dof])
 		_:
-			ctx.error("bad_arguments", "/gscore/joint/" + id, "Unknown joint cmd: " + verb)
+			if not j.apply(verb, rest_args):
+				if ctx.verbose:
+					print("[GScoreOSC] joint '%s' (%s): '%s' is a no-op for this type" % [id, j.jtype, verb])
 
 func _create(id: String, args: Array) -> void:
 	if id.is_empty():

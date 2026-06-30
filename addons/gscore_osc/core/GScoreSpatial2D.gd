@@ -508,4 +508,39 @@ func to_native_length(norm: float, mode: String) -> float:
 	return ctx.mapper.length_x_to_pixels(norm, mode)
 
 func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, _active_dof: String, mode: String) -> bool:
+	match key:
+		"stiffness":
+			if joint is DampedSpringJoint2D:
+				(joint as DampedSpringJoint2D).stiffness = clampf(_pf(args, 0, 0.0), 0.0, 1.0) * JOINT_STIFF_MAX
+				return true
+		"damping":
+			if joint is DampedSpringJoint2D:
+				(joint as DampedSpringJoint2D).damping = clampf(_pf(args, 0, 0.0), 0.0, 1.0) * JOINT_DAMP_MAX
+				return true
+		"restlength":
+			if joint is DampedSpringJoint2D:
+				var d := maxf(to_native_length(_pf(args, 0, 0.1), mode), 1.0)
+				var ds := joint as DampedSpringJoint2D
+				ds.rest_length = d
+				ds.length = maxf(ds.length, d)
+				return true
+		"limit":
+			if joint is PinJoint2D:
+				var p := joint as PinJoint2D
+				p.angular_limit_enabled = true
+				p.angular_limit_lower = deg_to_rad(_pf(args, 0, 0.0))
+				p.angular_limit_upper = deg_to_rad(_pf(args, 1, 0.0))
+				return true
+			if joint is GrooveJoint2D:
+				# groove is single-axis: first value is the slide length (a second value, if any, is ignored)
+				(joint as GrooveJoint2D).length = maxf(to_native_length(_pf(args, 0, 0.1), mode), 1.0)
+				return true
+		"motor":
+			if joint is PinJoint2D:
+				var p := joint as PinJoint2D
+				p.motor_enabled = true
+				p.motor_target_velocity = _pf(args, 0, 0.0)   # torque (arg 1) has no 2D equivalent
+				return true
+		"axis":
+			return false   # 2D joints orient via attach
 	return false
