@@ -49,8 +49,62 @@ func handle(id: String, args: Array) -> void:
 		_:
 			ctx.error("bad_arguments", "/gscore/joint/" + id, "Unknown joint cmd: " + verb)
 
-func _create(_id: String, _args: Array) -> void:
-	pass  # implemented in Task 2
+func _create(id: String, args: Array) -> void:
+	if id.is_empty():
+		ctx.error("bad_arguments", "/gscore/joint", "Missing joint id"); return
+	var jtype := str(args[0]).to_lower() if args.size() > 0 else ""
+	var a_id := str(args[1]) if args.size() > 1 else ""
+	var b_id := str(args[2]) if args.size() > 2 else ""
+	var base := "/gscore/joint/" + id
+
+	if not ctx.spatial.joint_types().has(jtype):
+		ctx.error("bad_arguments", base, "joint type '%s' is not available in %s space" % [jtype, ctx.space])
+		return
+	var obj_a = ctx.registry.get_object(a_id)
+	var obj_b = ctx.registry.get_object(b_id)
+	if obj_a == null:
+		ctx.error("unknown_object", base, "Unknown joint endpoint: " + a_id); return
+	if obj_b == null:
+		ctx.error("unknown_object", base, "Unknown joint endpoint: " + b_id); return
+	var body_a = _body_of(obj_a)
+	var body_b = _body_of(obj_b)
+	if body_a == null:
+		ctx.error("bad_arguments", base, "endpoint '%s' has no physics body; enable physics first" % a_id); return
+	if body_b == null:
+		ctx.error("bad_arguments", base, "endpoint '%s' has no physics body; enable physics first" % b_id); return
+
+	if _joints.has(id):
+		_remove(id)  # re-create frees the old joint first
+
+	var node: Node = ctx.spatial.make_joint(jtype)
+	if node == null:
+		ctx.error("bad_arguments", base, "could not build joint of type: " + jtype); return
+	node.name = id + "_joint"
+	ctx.objects_root.add_child(node)              # in-tree (correctly-typed parent) before NodePaths are set
+	ctx.spatial.joint_attach(node, body_a, body_b)
+
+	var j = GScoreJoint.new(ctx, id)
+	j.jtype = jtype
+	j.node = node
+	j.obj_a = obj_a; j.obj_b = obj_b
+	j.body_a = body_a; j.body_b = body_b
+	j.rest_separation = ctx.spatial.joint_separation(node, body_a, body_b)
+	_joints[id] = j
+	if jtype == "distance":
+		# stiff-spring preset: near-rigid rod at the initial separation
+		ctx.spatial.joint_set_param(node, jtype, "stiffness", [1.0], "all", ctx.mapper.physics_mode)
+		ctx.spatial.joint_set_param(node, jtype, "damping", [0.8], "all", ctx.mapper.physics_mode)
+	if ctx.verbose:
+		print("[GScoreOSC] joint '%s' (%s) %s <-> %s" % [id, jtype, a_id, b_id])
+
+func _body_of(obj):
+	if obj == null:
+		return null
+	if obj.physics_adapter != null and obj.physics_adapter.is_valid():
+		return obj.physics_adapter.body
+	if ctx.spatial.is_physics_body(obj.node):
+		return obj.node
+	return null
 
 func _remove(id: String) -> void:
 	var j = _joints.get(id)

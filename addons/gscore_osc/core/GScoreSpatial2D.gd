@@ -462,3 +462,50 @@ func _load_texture(path: String) -> Texture2D:
 		if img.load(path) == OK:
 			return ImageTexture.create_from_image(img)
 	return null
+
+
+# --- Joints --------------------------------------------------------------
+
+const JOINT_STIFF_MAX := 150.0   # DampedSpringJoint2D.stiffness at value 1.0 (default ~20)
+const JOINT_DAMP_MAX := 30.0     # DampedSpringJoint2D.damping at value 1.0 (default ~1)
+
+func joint_types() -> PackedStringArray:
+	return PackedStringArray(["pin", "spring", "dampedspring", "groove", "distance"])
+
+func make_joint(jtype: String) -> Node:
+	match jtype:
+		"pin": return PinJoint2D.new()
+		"spring", "dampedspring", "distance": return DampedSpringJoint2D.new()
+		"groove": return GrooveJoint2D.new()
+		_: return null
+
+func joint_attach(joint: Node, body_a: Node, body_b: Node) -> void:
+	var a := body_a as Node2D
+	var b := body_b as Node2D
+	if a == null or b == null:
+		return
+	var pa: Vector2 = a.global_position
+	var dir: Vector2 = b.global_position - pa
+	(joint as Node2D).global_position = pa
+	# Threshold is in native units (2D pixels); do not equalise with the 3D backend's world-unit guard.
+	if dir.length() > 0.001:
+		(joint as Node2D).rotation = dir.angle()  # local +X points A->B (groove slides along it; ignored by spring/pin)
+	joint.set("node_a", joint.get_path_to(a))
+	joint.set("node_b", joint.get_path_to(b))
+	var d := maxf(dir.length(), 1.0)
+	if joint is DampedSpringJoint2D:
+		(joint as DampedSpringJoint2D).length = d
+		(joint as DampedSpringJoint2D).rest_length = d   # `distance` preset applied later by the world
+	elif joint is GrooveJoint2D:
+		(joint as GrooveJoint2D).length = d
+
+func joint_separation(_joint: Node, body_a: Node, body_b: Node) -> float:
+	if body_a is Node2D and body_b is Node2D:
+		return ((body_a as Node2D).global_position - (body_b as Node2D).global_position).length()
+	return 0.0
+
+func to_native_length(norm: float, mode: String) -> float:
+	return ctx.mapper.length_x_to_pixels(norm, mode)
+
+func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, _active_dof: String, mode: String) -> bool:
+	return false

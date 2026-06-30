@@ -574,3 +574,50 @@ func _load_texture(path: String) -> Texture2D:
 		if img.load(path) == OK:
 			return ImageTexture.create_from_image(img)
 	return null
+
+
+# --- Joints --------------------------------------------------------------
+
+func joint_types() -> PackedStringArray:
+	return PackedStringArray(["pin", "hinge", "slider", "conetwist", "generic6dof"])
+
+func make_joint(jtype: String) -> Node:
+	match jtype:
+		"pin": return PinJoint3D.new()
+		"hinge": return HingeJoint3D.new()
+		"slider": return SliderJoint3D.new()
+		"conetwist": return ConeTwistJoint3D.new()
+		"generic6dof": return Generic6DOFJoint3D.new()
+		_: return null
+
+func joint_attach(joint: Node, body_a: Node, body_b: Node) -> void:
+	var a := body_a as Node3D
+	var b := body_b as Node3D
+	if a == null or b == null:
+		return
+	var pa: Vector3 = a.global_position
+	var dir: Vector3 = b.global_position - pa
+	var j := joint as Node3D
+	# Threshold is in native units (3D world units); do not equalise with the 2D backend's pixel guard.
+	if dir.length() > 0.0001:
+		# Build a basis whose +X points A->B (slider/hinge default working axis).
+		var x_axis := dir.normalized()
+		var up := Vector3.UP if absf(x_axis.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
+		var z_axis := x_axis.cross(up).normalized()
+		var y_axis := z_axis.cross(x_axis).normalized()
+		j.global_transform = Transform3D(Basis(x_axis, y_axis, z_axis), pa)
+	else:
+		j.global_position = pa
+	joint.set("node_a", joint.get_path_to(a))
+	joint.set("node_b", joint.get_path_to(b))
+
+func joint_separation(_joint: Node, body_a: Node, body_b: Node) -> float:
+	if body_a is Node3D and body_b is Node3D:
+		return ((body_a as Node3D).global_position - (body_b as Node3D).global_position).length()
+	return 0.0
+
+func to_native_length(norm: float, mode: String) -> float:
+	return length_to_world(norm, mode)
+
+func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, _active_dof: String, mode: String) -> bool:
+	return false
