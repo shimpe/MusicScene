@@ -65,11 +65,15 @@ static func _build_data(ctx, obj, _event: String, other: Node) -> Dictionary:
 
 	var other_id := ""
 	var other_w = pos_w
+	var other_norm := Vector3.ZERO
+	var other_vel_norm := Vector3.ZERO
 	if other != null:
 		other_id = ctx.registry.id_for_node(other)
 		if other_id == "":
-			other_id = String(other.name)
+			other_id = str(other.name)
 		other_w = sp.body_global_position(other)
+		other_norm = sp.point_to_norm(other_w, pmode)
+		other_vel_norm = sp.vector_to_norm(sp.body_get_velocity(other), pmode)
 
 	var normal = pos_w - other_w
 	var n = normal.normalized() if normal.length() > 0.0 else normal
@@ -85,6 +89,9 @@ static func _build_data(ctx, obj, _event: String, other: Node) -> Dictionary:
 		"intensity": speed,
 		"impulse": speed * mass,
 		"normalx": n.x, "normaly": -n.y, "normalz": nz,
+		"otherx": other_norm.x, "othery": other_norm.y, "otherz": other_norm.z,
+		"othervx": other_vel_norm.x, "othervy": other_vel_norm.y, "othervz": other_vel_norm.z,
+		"otherspeed": other_vel_norm.length(),
 		"time": float(Time.get_ticks_msec()) / 1000.0,
 		"beat": ctx.transport.beat if ctx.transport != null else 0.0,
 		"mass": mass,
