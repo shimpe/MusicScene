@@ -3,6 +3,21 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.1] — 2026-06-30
+
+### Fixed
+- **3D notation cursor** stayed on top of the score quad for the whole sweep. The page, regions and
+  cursor are coplanar transparent quads; Godot sorts transparents by origin distance, so the moving
+  cursor sorted behind the page off-centre and only popped in front near the middle. Explicit
+  `render_priority` (page 0 < regions 1 < cursor 2 < annotations 3) gives stable layering.
+- **Registry**: re-creating an existing id now frees the old gscore-owned node instead of orphaning
+  it in the tree (bound/auto-bound nodes are still only unbound, never freed).
+
+### Docs
+- `TUTORIAL.md`: documented the `capabilities` reply and the reply/event format; added
+  `transport stop/pause/seek/state` after `play`; tightened the `m1` region rect in the 3D
+  notation-on-a-quad example (5.5).
+
 ## [0.2.0] — 2026-06-30
 
 A large feature pass since the initial implementation.
