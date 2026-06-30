@@ -51,7 +51,23 @@ func _process(_d: float) -> bool:
 		check(data.has("otherx") and data.has("otherspeed"), "data has other-centric fields")
 		check(str(data["other"]) == "ball", "data.other resolves to 'ball'")
 		check(absf(float(data["otherx"]) - 0.1) < 0.05, "data.otherx ~= ball normalized x (0.1)")
-	if _f == 8:
+	if _f == 9:
+		var b = EB.new()
+		b.max_rate = 20.0   # gap = 0.05s
+		check(b.should_emit_other(1.0, 100.0, "n1", ""), "n1 first emit allowed")
+		b.mark_other("n1", 100.0)
+		check(not b.should_emit_other(1.0, 100.01, "n1", ""), "n1 throttled within gap")
+		check(b.should_emit_other(1.0, 100.01, "n2", ""), "n2 has its own timer")
+		check(b.should_emit_other(1.0, 100.10, "n1", ""), "n1 allowed after gap")
+		b.mark_other("n1", 100.0); b.mark_other("n2", 100.0)
+		b.prune_others({"n1": true})
+		check(b._last_emit_other.has("n1") and not b._last_emit_other.has("n2"), "prune drops absent bodies")
+		var bc = EB.new()
+		bc.cooldown = 0.2
+		bc.mark_other("n1", 100.0)
+		check(not bc.should_emit_other(1.0, 100.1, "n1", ""), "n1 throttled by cooldown")
+		check(bc.should_emit_other(1.0, 100.25, "n1", ""), "n1 passes after cooldown")
+	if _f == 11:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

@@ -15,6 +15,7 @@ var mode: String = "immediate"
 var payload: Array = []            # field names; empty -> DEFAULT_FIELDS
 
 var _last_emit: float = -1.0
+var _last_emit_other: Dictionary = {}     # other_id -> last emit time (seconds)
 var state: bool = false            # edge-detection for continuous events
 
 
@@ -28,21 +29,52 @@ func set_option(key: String, value) -> void:
 		"mode": mode = str(value)
 
 
-func should_emit(intensity: float, now: float, other_id: String, layer: String) -> bool:
+func _passes_filters(intensity: float, other_id: String, layer: String) -> bool:
 	if intensity < min_intensity:
 		return false
 	if other_filter != "" and not _match(other_id):
 		return false
 	if layer_filter != "" and layer != layer_filter:
 		return false
-	var gap := 0.0
+	return true
+
+
+func _gap() -> float:
+	var g := 0.0
 	if cooldown > 0.0:
-		gap = cooldown
+		g = cooldown
 	if max_rate > 0.0:
-		gap = maxf(gap, 1.0 / max_rate)
+		g = maxf(g, 1.0 / max_rate)
+	return g
+
+
+func should_emit(intensity: float, now: float, other_id: String, layer: String) -> bool:
+	if not _passes_filters(intensity, other_id, layer):
+		return false
+	var gap := _gap()
 	if gap > 0.0 and _last_emit >= 0.0 and (now - _last_emit) < gap:
 		return false
 	return true
+
+
+func should_emit_other(intensity: float, now: float, other_id: String, layer: String) -> bool:
+	if not _passes_filters(intensity, other_id, layer):
+		return false
+	var gap := _gap()
+	var last: float = _last_emit_other.get(other_id, -1.0)
+	if gap > 0.0 and last >= 0.0 and (now - last) < gap:
+		return false
+	return true
+
+
+func mark_other(other_id: String, now: float) -> void:
+	_last_emit_other[other_id] = now
+
+
+func prune_others(active: Dictionary) -> void:
+	for k in _last_emit_other.keys():
+		if not active.has(k):
+			_last_emit_other.erase(k)
 
 
 func mark(now: float) -> void:
