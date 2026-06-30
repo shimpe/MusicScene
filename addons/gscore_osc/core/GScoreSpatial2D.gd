@@ -464,6 +464,19 @@ func _load_texture(path: String) -> Texture2D:
 	return null
 
 
+func is_area(node: Node) -> bool:
+	return node is Area2D
+
+
+func overlapping_others(node: Node) -> Array:
+	if node is Area2D:
+		var out: Array = []
+		out.append_array((node as Area2D).get_overlapping_bodies())
+		out.append_array((node as Area2D).get_overlapping_areas())
+		return out
+	return []
+
+
 # --- Joints --------------------------------------------------------------
 
 const JOINT_STIFF_MAX := 150.0   # DampedSpringJoint2D.stiffness at value 1.0 (default ~20)

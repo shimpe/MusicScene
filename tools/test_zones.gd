@@ -67,7 +67,25 @@ func _process(_d: float) -> bool:
 		bc.mark_other("n1", 100.0)
 		check(not bc.should_emit_other(1.0, 100.1, "n1", ""), "n1 throttled by cooldown")
 		check(bc.should_emit_other(1.0, 100.25, "n1", ""), "n1 passes after cooldown")
-	if _f == 11:
+	if _f == 13:
+		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/gscore/scene/zoneA/on", ["areaStay", "/zone/presence", "maxRate", 20])
+	if _f == 14:
+		var zone = osc.registry.get_object("zoneA")
+		check(osc.spatial.is_area(zone.node), "zone node is an area")
+		check(osc.spatial.overlapping_others(zone.node).size() >= 1, "zone overlaps the ball")
+	if _f == 20:
+		var zone = osc.registry.get_object("zoneA")
+		var b = zone.event_bindings.get("areaStay")
+		check(b != null, "areaStay binding registered")
+		check(b != null and b._last_emit_other.has("ball"), "areaStay emitted for contained body (per-body timer set)")
+	if _f == 22:
+		osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.9, 0.0, 0.0])  # move ball out of the zone
+	if _f == 28:
+		var zone = osc.registry.get_object("zoneA")
+		var b = zone.event_bindings.get("areaStay")
+		check(b != null and not b._last_emit_other.has("ball"), "left body's per-body timer is pruned")
+	if _f == 30:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

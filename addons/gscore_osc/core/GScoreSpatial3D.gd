@@ -576,6 +576,19 @@ func _load_texture(path: String) -> Texture2D:
 	return null
 
 
+func is_area(node: Node) -> bool:
+	return node is Area3D
+
+
+func overlapping_others(node: Node) -> Array:
+	if node is Area3D:
+		var out: Array = []
+		out.append_array((node as Area3D).get_overlapping_bodies())
+		out.append_array((node as Area3D).get_overlapping_areas())
+		return out
+	return []
+
+
 # --- Joints --------------------------------------------------------------
 
 func joint_types() -> PackedStringArray:

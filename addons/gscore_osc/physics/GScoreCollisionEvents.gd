@@ -50,6 +50,18 @@ static func check_continuous(ctx, obj) -> void:
 			ctx.send_event(b.target, b.build_args(data))
 		b.state = cond
 
+	var sb = obj.event_bindings.get("areaStay")
+	if sb != null and ctx.spatial.is_area(node):
+		var active := {}
+		for other in ctx.spatial.overlapping_others(node):
+			var odata := _build_data(ctx, obj, "areaStay", other)
+			var oid: String = odata["other"]
+			active[oid] = true
+			if sb.should_emit_other(odata["intensity"], odata["time"], oid, odata["layer"]):
+				sb.mark_other(oid, odata["time"])
+				ctx.send_event(sb.target, sb.build_args(odata))
+		sb.prune_others(active)
+
 
 static func _build_data(ctx, obj, _event: String, other: Node) -> Dictionary:
 	var node = obj.node
