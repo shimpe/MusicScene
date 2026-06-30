@@ -41,6 +41,14 @@ func dispatch(address: String, args: Array) -> void:
 				ctx.physics_world.handle_layer(args)
 			else:
 				ctx.physics_world.handle_global(args)
+		"joint", "joints":
+			# head=="joint"  => /gscore/joint/<id> <verb> ...
+			# head=="joints" => /gscore/joints <query>
+			if head == "joints":
+				ctx.joints.handle_global(parts.slice(2), args)
+			else:
+				var jid := str(parts[2]) if parts.size() > 2 else ""
+				ctx.joints.handle(jid, args)
 		"bind":
 			ctx.registry.bind(_s(args, 0), _s(args, 1))
 		"bindrel", "bindRel":

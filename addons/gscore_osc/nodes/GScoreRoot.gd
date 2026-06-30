@@ -14,6 +14,7 @@ const GScoreCoordinateMapper := preload("res://addons/gscore_osc/core/GScoreCoor
 const GScoreSpatial2D := preload("res://addons/gscore_osc/core/GScoreSpatial2D.gd")
 const GScoreSpatial3D := preload("res://addons/gscore_osc/core/GScoreSpatial3D.gd")
 const GScorePhysicsWorld := preload("res://addons/gscore_osc/physics/GScorePhysicsWorld.gd")
+const GScoreJointWorld := preload("res://addons/gscore_osc/physics/GScoreJointWorld.gd")
 const GScoreEvents := preload("res://addons/gscore_osc/events/GScoreEvents.gd")
 const GScoreNotation := preload("res://addons/gscore_osc/notation/GScoreNotation.gd")
 const GScoreRenderQueue := preload("res://addons/gscore_osc/notation/GScoreRenderQueue.gd")
@@ -29,6 +30,7 @@ var permissions = null
 var mapper = null
 var spatial = null
 var physics_world = null
+var joints = null
 var events = null
 var notation = null
 var render_queue = null
@@ -63,6 +65,7 @@ func _ready() -> void:
 
 	registry = GScoreRegistry.new(self)
 	physics_world = GScorePhysicsWorld.new(self)
+	joints = GScoreJointWorld.new(self)
 	transport = GScoreTransport.new(self)
 	timemapper = GScoreTimeMapper.new(self)
 	notation = GScoreNotation.new(self)
@@ -123,6 +126,8 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if physics_world != null:
 		physics_world.physics_step(delta)
+	if joints != null:
+		joints.physics_step(delta)
 
 
 func _on_message(address: String, args: Array, _ip: String, _port: int) -> void:
