@@ -23,7 +23,7 @@ static func emit(ctx, obj, event: String, other: Node) -> void:
 	if not binding.should_emit(data["intensity"], data["time"], data["other"], data["layer"]):
 		return
 	binding.mark(data["time"])
-	ctx.send_event(binding.target, binding.build_args(data))
+	ctx.emitter.emit(binding.target, binding.build_args(data), binding.mode, binding.quantize_grid)
 
 
 static func check_continuous(ctx, obj) -> void:
@@ -47,7 +47,7 @@ static func check_continuous(ctx, obj) -> void:
 			"yBelow": cond = y < b.min_intensity
 		if cond and not b.state and b.should_emit(9999.0, data["time"], data["other"], data["layer"]):
 			b.mark(data["time"])
-			ctx.send_event(b.target, b.build_args(data))
+			ctx.emitter.emit(b.target, b.build_args(data), b.mode, b.quantize_grid)
 		b.state = cond
 
 	var sb = obj.event_bindings.get("areaStay")
@@ -61,7 +61,7 @@ static func check_continuous(ctx, obj) -> void:
 			active[oid] = true
 			if sb.should_emit_other(odata["intensity"], odata["time"], oid, odata["layer"]):
 				sb.mark_other(oid, odata["time"])
-				ctx.send_event(sb.target, sb.build_args(odata))
+				ctx.emitter.emit(sb.target, sb.build_args(odata), sb.mode, sb.quantize_grid)
 		sb.prune_others(active)
 
 

@@ -12,6 +12,7 @@ var max_rate: float = 0.0          # Hz; 0 = unlimited
 var layer_filter: String = ""
 var other_filter: String = ""
 var mode: String = "immediate"
+var quantize_grid: float = 1.0     # beats; grid for mode "quantized"
 var payload: Array = []            # field names; empty -> DEFAULT_FIELDS
 
 var _last_emit: float = -1.0
@@ -27,6 +28,7 @@ func set_option(key: String, value) -> void:
 		"layer": layer_filter = str(value)
 		"other": other_filter = str(value)
 		"mode": mode = str(value)
+		"quantizegrid": quantize_grid = maxf(float(value), 0.0)
 
 
 func _passes_filters(intensity: float, other_id: String, layer: String) -> bool:
