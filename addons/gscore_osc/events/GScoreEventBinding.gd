@@ -34,7 +34,7 @@ func _passes_filters(intensity: float, other_id: String, layer: String) -> bool:
 		return false
 	if other_filter != "" and not _match(other_id):
 		return false
-	if layer_filter != "" and layer != layer_filter:
+	if layer_filter != "" and not (layer_filter in str(layer).split(",")):
 		return false
 	return true
 

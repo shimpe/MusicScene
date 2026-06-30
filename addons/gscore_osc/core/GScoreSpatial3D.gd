@@ -589,6 +589,16 @@ func overlapping_others(node: Node) -> Array:
 	return []
 
 
+func layer_names_for(node: Node) -> PackedStringArray:
+	var out := PackedStringArray()
+	if node is CollisionObject3D:
+		var bits: int = (node as CollisionObject3D).collision_layer
+		for i in range(1, 33):
+			if bits & (1 << (i - 1)):
+				out.append(str(ctx.physics_world.layer_names.get(i, i)))
+	return out
+
+
 # --- Joints --------------------------------------------------------------
 
 func joint_types() -> PackedStringArray:

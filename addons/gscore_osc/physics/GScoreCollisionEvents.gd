@@ -111,5 +111,5 @@ static func _build_data(ctx, obj, _event: String, other: Node) -> Dictionary:
 		"mass": mass,
 		"angle": sp.body_angle(node),
 		"angularvelocity": sp.body_angular_velocity(node),
-		"layer": "",
+		"layer": ",".join(sp.layer_names_for(other)) if other != null else "",
 	}
