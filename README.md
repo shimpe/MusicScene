@@ -31,6 +31,7 @@ project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-a
 - [Ports](#ports--networking) · [Coordinates](#coordinate-system) · [Creating objects](#creating-objects)
 - [Notation](#music-notation) (backends, cursor, regions, annotations) · [Binding nodes](#binding-existing-godot-nodes)
 - [Instantiating scenes](#instantiating-packedscenes) · [Physics & collisions](#physics--collision-events)
+- [Physics joints](#physics-joints) · [Sensors & trigger zones](#sensors--trigger-zones)
 - [Methods/props](#controlled-method--property-access) · [Signals](#signal-to-osc-forwarding)
 - [Transport](#transport--time-mapping) · [Script runner](#script-runner) · [Permissions](#permissions--safety)
 - [Errors](#errors) · [API reference](#api-reference) · [Limitations](#known-limitations)
@@ -505,8 +506,17 @@ Events:
 ```
 
 Events: `collisionEnter collisionExit areaEnter areaExit sleep wake` and continuous
-`velocityAbove velocityBelow yAbove yBelow` (threshold = the binding's `minIntensity`). Options:
-`minIntensity <f>  cooldown <s>  maxRate <hz>  layer <name>  other <id_or_pattern>  mode <…>`.
+`velocityAbove velocityBelow yAbove yBelow` (threshold = the binding's `minIntensity`);
+`collisionStay` (each body currently touching — per-body throttled by `maxRate`);
+`areaStay` (each body inside an area zone, per-body throttled — see
+[Sensors & trigger zones](#sensors--trigger-zones)).
+
+Options: `minIntensity <f>  cooldown <s>  maxRate <hz>  other <id_or_pattern>
+layer <name|number>  mode immediate|queued|bundle|quantized  quantizeGrid <beats>`.
+`layer` fires only when the other body is on that collision layer (name registered via
+`/gscore/physics/layer`, or the bit number). `mode`: `immediate` (default); `queued` flushes at
+end of frame; `bundle` packs the frame's events as one OSC bundle; `quantized` holds until the
+next transport beat (`quantizeGrid <beats>`, default 1; transport must be playing).
 
 Payload fields: `self other x y worldX worldY vx vy speed relativeSpeed intensity impulse
 normalX normalY time beat mass angle angularVelocity`. Default:
@@ -534,6 +544,97 @@ Example:
 
 Any visual object or notation region is clickable (centralized hit-testing — no per-object
 Area2D needed). Canonical: `/gscore/event/input <event> <self> <x> <y>`.
+
+---
+
+## Physics joints
+
+Joints constrain two physics bodies and live in their own namespace `/gscore/joint/<id>` with
+their own id space (separate from scene objects). Both endpoints must have physics enabled; at
+least one must be non-static.
+
+```
+/gscore/joint/<id> new <type> <a> <b>
+/gscore/joint/<id> <property> [args...]
+/gscore/joint/<id> del | info
+/gscore/joints list
+```
+
+**Types — native per space:**
+
+| Space | Types |
+|-------|-------|
+| 2D | `pin`  `spring`/`dampedSpring`  `groove`  `distance` |
+| 3D | `pin`  `hinge`  `slider`  `coneTwist`  `generic6dof` |
+
+**Properties:**
+
+| Property | Meaning |
+|----------|---------|
+| `stiffness <0..1>` / `damping <0..1>` | Spring feel (normalized, mapped per backend) |
+| `restLength <norm>` | Spring equilibrium length (normalized, coord-mapped) |
+| `limit <lower> <upper>` | Angular joints: degrees; linear (slider/groove): normalized length |
+| `motor <speed> <torque>` | 2D `pin`: target velocity (torque is a no-op). 3D `hinge`: velocity + max impulse |
+| `axis <x> <y> <z>` | 3D working axis for `hinge`/`slider`/`coneTwist` (default A→B) |
+| `dof <linX\|linY\|linZ\|angX\|angY\|angZ\|lin\|ang\|all>` | `generic6dof` DOF selector |
+| `breakForce <0..1>` | Snaps joint when overstretched; emits `/gscore/event/jointBreak <id> <a> <b>` |
+
+> `breakForce` is an overstretch proxy — Godot exposes no joint reaction force, so the joint snaps
+> when endpoints are pulled too far apart (most effective on spring/distance/slider; a rigid `pin`
+> effectively never snaps). The 2D `pin` `motor` torque argument is a no-op (not exposed by Godot's
+> 2D pin motor).
+
+**2D example — note hanging on a spring:**
+
+```
+/gscore/scene/anchor/physics enable static
+/gscore/scene/note/physics enable rigid
+/gscore/joint/string1 new dampedSpring anchor note
+/gscore/joint/string1 stiffness 0.8
+/gscore/joint/string1 damping 0.1
+/gscore/joint/string1 restLength 0.4
+```
+
+**3D example — swinging hinge:**
+
+```
+/gscore/scene/post/physics enable static
+/gscore/scene/arm/physics enable rigid
+/gscore/joint/hinge1 new hinge post arm
+/gscore/joint/hinge1 axis 0 0 1
+/gscore/joint/hinge1 limit -60 60
+/gscore/joint/hinge1 motor 2.0 0.5
+```
+
+---
+
+## Sensors & trigger zones
+
+An **area** object (`physics enable area` + a collider) acts as a sensor: it reports when other
+bodies enter, leave, or remain inside it — useful for form sections, presence triggers, and spatial
+gates.
+
+```
+/gscore/scene/zoneA/physics enable area
+/gscore/scene/zoneA/collider rect 0.4 0.3
+/gscore/scene/zoneA/on areaEnter /form/section
+/gscore/scene/zoneA/on areaExit  /form/leave
+/gscore/scene/zoneA/on areaStay  /zone/presence maxRate 20
+```
+
+`areaEnter`/`areaExit` fire as bodies cross the boundary. `areaStay` fires every physics frame for
+each body currently inside, throttled **per body** by `maxRate`.
+
+Use `other*` payload fields to stream each contained body's position and velocity
+(`otherx othery otherz othervx othervy othervz otherspeed`); `x`/`y`/`speed` describe the zone
+itself. Filters (`other <id|prefix*>`, `layer <name|number>`) restrict which bodies fire events.
+
+**Literal payload tags** — prefix a payload token with `=` (or `'`) to embed a constant string:
+
+```
+/gscore/scene/zoneA/payload areaEnter self other =A
+# -> /form/section zoneA note17 A
+```
 
 ---
 
@@ -640,7 +741,7 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 ```
 # system
 /gscore ping                         -> /gscore/pong
-/gscore/version | /gscore version    -> /gscore/reply version "0.1.0"
+/gscore/version | /gscore version    -> /gscore/reply version "0.5.0"
 /gscore/info    | /gscore info       -> /gscore/reply info ...
 /gscore/app coord <mode>
 /gscore/app root "<path>"
@@ -720,7 +821,8 @@ py tools/osc_test.py
   there is no in-engine engraving.
 - The lightweight `glyphs` backend is a stub (returns a clear error).
 - `velocityAbove/Below`, `yAbove/Below`, `bindTransform` and physics `debug` are functional but
-  minimal; `collisionStay`/`areaStay`/`positionEnter`/`positionExit` are not implemented in v1.
+  minimal. `positionEnter`/`positionExit` were intentionally not implemented — use area zones
+  (`areaEnter`/`areaExit`/`areaStay`) or `yAbove`/`yBelow` instead.
 - OSC over UDP only (no TCP); no variables in the script runner.
 - The 2D/3D mode is global per run (`gscore_osc/space`), chosen at boot — not per-object, and not
   switchable at runtime.
