@@ -47,6 +47,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_events.gd 2>&1 | tee events.log
           grep -q "fail=0" events.log && ! grep -q "FAIL:" events.log
 
+      - name: Self-tests — scene clear (id-spaces)
+        run: |
+          ./godot --headless --path . --script res://tools/test_scene_clear.gd 2>&1 | tee sceneclear.log
+          grep -q "fail=0" sceneclear.log && ! grep -q "FAIL:" sceneclear.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log

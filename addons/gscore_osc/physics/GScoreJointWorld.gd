@@ -120,6 +120,15 @@ func _remove(id: String) -> void:
 		j.node.queue_free()
 	_joints.erase(id)
 
+## Remove every joint and free its node. Called on scene clear so no stale joint survives a
+## rebuild (a lingering joint's name-based node_a/node_b could re-bind to new bodies or dangle).
+func clear() -> void:
+	for id in _joints.keys():
+		var j = _joints[id]
+		if j != null and is_instance_valid(j.node):
+			j.node.queue_free()
+	_joints.clear()
+
 # --- Per physics frame ---------------------------------------------------
 
 func physics_step(_delta: float) -> void:

@@ -3,6 +3,16 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.5.1] — 2026-06-30
+
+### Fixed
+- **`/gscore/scene clear` now clears every scene-bound id-space** — not just registry objects, but
+  also joints (`ctx.joints`) and time-maps (`ctx.timemapper`). Previously these separate id-spaces
+  survived a scene clear and were only removed reactively a physics tick later, leaving a window
+  where a stale joint (whose name-based `node_a`/`node_b` could re-bind to rebuilt bodies or dangle
+  to world origin) could interfere with the next run. Global config (layer names, gravity, transport,
+  permissions, coord modes) is intentionally preserved.
+
 ## [0.5.0] — 2026-06-30
 
 ### Added

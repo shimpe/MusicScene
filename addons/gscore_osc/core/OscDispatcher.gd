@@ -31,7 +31,7 @@ func dispatch(address: String, args: Array) -> void:
 		"ping":
 			ctx.server.send("/gscore/pong", [])
 		"version":
-			ctx.reply("version", ["0.5.0"])
+			ctx.reply("version", ["0.5.1"])
 		"info":
 			_handle_info()
 		"app":
@@ -80,14 +80,14 @@ func dispatch(address: String, args: Array) -> void:
 func _handle_root(args: Array) -> void:
 	match _s(args, 0):
 		"ping": ctx.server.send("/gscore/pong", [])
-		"version": ctx.reply("version", ["0.5.0"])
+		"version": ctx.reply("version", ["0.5.1"])
 		"info": _handle_info()
 		_: ctx.error("bad_arguments", "/gscore", "Expected ping|version|info")
 
 
 func _handle_info() -> void:
 	ctx.reply("info", [
-		"gscore_osc", "0.5.0",
+		"gscore_osc", "0.5.1",
 		"listen", ctx.server.get_listen_port(),
 		"coord", ctx.mapper.app_mode,
 		"objects", ctx.registry.list_ids().size(),
@@ -183,7 +183,12 @@ func _handle_scene(rest, args: Array) -> void:
 	if rest.is_empty():
 		# /gscore/scene <verb>  (e.g. clear)
 		match _s(args, 0):
-			"clear": ctx.registry.clear()
+			"clear":
+				# Clear every scene-bound id-space: objects, joints, and time-maps. (Global config —
+				# layer names, gravity, transport, permissions, coord modes — is intentionally kept.)
+				ctx.registry.clear()
+				ctx.joints.clear()
+				ctx.timemapper.clear()
 			"list": ctx.reply("scene/list", ctx.registry.list_ids())
 			"tree": _reply_tree()
 			_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|list|tree")
