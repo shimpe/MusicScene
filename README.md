@@ -1,5 +1,9 @@
 # gscore_osc
 
+[![CI](https://github.com/shimpe/MusicScene/actions/workflows/ci.yml/badge.svg)](https://github.com/shimpe/MusicScene/actions/workflows/ci.yml)
+![Godot 4.7](https://img.shields.io/badge/Godot-4.7-478cbf)
+![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)
+
 An **OSC-controlled, INScore-inspired interactive music-score / world system** for Godot 4.
 
 External OSC clients (Max/MSP, Pure Data, SuperCollider, Python, TouchDesigner, Ableton
@@ -751,4 +755,19 @@ addons/gscore_osc/
 osc_spawnable/PhysicalNote.tscn  PhysicalNote3D.tscn   # whitelisted spawnables
 scores/page1.png                       # placeholder engraved page
 tools/  osc_test.py  gen_assets.gd  test_internals.gd
+        ly_to_score.py  mscore_to_score.py  verovio_render.py   # engraver wrappers
 ```
+
+## Requirements
+
+- **Godot 4.7** (uses stable Godot 4.x APIs).
+- Optional, only for symbolic-notation engraving (PNG/SVG display needs none of these):
+  - **MuseScore 4** — MusicXML rendering + addressable measures.
+  - **LilyPond 2.24+** — `.ly` rendering + note-level addressing/following.
+  - **Verovio** (`pip install verovio`) — MEI/ABC/MusicXML rendering + note-level addressing/following.
+  - **Python 3** — for the bundled engraver wrappers and `tools/osc_test.py`.
+
+## License
+
+gscore_osc is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE).
+

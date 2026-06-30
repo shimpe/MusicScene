@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Headless tests (Godot 4.7)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot 4.7
+        run: |
+          set -e
+          URL="https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip"
+          wget -q "$URL" -O godot.zip
+          unzip -q godot.zip
+          mv Godot_v4.7-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project (compiles all scripts, catches parse errors)
+        run: timeout 300 ./godot --headless --import --path . 2>&1 | tee import.log || true
+
+      - name: Self-tests — OSC codec + SVG backend
+        run: |
+          ./godot --headless --path . --script res://tools/test_internals.gd 2>&1 | tee test.log
+          grep -q "\[codec\] PASS" test.log
+          grep -q "\[svg\] PASS" test.log
+
+      - name: Boot check — no script/parse errors
+        run: |
+          ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
+          if grep -qiE "SCRIPT ERROR|Parse Error|Failed to load script" boot.log; then
+            echo "::error::Runtime/parse errors during boot"; exit 1
+          fi

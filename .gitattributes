@@ -1,0 +1,22 @@
+# Normalize line endings: LF in the repo, Godot/GDScript tooling expects LF.
+* text=auto eol=lf
+
+*.gd      text eol=lf linguist-language=GDScript
+*.gdshader text eol=lf
+*.tscn    text eol=lf
+*.tres    text eol=lf
+*.godot   text eol=lf
+*.cfg     text eol=lf
+*.gscore  text eol=lf
+*.py      text eol=lf
+*.md      text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.webp binary
+*.ttf binary
+*.otf binary
+
+# Keep tools out of GitHub's language stats noise
+tools/** linguist-vendored=false
