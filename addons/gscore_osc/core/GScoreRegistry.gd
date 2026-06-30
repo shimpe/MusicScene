@@ -68,7 +68,13 @@ func register_object(id: String, node: Node, ownership: String) -> GScoreObject:
 		ctx.error("internal_error", "/gscore/scene/" + id, "Cannot register null node")
 		return null
 	if _objects.has(id):
-		unbind(id)  # replace existing binding under the same id
+		# Replacing an id: free the old node if gscore created/instantiated it (otherwise it would
+		# orphan in the tree); for bound/auto-bound nodes just drop the binding (not ours to free).
+		var prev = _objects[id]
+		if prev.ownership == OWN_CREATED or prev.ownership == OWN_INSTANTIATED:
+			delete(id)
+		else:
+			unbind(id)
 	var obj := GScoreObject.new(id, node, ctx)
 	obj.ownership = ownership
 	_objects[id] = obj
