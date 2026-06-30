@@ -604,7 +604,7 @@ notation/engraver_output="png"   ; what your command writes: "png" (default) or 
 > This project ships **working defaults for LilyPond and MuseScore** — if either is installed, the
 > matching format works immediately (set your install path).
 
-#### MuseScore — works out of the box
+#### MuseScore
 
 With MuseScore 4 installed and the default `musicxml` setting above (point it at your MuseScore
 binary), engrave **MusicXML / .mxl / .mscz** immediately — from a file or inline:
@@ -621,7 +621,7 @@ automatically. (Prefer auto-detecting the binary? Use the bundled `tools/mscore_
 wrapper instead.) Note: MuseScore 4 occasionally crashes on a cold start under headless automation —
 since rendered pages are cached, a retry succeeds and repeats are instant.
 
-#### LilyPond — works out of the box
+#### LilyPond
 
 With LilyPond installed and the default setting above (point it at your `lilypond` binary), engrave
 immediately — from a `.ly` file or inline (send the LilyPond source as the data):
