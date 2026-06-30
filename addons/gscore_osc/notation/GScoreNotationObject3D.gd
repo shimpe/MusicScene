@@ -63,6 +63,11 @@ func setup(p_ctx, p_osc_id: String) -> void:
 	add_child(page_mesh)
 
 	cursor_mat = _mat(cur_color)
+	# Page, regions and cursor are coplanar transparent quads; Godot sorts transparents by origin
+	# distance, so the moving cursor would flip behind the page off-centre. render_priority forces a
+	# stable layering: page (0) < regions (1) < cursor (2) < annotations (3).
+	page_mat.render_priority = 0
+	cursor_mat.render_priority = 2
 	cursor_node = MeshInstance3D.new()
 	cursor_node.name = "Cursor"
 	cursor_node.material_override = cursor_mat
@@ -355,6 +360,7 @@ func _ensure_region(rid: String) -> GScoreNotationRegion3D:
 	mi.name = "Region_" + rid
 	mi.mesh = QuadMesh.new()
 	mi.material_override = _mat(reg.fill_color)
+	(mi.material_override as StandardMaterial3D).render_priority = 1   # above page, below cursor
 	mi.visible = false
 	add_child(mi)
 	reg.node = mi
@@ -433,6 +439,7 @@ func _ensure_annotation(aid: String) -> Label3D:
 	l.pixel_size = 0.004
 	l.modulate = Color(0.1, 0.1, 0.1)
 	l.double_sided = true
+	l.render_priority = 3   # above page/regions/cursor
 	l.set_meta("rect", Rect2(0.1, 0.1, 0.2, 0.1))
 	add_child(l)
 	annotations[aid] = l
