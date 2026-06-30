@@ -13,6 +13,10 @@ All notable changes to **gscore_osc** are documented here. Format loosely follow
   per-frame emission scheduler. `positionEnter`/`positionExit` were intentionally dropped (redundant
   with area zones and `yAbove`/`yBelow`).
 
+### Changed
+- The `layer` payload field in physics event bindings now carries the other body's collision-layer
+  names (comma-joined; named layers, else the bit number) — it was previously always empty.
+
 ## [0.4.0] — 2026-06-30
 
 ### Added

@@ -33,10 +33,15 @@ func _process(_d: float) -> bool:
 		osc.dispatcher.dispatch("/gscore/scene/obj", ["new", "circle"])
 		osc.dispatcher.dispatch("/gscore/scene/obj/physics", ["enable", "rigid"])
 		osc.dispatcher.dispatch("/gscore/scene/obj/physics", ["layer", "perc"])
+		osc.dispatcher.dispatch("/gscore/scene/obj2", ["new", "circle"])
+		osc.dispatcher.dispatch("/gscore/scene/obj2/physics", ["enable", "rigid"])
+		osc.dispatcher.dispatch("/gscore/scene/obj2/physics", ["layer", 2])   # unnamed bit
 	if _f == 5:
 		var o = osc.registry.get_object("obj")
 		var names = osc.spatial.layer_names_for(o.physics_adapter.body)
 		check("perc" in names, "layer_names_for resolves a named layer")
+		var o2 = osc.registry.get_object("obj2")
+		check("2" in osc.spatial.layer_names_for(o2.physics_adapter.body), "layer_names_for falls back to bit number for unnamed layer")
 	if _f == 7:
 		var sch = SCHED.new(osc)
 		sch.emit("/a", [1], "queued", 1.0)

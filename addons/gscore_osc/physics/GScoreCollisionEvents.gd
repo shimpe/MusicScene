@@ -71,7 +71,7 @@ static func check_continuous(ctx, obj) -> void:
 			if not is_instance_valid(other):
 				continue
 			var cdata := _build_data(ctx, obj, "collisionStay", other)
-			var coid := str(cdata["other"])
+			var coid: String = cdata["other"]
 			c_active[coid] = true
 			if cb.should_emit_other(cdata["intensity"], cdata["time"], coid, cdata["layer"]):
 				cb.mark_other(coid, cdata["time"])
