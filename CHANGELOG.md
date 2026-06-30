@@ -3,6 +3,16 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.5.0] — 2026-06-30
+
+### Added
+- **Event-system completion** (spec §19): `collisionStay` continuous-contact events (per-body
+  throttled, mirroring `areaStay`); a functional `layer` event filter (matches the other body's
+  collision-layer name or number); and the `mode` option — `queued`, `bundle` (one OSC bundle per
+  frame), and `quantized` (snapped to the next transport beat via `quantizeGrid`) — via a new
+  per-frame emission scheduler. `positionEnter`/`positionExit` were intentionally dropped (redundant
+  with area zones and `yAbove`/`yBelow`).
+
 ## [0.4.0] — 2026-06-30
 
 ### Added

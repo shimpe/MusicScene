@@ -548,6 +548,21 @@ which bodies stream.
 > `areaStay` runs while the simulation is on (`/gscore/physics enable 1`); enter/exit fire
 > independently. Constants live in `payload` (the `on` command's trailing tokens are option pairs).
 
+### Event modes, filters & continuous contacts
+
+Every physics/area event binding accepts gating options and an emission `mode`:
+
+```
+s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "minIntensity", 0.2, "cooldown", 0.05)
+s("/gscore/scene/ball/on", "collisionStay",  "/synth/sustain", "maxRate", 30)   # per-contact, per body
+s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "layer", "percussion")  # only when the other body is on layer "percussion" (name or number)
+s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "mode", "quantized", "quantizeGrid", 0.5)
+```
+
+- `collisionStay` reports each body currently touching this rigid body, every frame, throttled per body (like `areaStay` for contacts).
+- `layer <name|number>` only fires when the other body is on that collision layer (name registered via `/gscore/physics/layer <n> <name>`, or the bit number).
+- `mode`: `immediate` (default) sends at once; `queued` flushes at end of frame; `bundle` sends the frame's events as one OSC bundle; `quantized` holds the event until the next transport beat (grid via `quantizeGrid <beats>`, default 1) — requires the transport to be playing.
+
 ---
 
 ## Displaying scores — every source option

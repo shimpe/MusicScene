@@ -42,6 +42,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_zones.gd 2>&1 | tee zones.log
           grep -q "fail=0" zones.log && ! grep -q "FAIL:" zones.log
 
+      - name: Self-tests — event system
+        run: |
+          ./godot --headless --path . --script res://tools/test_events.gd 2>&1 | tee events.log
+          grep -q "fail=0" events.log && ! grep -q "FAIL:" events.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
