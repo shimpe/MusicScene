@@ -3,6 +3,16 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.4.0] — 2026-06-30
+
+### Added
+- **Sensors & trigger zones** (spec §12): `areaStay` continuous presence events, emitted per physics
+  frame for each body inside an area and throttled **per body** by `maxRate`. New other-centric
+  payload fields (`otherx/othery/otherz/othervx/othervy/othervz/otherspeed`) report each contained
+  body's position and velocity. Event payloads can now carry **literal constants** via a `'`/`=`
+  prefix (e.g. `payload areaEnter self other =A`). Area enter/exit, filters and rate-limiting were
+  already supported.
+
 ## [0.3.0] — 2026-06-30
 
 ### Added

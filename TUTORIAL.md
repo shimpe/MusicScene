@@ -15,6 +15,7 @@ client.
 - [4. Getting started in 2D](#4-getting-started-in-2d)
 - [5. Getting started in 3D](#5-getting-started-in-3d)
 - [Physical notation: joints](#physical-notation-joints)
+- [Sensors & trigger zones](#sensors--trigger-zones)
 - [Displaying scores — every source option](#displaying-scores--every-source-option)
 - [6. Driving it from a `.gscore` script](#6-driving-it-from-a-gscore-script)
 - [7. Connecting from Max / Pd / SuperCollider](#7-connecting-from-max--pd--supercollider)
@@ -502,6 +503,50 @@ s("/gscore/physics", "enable", 1)
 > reaction force, so it snaps when the endpoints are pulled too far apart (most useful on
 > spring/distance/slider joints; a rigid `pin` effectively never snaps). In 2D, `motor`'s torque
 > argument is ignored (Godot's 2D pin motor has no max impulse); it *is* honoured by the 3D hinge.
+
+---
+
+## Sensors & trigger zones
+
+An **area** is a sensor: it reports when bodies enter, leave, or stay inside it — ideal for form
+sections, presence, and spatial triggers.
+
+```
+s("/gscore/scene/zoneA", "new", "rect")
+s("/gscore/scene/zoneA/physics", "enable", "area")
+s("/gscore/scene/zoneA/collider", "rect", 0.4, 0.3)
+
+s("/gscore/scene/zoneA/on", "areaEnter", "/form/section")
+s("/gscore/scene/zoneA/on", "areaExit",  "/form/leave")
+```
+
+Enter/exit fire as bodies cross the boundary. Add a **constant tag** to the payload with a `=` (or `'`)
+prefix — handy for labelling which section fired:
+
+```
+s("/gscore/scene/zoneA/payload", "areaEnter", "self", "other", "=A")
+# -> /form/section zoneA note17 A
+```
+
+### Continuous presence — `areaStay`
+
+`areaStay` reports each body **currently inside** the zone, every physics frame, throttled
+**per body** by `maxRate` (Hz):
+
+```
+s("/gscore/scene/zoneA/on", "areaStay", "/zone/presence", "maxRate", 20)
+s("/gscore/scene/zoneA/payload", "areaStay", "self", "other", "otherx", "othery", "otherspeed")
+s("/gscore/physics", "enable", 1)
+# -> /zone/presence zoneA note17 0.12 -0.03 0.4   (~20 Hz per contained body)
+```
+
+Use the `other*` payload fields (`otherx`, `othery`, `otherz`, `othervx`, `othervy`, `othervz`,
+`otherspeed`) to report where each contained body is and how fast it's moving — `x`/`y`/`speed`
+describe the zone itself. Filters apply per body: `other <id|prefix*>` and `layer <name>` restrict
+which bodies stream.
+
+> `areaStay` runs while the simulation is on (`/gscore/physics enable 1`); enter/exit fire
+> independently. Constants live in `payload` (the `on` command's trailing tokens are option pairs).
 
 ---
 

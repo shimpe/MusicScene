@@ -37,6 +37,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_joints.gd 2>&1 | tee joints.log
           grep -q "fail=0" joints.log && ! grep -q "FAIL:" joints.log
 
+      - name: Self-tests — sensor zones
+        run: |
+          ./godot --headless --path . --script res://tools/test_zones.gd 2>&1 | tee zones.log
+          grep -q "fail=0" zones.log && ! grep -q "FAIL:" zones.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
