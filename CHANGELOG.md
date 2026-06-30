@@ -3,6 +3,16 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.0] — 2026-06-30
+
+### Added
+- **Physics joints** (`/gscore/joint/<id>`), native per space. 2D: `pin`, `spring`/`dampedSpring`,
+  `groove`, `distance`. 3D: `pin`, `hinge`, `slider`, `coneTwist`, `generic6dof` (per-DOF via `dof`).
+  Properties `stiffness`/`damping` (normalized 0..1), `restLength`, `limit`, `motor`, `axis`,
+  `breakForce`, plus `del` and `info`/`joints list` queries. `breakForce` is an overstretch proxy and
+  emits `/gscore/event/jointBreak`. Mirrors the physics architecture (`GScoreJointWorld` /
+  `GScoreJoint` + spatial-backend joint methods).
+
 ## [0.2.1] — 2026-06-30
 
 ### Fixed

@@ -32,6 +32,11 @@ jobs:
           grep -q "\[codec\] PASS" test.log
           grep -q "\[svg\] PASS" test.log
 
+      - name: Self-tests — physics joints
+        run: |
+          ./godot --headless --path . --script res://tools/test_joints.gd 2>&1 | tee joints.log
+          grep -q "fail=0" joints.log && ! grep -q "FAIL:" joints.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
