@@ -101,7 +101,7 @@ func should_emit(intensity, now, other_id, layer) -> bool:
     # existing single-timer gap logic (cooldown / max_rate vs _last_emit)
     ...
 
-func should_emit_other(other_id, intensity, now, layer) -> bool:
+func should_emit_other(intensity, now, other_id, layer) -> bool:   # arg order matches should_emit
     if not _passes_filters(intensity, other_id, layer): return false
     var gap := 0.0
     if cooldown > 0.0: gap = cooldown

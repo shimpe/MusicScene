@@ -54,6 +54,8 @@ static func check_continuous(ctx, obj) -> void:
 	if sb != null and ctx.spatial.is_area(node):
 		var active := {}
 		for other in ctx.spatial.overlapping_others(node):
+			if not is_instance_valid(other):
+				continue  # body freed (direct free()) while overlapping; skip stale ref
 			var odata := _build_data(ctx, obj, "areaStay", other)
 			var oid: String = odata["other"]
 			active[oid] = true
