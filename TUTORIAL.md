@@ -190,6 +190,27 @@ s("/gscore/scene/ball", "dump")      # <- reply dump ball circle created_by_osc 
 s("/gscore/scene/ball", "capabilities")
 ```
 
+**Reading replies.** Every query answers on `/gscore/reply` as `<topic> <id> <values…>` — arg 0 is
+the topic (which query it answers), arg 1 is the object id, the rest are the result. For example
+`/gscore/reply ['capabilities', 'ball', 'transform', 'input']` means object `ball` currently has the
+`transform` and `input` capabilities.
+
+**Capabilities** tell you what an object supports right now (they change as you enable features):
+
+| flag | meaning | when present |
+|---|---|---|
+| `transform` | pos/x/y/z, scale, rotate, opacity, color, show/hide, size | always |
+| `input` | clickable/hoverable (`/on click\|down\|up\|drag\|enter\|leave`) | always |
+| `physics` | has a physics body | after `…/physics enable <static\|rigid\|area>` (or bound to a physics node) |
+| `collision` | emits collision/area events | once physics is enabled |
+| `notation` | a score object (pages/cursor/regions/measures/notes) | created with `new notation` |
+| `customProperties` | `prop` / `getProp` allowed | object exposes properties (OscExposable/meta), or developer mode |
+| `customMethods` | `call` allowed | object exposes methods, or developer mode |
+| `signals` | Godot signals available to forward | object exposes signals |
+
+So a plain `circle` reports `transform input`; after `…/physics enable rigid` + a collider it reports
+`transform physics collision input`.
+
 ### 4.4 Animate with the transport
 
 `map` interpolates a property over transport time:
