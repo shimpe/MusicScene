@@ -17,3 +17,6 @@ Thumbs.db
 # Python tooling cache
 __pycache__/
 *.pyc
+
+# temporary per-run project-setting overrides (e.g. 2D test runs)
+/override.cfg
