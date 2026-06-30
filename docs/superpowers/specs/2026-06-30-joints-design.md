@@ -70,8 +70,9 @@ step driver (whatever currently calls `physics_world.physics_step(delta)`) also 
         ctx.joints.handle(jid, args)
 ```
 
-**Node placement.** Joint nodes are parented under a single `Joints` child of `ctx.objects_root`
-(created lazily). `node_a`/`node_b` are set as NodePaths from the joint to each endpoint body.
+**Node placement.** Joint nodes are parented directly under `ctx.objects_root` (which is the correctly
+typed `Node2D`/`Node3D`, so the joint's `global_position`/`global_transform` resolve against the same
+space as the bodies). `node_a`/`node_b` are set as NodePaths from the joint to each endpoint body.
 
 ---
 
@@ -84,8 +85,9 @@ step driver (whatever currently calls `physics_world.physics_step(delta)`) also 
    `ctx.spatial.is_physics_body(obj.node)`, else → `bad_arguments` error:
    *"joint endpoint '<id>' has no physics body; enable physics first"*.
 
-At least one endpoint must be a movable body (rigid). Two static bodies → `bad_arguments`
-(*"joint needs at least one non-static body"*).
+In practice at least one endpoint should be a movable (rigid) body — joining two static bodies just
+produces an inert constraint, which is harmless and not treated as an error (no extra dimension-specific
+static check is introduced).
 
 On creation the joint node is positioned/oriented from the two bodies' current world transforms
 (e.g. spring/slider placed at body A, axis pointing toward body B; pin at body A's origin). The
