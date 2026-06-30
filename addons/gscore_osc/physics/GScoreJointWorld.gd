@@ -119,6 +119,16 @@ func _remove(id: String) -> void:
 # --- Per physics frame ---------------------------------------------------
 
 func physics_step(_delta: float) -> void:
+	var simulating: bool = ctx.physics_world != null and ctx.physics_world.is_simulating()
 	for id in _joints.keys().duplicate():
-		if not _joints[id].is_valid():
+		var j = _joints[id]
+		if not j.is_valid():
 			_remove(id)  # endpoint died; prune silently
+			continue
+		if simulating and j.should_break():
+			var a_id: String = j.obj_a.osc_id
+			var b_id: String = j.obj_b.osc_id
+			_remove(id)
+			ctx.send_event("/gscore/event/jointBreak", [id, a_id, b_id])
+			if ctx.verbose:
+				print("[GScoreOSC] joint '%s' broke (overstretch)" % id)

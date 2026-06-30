@@ -54,7 +54,20 @@ func _process(_d: float) -> bool:
 		else:
 			check(jn.node is DampedSpringJoint2D, "2D spring type is DampedSpringJoint2D")
 			check((jn.node as DampedSpringJoint2D).stiffness > 50.0, "2D stiffness mapped (0.7 -> >50)")
-	if _f == 20:
+	if _f == 18:
+		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/gscore/joint/string1", ["breakforce", 0.9])
+	if _f == 22:
+		var note = osc.registry.get_object("note")
+		var bd = note.physics_adapter.body if (note != null and note.physics_adapter != null) else null
+		check(is_instance_valid(bd), "body valid for overstretch yank at f22")
+		if is_instance_valid(bd):
+			# 4000 px (2D) / 50 m (3D) — both far exceed the break threshold (~rest * 1.29)
+			if bd is Node2D: bd.global_position += Vector2(4000, 0)
+			elif bd is Node3D: bd.global_position += Vector3(50, 0, 0)
+	if _f == 26:
+		check(not osc.joints.has("string1"), "joint broke and was removed after overstretch")
+	if _f == 30:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

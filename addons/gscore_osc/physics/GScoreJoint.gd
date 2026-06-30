@@ -43,6 +43,18 @@ func apply(verb: String, args: Array) -> bool:
 		_:
 			return false
 
+## Overstretch proxy for breakForce. Godot exposes no joint reaction force, so we break when the
+## endpoint separation exceeds rest + tolerance; tolerance shrinks as break_force -> 1.
+## If rest_separation is 0 (bodies co-located at creation), the maxf clamp makes the tolerance
+## nearly zero, so the joint breaks on any separation.
+func should_break() -> bool:
+	if break_force <= 0.0:
+		return false
+	var sep: float = ctx.spatial.joint_separation(node, body_a, body_b)
+	var rest: float = maxf(rest_separation, 0.0001)
+	var tol: float = rest * lerp(2.0, 0.1, clampf(break_force, 0.0, 1.0))
+	return sep > rest + tol
+
 func _f(args: Array, i: int, def: float) -> float:
 	if i < args.size():
 		var a = args[i]
