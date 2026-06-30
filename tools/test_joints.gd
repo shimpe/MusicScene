@@ -65,8 +65,25 @@ func _process(_d: float) -> bool:
 			# 4000 px (2D) / 50 m (3D) — both far exceed the break threshold (~rest * 1.29)
 			if bd is Node2D: bd.global_position += Vector2(4000, 0)
 			elif bd is Node3D: bd.global_position += Vector3(50, 0, 0)
+	if _f == 24 and osc.spatial.is_3d():
+		osc.dispatcher.dispatch("/gscore/scene/anc2", ["new", "circle"])
+		osc.dispatcher.dispatch("/gscore/scene/anc2/physics", ["enable", "static"])
+		osc.dispatcher.dispatch("/gscore/scene/bod2", ["new", "circle"])
+		osc.dispatcher.dispatch("/gscore/scene/bod2/physics", ["enable", "rigid"])
+		for t in ["pin", "hinge", "conetwist", "generic6dof"]:
+			osc.dispatcher.dispatch("/gscore/joint/j_" + t, ["new", t, "anc2", "bod2"])
+		osc.dispatcher.dispatch("/gscore/joint/j_generic6dof", ["dof", "liny"])
+		osc.dispatcher.dispatch("/gscore/joint/j_generic6dof", ["limit", -0.2, 0.2])
+		osc.dispatcher.dispatch("/gscore/joint/j_generic6dof", ["stiffness", 0.6])
 	if _f == 26:
 		check(not osc.joints.has("string1"), "joint broke and was removed after overstretch")
+	if _f == 27 and osc.spatial.is_3d():
+		check(osc.joints.has("j_pin"), "3D pin created")
+		check(osc.joints.has("j_hinge"), "3D hinge created")
+		check(osc.joints.has("j_conetwist"), "3D coneTwist created")
+		var g = osc.joints._joints.get("j_generic6dof")
+		check(g != null and g.node is Generic6DOFJoint3D, "3D generic6dof created")
+		check(g != null and bool(g.node.get("linear_spring_y/enabled")), "generic6dof linY spring enabled via dof")
 	if _f == 30:
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
