@@ -53,8 +53,12 @@ func build_args(data: Dictionary) -> Array:
 	var fields: Array = payload if not payload.is_empty() else DEFAULT_FIELDS
 	var out: Array = []
 	for f in fields:
-		var key := str(f).to_lower()
-		out.append(data[key] if data.has(key) else 0)
+		var s := str(f)
+		if s.begins_with("'") or s.begins_with("="):
+			out.append(s.substr(1))             # literal string (case preserved)
+		else:
+			var key := s.to_lower()
+			out.append(data[key] if data.has(key) else 0)
 	return out
 
 
