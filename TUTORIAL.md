@@ -219,7 +219,14 @@ So a plain `circle` reports `transform input`; after `…/physics enable rigid` 
 s("/gscore/scene/ball", "map", 0.0, 4.0, "x", 0.4, -0.9)   # slide x over 4 seconds
 s("/gscore/transport", "tempo", 120.0)
 s("/gscore/transport", "play")
+s("/gscore/transport", "pause")     # halt at the current time
+s("/gscore/transport", "stop")      # halt and reset time to 0
+s("/gscore/transport", "seek", 2.0) # jump to 2.0 seconds
+s("/gscore/transport", "state")     # <- reply transport state playing|stopped <time> <tempo>
 ```
+
+Transport commands: `play`, `pause`, `stop`, `seek <seconds>`, `tempo <bpm>`, and the queries
+`time`, `beat`, `state`.
 
 ### 4.5 Display a music score
 
