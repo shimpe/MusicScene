@@ -35,10 +35,20 @@ func ensure_camera() -> void:
 
 func set_position(node: Node, x: float, y: float, _z: float, mode: String) -> void:
 	var px: Vector2 = ctx.mapper.point_to_pixels(x, y, mode)
-	if node is Node2D:
+	if node is RigidBody2D:
+		_teleport_rigid_2d(node, px)
+	elif node is Node2D:
 		node.global_position = px
 	elif node is Control:
 		node.set_global_position(px)
+
+
+## A simulating (awake) RigidBody2D reverts a plain global_position assignment to its own physics
+## state on the next step, so the body snaps back to its creation origin. Set the physics-state
+## transform directly so the teleport actually sticks (works whether the body is frozen or active).
+func _teleport_rigid_2d(body: RigidBody2D, px: Vector2) -> void:
+	body.global_position = px   # sync the node (preserves rotation; immediate for same-frame queries)
+	PhysicsServer2D.body_set_state(body.get_rid(), PhysicsServer2D.BODY_STATE_TRANSFORM, body.global_transform)
 
 
 func set_axis(node: Node, axis: int, value: float, mode: String) -> void:

@@ -77,7 +77,12 @@ func length_to_world(s: float, mode: String) -> float:
 # --- Transforms ----------------------------------------------------------
 
 func set_position(node: Node, x: float, y: float, z: float, mode: String) -> void:
-	if node is Node3D:
+	if node is RigidBody3D:
+		(node as Node3D).global_position = to_world_point(x, y, z, mode)
+		# Teleport via the physics server so a simulating body doesn't revert it (mirrors 2D).
+		PhysicsServer3D.body_set_state((node as RigidBody3D).get_rid(),
+			PhysicsServer3D.BODY_STATE_TRANSFORM, (node as Node3D).global_transform)
+	elif node is Node3D:
 		node.global_position = to_world_point(x, y, z, mode)
 
 

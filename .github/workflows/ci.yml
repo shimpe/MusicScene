@@ -52,6 +52,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_scene_clear.gd 2>&1 | tee sceneclear.log
           grep -q "fail=0" sceneclear.log && ! grep -q "FAIL:" sceneclear.log
 
+      - name: Self-tests — rigid-body pos while simulating
+        run: |
+          ./godot --headless --path . --script res://tools/test_rigid_pos.gd 2>&1 | tee rigidpos.log
+          grep -q "fail=0" rigidpos.log && ! grep -q "FAIL:" rigidpos.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log

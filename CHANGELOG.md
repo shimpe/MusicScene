@@ -3,6 +3,17 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.5.2] — 2026-07-01
+
+### Fixed
+- **`pos` (and `x`/`y`/`z`) on a RigidBody now sticks while physics is simulating.** Previously a
+  plain `global_position` assignment to an awake (gravity-kept-active) `RigidBody2D` was reverted by
+  the physics server on the next step, snapping the body back to its creation origin (normalized
+  `(-1, +1)` = top-left). This is why a re-run that populated the scene *while physics was already
+  enabled* (e.g. after a first run left physics on through a `scene clear`) placed objects at the
+  wrong position. Transform commands now teleport rigid bodies via `PhysicsServer2D/3D.body_set_state`,
+  which is authoritative whether the body is frozen or active.
+
 ## [0.5.1] — 2026-06-30
 
 ### Fixed
