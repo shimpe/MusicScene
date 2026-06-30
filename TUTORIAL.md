@@ -373,7 +373,7 @@ s("/gscore/scene/score", "pos", -0.4, 0.1, 0.0)
 s("/gscore/scene/score", "rotate", 0, -18, 0)   # angle the page in 3D
 s("/gscore/scene/score/cursor", "show", 1)
 s("/gscore/scene/score/cursor", "map", 0.0, 8.0, "x", 0.05, 0.95)
-s("/gscore/scene/score/region", "m1", "rect", 0.1, 0.25, 0.2, 0.1)
+s("/gscore/scene/score/region", "m1", "rect", 0.1, 0.22, 0.25, 0.085)
 s("/gscore/scene/score/region", "m1", "highlight", 1)
 s("/gscore/scene/score/region", "m1", "on", "click", "/score/measure")
 s("/gscore/transport", "play")
