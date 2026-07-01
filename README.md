@@ -32,7 +32,7 @@ project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-a
 - [Notation](#music-notation) (backends, cursor, regions, annotations) · [Binding nodes](#binding-existing-godot-nodes)
 - [Instantiating scenes](#instantiating-packedscenes) · [Physics & collisions](#physics--collision-events)
 - [Physics joints](#physics-joints) · [Sensors & trigger zones](#sensors--trigger-zones)
-- [Methods/props](#controlled-method--property-access) · [Signals](#signal-to-osc-forwarding)
+- [Camera control](#camera-control) · [Methods/props](#controlled-method--property-access) · [Signals](#signal-to-osc-forwarding)
 - [Transport](#transport--time-mapping) · [Script runner](#script-runner) · [Permissions](#permissions--safety)
 - [Errors](#errors) · [API reference](#api-reference) · [Limitations](#known-limitations)
 
@@ -638,6 +638,39 @@ itself. Filters (`other <id|prefix*>`, `layer <name|number>`) restrict which bod
 
 ---
 
+## Camera control
+
+**3D only** — ignored in 2D (no camera). Positions and look-at points use the same normalized
+coordinates as everything else (`x/y/z ∈ [-1,1]`); FOV is degrees.
+
+```
+/gscore/camera pos <x> <y> <z>                  # move camera (normalized, stops tracking)
+/gscore/camera lookAt <x> <y> <z>               # aim at a point (stops tracking)
+/gscore/camera up <x> <y> <z>                   # override the up vector
+/gscore/camera fov <degrees>                     # field of view
+/gscore/camera projection <perspective|orthographic>
+/gscore/camera orthoSize <norm>                  # orthographic extent (normalized)
+/gscore/camera target <id>                       # re-aim each frame at a scene object (stays put)
+/gscore/camera follow <id> [dist]                # chase-cam: keep current offset, aim at object
+/gscore/camera reset                             # restore default framing, clear tracking
+/gscore/camera info                              # -> /gscore/reply camera pos x y z fov projection tracking ...
+```
+
+`target` keeps the camera stationary and re-aims it each frame; `follow` also moves it, preserving
+the offset from when the call was made (`dist` overrides that distance). Any `pos`/`lookAt`/`reset`
+command stops tracking. If a tracked object is removed, tracking stops automatically.
+
+### Scene clear vs reset
+
+```
+/gscore/scene clear   # removes objects/joints/time-maps; keeps global config (physics, gravity, camera)
+/gscore/scene reset   # full "like first run" reset: clear + disable physics + zero gravity +
+                      # reset camera + drop buffered events + restore default coord modes.
+                      # Safety config (permissions, whitelist, developer mode) and transport preserved.
+```
+
+---
+
 ## Controlled method / property access
 
 Only members exposed via `OscExposable` / metadata are reachable (unless developer mode is on):
@@ -750,7 +783,7 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 /gscore/app permissions <flag> <0|1>
 
 # scene-wide
-/gscore/scene clear | list | tree
+/gscore/scene clear | reset | list | tree
 /gscore/scene/list                   -> /gscore/reply scene/list <ids...>
 /gscore/scene/tree                   -> /gscore/reply scene/tree <id type ownership path ...>
 
@@ -778,6 +811,11 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 /gscore/scene/<id>/physics enable|mass|gravityScale|friction|bounce|damping|velocity|...
 /gscore/scene/<id>/collider rect|circle|polygon|auto|disabled|offset
 /gscore/scene/<id>/on <event> <target> [opts]   /off   /payload   /signal
+
+# camera (3D only)
+/gscore/camera pos <x> <y> <z> | lookAt <x> <y> <z> | up <x> <y> <z>
+/gscore/camera fov <deg> | projection <perspective|orthographic> | orthoSize <norm>
+/gscore/camera target <id> | follow <id> [dist] | reset | info
 
 # binding / discovery / assets / transport / script
 /gscore/bind | /gscore/bindRel | /gscore/bindGroup | /gscore/bindAll meta

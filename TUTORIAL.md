@@ -14,6 +14,7 @@ client.
 - [3. Smoke test: ping](#3-smoke-test-ping)
 - [4. Getting started in 2D](#4-getting-started-in-2d)
 - [5. Getting started in 3D](#5-getting-started-in-3d)
+- [Camera control (3D)](#camera-control-3d)
 - [Physical notation: joints](#physical-notation-joints)
 - [Sensors & trigger zones](#sensors--trigger-zones)
 - [Displaying scores — every source option](#displaying-scores--every-source-option)
@@ -423,6 +424,39 @@ s("/gscore/scene/ball/on", "click", "/hit/ball")
 
 Set `gscore_osc/space = "2d"` (and choose a `Node2D` main scene) and restart. Same OSC scripts,
 2D rendering.
+
+---
+
+## Camera control (3D)
+
+In 3D you can drive the camera over OSC (2D mode ignores these — it has no camera). Positions and
+look-at points use the same normalized coordinates as everything else; angles are degrees.
+
+```
+s("/gscore/camera", "pos", 0.0, 0.0, 1.2)      # move the camera (normalized)
+s("/gscore/camera", "lookAt", 0.0, 0.0, 0.0)   # aim at a point
+s("/gscore/camera", "fov", 50)                 # field of view
+s("/gscore/camera", "projection", "orthographic")   # or "perspective" (default)
+s("/gscore/camera", "orthoSize", 1.2)          # orthographic extent (normalized)
+s("/gscore/camera", "target", "note")          # re-aim at 'note' every frame as it moves
+s("/gscore/camera", "follow", "note", 0.6)     # chase-cam: keep a fixed offset and aim at it
+s("/gscore/camera", "reset")                   # back to the default framing, tracking cleared
+s("/gscore/camera", "info")                    # -> /gscore/reply camera pos ... fov ... projection ... tracking ...
+```
+
+`target` tracks orientation only (the camera stays put and keeps the object centred); `follow` also
+moves the camera, keeping the offset it had when you called it (`dist` overrides that distance).
+Setting `pos`/`lookAt`/`reset` stops tracking. If a tracked object is removed, tracking stops.
+
+### Clearing vs resetting the scene
+
+- `s("/gscore/scene", "clear")` removes scene objects, joints and time-maps, but keeps global config
+  (physics on/off, gravity, camera) — good for swapping content mid-performance.
+- `s("/gscore/scene", "reset")` is a full **like-first-run** reset: it clears all of the above **and**
+  disables physics, zeroes gravity, resets the camera to its default framing, drops buffered events,
+  and restores default coordinate modes. Safety settings (permissions, the scene whitelist, developer
+  mode) and the transport are preserved. Use `reset` between takes so a rebuild behaves like the first
+  run (in particular, physics is off again while you position objects).
 
 ---
 

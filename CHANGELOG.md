@@ -3,6 +3,17 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.6.0] — 2026-07-01
+
+### Added
+- **OSC camera control (3D)** — `/gscore/camera` with `pos`, `lookAt`, `up`, `target` (re-aim at an
+  object each frame), `follow` (chase-cam), `fov`, `projection` (perspective|orthographic),
+  `orthoSize`, `reset`, and `info`. Normalized coordinates; 3D only (2D commands error).
+- **`/gscore/scene reset`** — a full "like first run" reset: clears objects/joints/time-maps and
+  disables physics, zeroes gravity, resets the camera to default framing, drops buffered events, and
+  restores default coordinate modes. Safety config (permissions, whitelist, developer mode) and the
+  transport are preserved; `scene clear` is unchanged.
+
 ## [0.5.3] — 2026-07-01
 
 ### Changed
