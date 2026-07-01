@@ -13,6 +13,7 @@ var body_b: Node = null
 var rest_separation: float = 0.0 # native units, captured at creation; updated by restLength
 var break_force: float = 0.0     # 0 disables breaking
 var active_dof: String = "all"   # generic6dof DOF cursor
+var debug_vis: Node = null       # optional debug overlay (line + pivot + axis), child of `node`
 
 func _init(p_ctx, p_id: String) -> void:
 	ctx = p_ctx
@@ -56,6 +57,25 @@ func should_break() -> bool:
 	var rest: float = maxf(rest_separation, 0.0001)
 	var tol: float = rest * lerp(2.0, 0.1, clampf(break_force, 0.0, 1.0))
 	return sep > rest + tol
+
+## Show or hide the debug overlay for this joint. A Joint node has no visual of its own, so when
+## enabled we attach a spatial-drawn overlay (connection line A<->B, a pivot marker, and — for
+## hinge/slider — the working axis) as a child of the joint node and refresh it each frame. The
+## overlay is freed automatically when the joint node is freed, or here when hidden.
+func update_debug(show: bool) -> void:
+	if not show:
+		if debug_vis != null and is_instance_valid(debug_vis):
+			debug_vis.queue_free()
+		debug_vis = null
+		return
+	if not is_valid():
+		return
+	if debug_vis == null or not is_instance_valid(debug_vis):
+		debug_vis = ctx.spatial.make_joint_debug()
+		if debug_vis != null:
+			node.add_child(debug_vis)
+	if debug_vis != null:
+		ctx.spatial.update_joint_debug(debug_vis, node, body_a, body_b, jtype)
 
 func _f(args: Array, i: int, def: float) -> float:
 	if i < args.size():

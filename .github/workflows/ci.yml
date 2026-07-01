@@ -67,6 +67,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_scene_reset.gd 2>&1 | tee scenereset.log
           grep -q "fail=0" scenereset.log && ! grep -q "FAIL:" scenereset.log
 
+      - name: Self-tests — joint debug overlay
+        run: |
+          ./godot --headless --path . --script res://tools/test_joint_debug.gd 2>&1 | tee jointdebug.log
+          grep -q "fail=0" jointdebug.log && ! grep -q "FAIL:" jointdebug.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log

@@ -133,6 +133,9 @@ func clear() -> void:
 
 func physics_step(_delta: float) -> void:
 	var simulating: bool = ctx.physics_world != null and ctx.physics_world.is_simulating()
+	# Joints have no visual; when the physics debug flag is on we draw a per-joint overlay so hinges,
+	# springs, etc. are visible. Shares the /gscore/physics debug toggle with collision-shape display.
+	var debug_on: bool = ctx.physics_world != null and ctx.physics_world.debug
 	for id in _joints.keys().duplicate():
 		var j = _joints[id]
 		if not j.is_valid():
@@ -145,3 +148,5 @@ func physics_step(_delta: float) -> void:
 			ctx.send_event("/gscore/event/jointBreak", [id, a_id, b_id])
 			if ctx.verbose:
 				print("[GScoreOSC] joint '%s' broke (overstretch)" % id)
+			continue
+		j.update_debug(debug_on)

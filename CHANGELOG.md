@@ -3,6 +3,28 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.7.0] — 2026-07-01
+
+### Added
+- **`physics enable` now auto-creates a matching collider.** Enabling physics on an object
+  (`rigid`/`static`/`area`) gives it a collision shape sized to its visible mesh (equivalent to
+  `collider auto`), so bodies collide and are sensed by areas without a separate `collider` command; an
+  explicit `collider …` still replaces the automatic shape. Bodies connected by a joint are excluded
+  from colliding with each other (Godot's joint default), so hinge/spring setups are unaffected. The 3D
+  `auto` collider now floors each axis to a small minimum so a flat quad (`rect`/notation) yields a
+  usable volume instead of a degenerate zero-thickness box.
+- **Joint debug overlay.** `/gscore/physics debug 1` now also draws each joint (which otherwise has no
+  visual): a line between its two bodies, a pivot marker, and — for a `hinge`/`slider` — the working
+  axis. The overlay tracks the bodies each frame, is drawn on top, and is removed by `debug 0` or a
+  scene clear/reset. Works in both 2D and 3D.
+
+### Docs
+- `TUTORIAL.md`: §7 gains a **Damping** note (contact `friction` doesn't slow a free swing — use
+  `physics damping`, with the linear term being the effective one for a pendulum) plus an explanation of
+  the surprising hinge `limit` result; §8 now documents that colliders are automatic and how to size a
+  manual one (the normalized-units ×5 trap: `collider sphere 0.3` is a 1.5-world sphere). `README.md`
+  colliders section documents the auto-creation and sizing.
+
 ## [0.6.0] — 2026-07-01
 
 ### Added

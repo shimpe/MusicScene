@@ -78,6 +78,13 @@ func enable(kind: String) -> void:
 	obj.node = new_body
 	ctx.registry.update_node_mapping(obj, old_path)
 	ctx.spatial.connect_collision(self, body)
+	# Auto-create a collision shape matching the visible mesh, so the body can collide and be
+	# sensed by areas without a separate `collider` command. It's a one-time primitive shape
+	# (no per-frame cost beyond a normal collider), and a later explicit `collider ...` replaces
+	# it. Bodies connected by a joint are excluded from colliding with each other by Godot's
+	# joint defaults, so this does not disturb hinge/spring setups.
+	if collider == null:
+		set_collider("auto", [])
 	if ctx.verbose:
 		print("[GScoreOSC] physics enabled (%s) on '%s'" % [kind.to_lower(), obj.osc_id])
 

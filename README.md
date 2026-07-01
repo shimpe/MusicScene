@@ -478,6 +478,10 @@ Global:
 > Gravity is applied by gscore as an explicit per-body force, so it responds immediately and is
 > fully under OSC control. Set e.g. `gravity 0 -1` to make things fall.
 
+> `debug 1` shows Godot's collision shapes **and** draws a per-joint overlay (a line between the two
+> bodies, a pivot marker, and the working axis for a hinge/slider) — joints have no visual of their
+> own, so this is how you see them. `debug 0` removes both.
+
 Per object (`static → StaticBody2D`, `rigid → RigidBody2D`, `area → Area2D`):
 
 ```
@@ -489,7 +493,11 @@ Per object (`static → StaticBody2D`, `rigid → RigidBody2D`, `area → Area2D
 /gscore/scene/<id>/physics layer <n_or_name> | mask <n_or_name> [...]
 ```
 
-Colliders (2D: `rect`/`circle`/`polygon`; 3D: `box`/`rect`→box, `sphere`/`circle`→sphere):
+Colliders (2D: `rect`/`circle`/`polygon`; 3D: `box`/`rect`→box, `sphere`/`circle`→sphere). Enabling
+physics **auto-creates a collision shape matching the visible mesh** (like `collider auto`), so a body
+can collide and be sensed by areas out of the box; a `collider` command replaces the automatic shape.
+Collider *sizes* use the physics coordinate mode (in normalized 3D they are ×5 the world half-extent),
+so match them to the visual — or just rely on the automatic shape:
 
 ```
 /gscore/scene/<id>/collider rect <w> <h> | circle <r> | polygon <x1> <y1> ... | auto

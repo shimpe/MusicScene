@@ -424,6 +424,9 @@ func make_collider(kind: String, params: Array, mode: String, visual: Node = nul
 			if visual is MeshInstance3D and (visual as MeshInstance3D).mesh != null:
 				var mi := visual as MeshInstance3D
 				size = mi.mesh.get_aabb().size * mi.scale
+			# Floor each axis so a flat quad (e.g. a `rect`/notation visual, depth 0) still yields a
+			# usable collision volume rather than a degenerate zero-thickness box.
+			size = Vector3(maxf(size.x, 0.1), maxf(size.y, 0.1), maxf(size.z, 0.1))
 			b.size = size
 			cs.shape = b
 		_:
@@ -663,6 +666,46 @@ func joint_separation(_joint: Node, body_a: Node, body_b: Node) -> float:
 
 func to_native_length(norm: float, mode: String) -> float:
 	return length_to_world(norm, mode)
+
+# --- Joint debug overlay -------------------------------------------------
+
+func make_joint_debug() -> Node:
+	var mi := MeshInstance3D.new()
+	mi.name = "JointDebug"
+	mi.top_level = true                     # draw in world space, independent of the joint transform
+	mi.mesh = ImmediateMesh.new()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.no_depth_test = true                # always visible, even behind bodies
+	mi.material_override = mat
+	return mi
+
+func update_joint_debug(vis: Node, joint_node: Node, body_a: Node, body_b: Node, jtype: String) -> void:
+	if not (vis is MeshInstance3D) or not (body_a is Node3D and body_b is Node3D):
+		return
+	var im := (vis as MeshInstance3D).mesh as ImmediateMesh
+	var pa: Vector3 = (body_a as Node3D).global_position
+	var pb: Vector3 = (body_b as Node3D).global_position
+	im.clear_surfaces()
+	im.surface_begin(Mesh.PRIMITIVE_LINES)
+	# connection A <-> B (yellow)
+	im.surface_set_color(Color(1.0, 0.85, 0.2))
+	im.surface_add_vertex(pa); im.surface_add_vertex(pb)
+	# pivot cross at A (the joint origin sits on body A)
+	var s := 0.12
+	im.surface_set_color(Color(0.4, 1.0, 0.55))
+	im.surface_add_vertex(pa - Vector3(s, 0, 0)); im.surface_add_vertex(pa + Vector3(s, 0, 0))
+	im.surface_add_vertex(pa - Vector3(0, s, 0)); im.surface_add_vertex(pa + Vector3(0, s, 0))
+	im.surface_add_vertex(pa - Vector3(0, 0, s)); im.surface_add_vertex(pa + Vector3(0, 0, s))
+	# working axis for hinge/slider (the direction set via `axis`; joint local +X) in magenta
+	if (jtype == "hinge" or jtype == "slider") and joint_node is Node3D:
+		var axis: Vector3 = (joint_node as Node3D).global_transform.basis.x
+		if axis.length() > 0.0001:
+			var half := axis.normalized() * 0.6
+			im.surface_set_color(Color(1.0, 0.3, 1.0))
+			im.surface_add_vertex(pa - half); im.surface_add_vertex(pa + half)
+	im.surface_end()
 
 const J3D_STIFF_MAX := 200.0
 const J3D_DAMP_MAX := 30.0

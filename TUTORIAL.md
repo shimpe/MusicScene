@@ -533,10 +533,57 @@ s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
 s("/gscore/physics", "enable", 1)
 ```
 
+**What you'll see — and it's surprising:** the arm swings down and stops at a **diagonal**, *not*
+straight down. That's the `limit` doing its job, not a bug. The arm's starting position — directly to
+the **right** of the post — is the hinge's `0°` reference, so `limit -60 60` lets it rotate at most 60°
+below horizontal. Straight down is `-90°`, which is **past** the limit, so it never gets there. The
+`motor` then drives the hinge toward a fixed speed and the limit clamps it, so the arm comes to rest
+against the lower limit rather than swinging freely.
+
+To change what happens:
+
+- **Make it hang straight down:** widen the limit — `s("/gscore/joint/hinge1", "limit", -90, 90)` — or
+  drop the `limit` line entirely. Now the arm can reach the bottom (`-90°`).
+- **Turn it into a free swinging pendulum:** remove the `motor` line. A motor *forces* motion toward a
+  target velocity and pins the arm at a limit; without it, gravity alone swings the arm and it damps to
+  rest at the lowest point. (Pair this with the wider/no limit above so it can actually reach the
+  bottom.)
+
 > **Notes on fidelity:** `breakForce` is an *overstretch* proxy, not Newtons — Godot exposes no joint
 > reaction force, so it snaps when the endpoints are pulled too far apart (most useful on
 > spring/distance/slider joints; a rigid `pin` effectively never snaps). In 2D, `motor`'s torque
 > argument is ignored (Godot's 2D pin motor has no max impulse); it *is* honoured by the 3D hinge.
+
+### Damping — making a swing lose energy (not `friction`)
+
+A hinge or spring has no built-in pivot friction, and a body's contact `friction`
+(`/gscore/scene/<id>/physics friction`) only acts when two surfaces actually **touch** — so it does
+nothing to a freely swinging pendulum. To bleed energy out of a swing so it settles, give the moving
+body **damping**:
+
+```
+s("/gscore/scene/arm/physics", "damping", 0.5, 0.0)   # linear, angular  (per-second rates)
+```
+
+For a pendulum the **linear** term is the effective one — the swing energy lives in the arm's motion
+along its arc; the angular term mainly slows a body spinning about its own axis. Higher values settle
+it sooner: measured from a 90° release, `damping 0.5 0` decays to ~20° within a couple of swings,
+while `damping 0 0` keeps swinging for a long time.
+
+### Seeing your joints — `physics debug`
+
+A joint is a *constraint*, not an object, so it has no visual of its own — an invisible hinge is easy
+to lose track of. Turn on physics debug to draw every joint as an overlay:
+
+```
+s("/gscore/physics", "debug", 1)    # collision shapes + joint overlays
+s("/gscore/physics", "debug", 0)    # off
+```
+
+Each joint shows a **line between its two bodies**, a small **pivot marker** at the anchor, and — for a
+`hinge` or `slider` — the **working axis** you set with `axis` (drawn in magenta). The overlay tracks
+the bodies as they move and is drawn on top, so it stays visible even behind other geometry. The same
+flag also shows collision shapes, so you can see the colliders and the constraints together.
 
 ---
 
@@ -561,6 +608,56 @@ prefix — handy for labelling which section fired:
 s("/gscore/scene/zoneA/payload", "areaEnter", "self", "other", "=A")
 # -> /form/section zoneA note17 A
 ```
+
+### Colliders are automatic — and sizing a manual one
+
+When you `physics enable <rigid|static|area>`, gscore automatically gives the object a collision shape
+matching its visible mesh (the same result as `collider auto`). So a body can collide, and be sensed by
+an area, **out of the box** — no separate `collider` command required. The example below just works: the
+hinge arm swings down through the zone and you get `/form/section` as it enters and `/form/leave` as it
+leaves.
+
+```
+s("/gscore/scene/post", "new", "circle")
+s("/gscore/scene/post/physics", "enable", "static")
+s("/gscore/scene/post", "pos", 0.0, 0.5, 0.0)
+
+s("/gscore/scene/arm", "new", "circle")
+s("/gscore/scene/arm/physics", "enable", "rigid")    # collider auto-created to match the ball
+s("/gscore/scene/arm", "pos", 0.5, 0.5, 0.0)
+s("/gscore/scene/arm/physics", "damping", 0.5, 0.0)  # bleed energy so it settles (see §7)
+
+s("/gscore/joint/hinge1", "new", "hinge", "post", "arm")
+s("/gscore/joint/hinge1", "axis", 0, 0, 1)           # free pendulum: no limit, no motor
+
+s("/gscore/scene/zoneA", "new", "rect")
+s("/gscore/scene/zoneA/physics", "enable", "area")
+s("/gscore/scene/zoneA/collider", "rect", 0.4, 0.3)  # optional: override the auto shape with an exact size
+s("/gscore/scene/zoneA", "pos", 0.0, 0.0, 0.0)       # centre = the bottom of the arc
+s("/gscore/scene/zoneA/on", "areaEnter", "/form/section")
+s("/gscore/scene/zoneA/on", "areaExit",  "/form/leave")
+
+s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
+s("/gscore/physics", "enable", 1)
+```
+
+Two things worth knowing:
+
+- **A joint doesn't need colliders** to move its bodies — the hinge swings the arm regardless. What the
+  auto collider adds is the geometry an area (or a collision event) needs to *detect* the body. Bodies
+  joined together are excluded from colliding with *each other*, so the arm and post never knock heads.
+- **Give the zone an explicit `pos`.** Without one a new object sits at the origin — which happens to be
+  the bottom of this arc, but relying on that is fragile.
+
+**Overriding the auto shape.** Pass a `collider` command whenever you want an exact shape or size; it
+replaces the automatic one. When you set a size by hand, mind the units:
+
+> Collider sizes use the **physics coordinate mode** — in normalized 3D they're multiplied by the world
+> half-extent (×5), while the built-in `circle` visual is a fixed ~0.3-world ball. So `collider sphere 0.3`
+> is actually a **1.5-world** sphere — 5× the ball you see. A collider much bigger than its visual will
+> trip a zone while the *visible* object is still far outside it (and stay "inside" across a whole swing,
+> so enter/exit fire far less often than the visible passes suggest). Stick with the automatic shape, or
+> match the ball explicitly with `collider sphere 0.06` (`0.06 × 5 = 0.3` world).
 
 ### Continuous presence — `areaStay`
 

@@ -546,6 +546,34 @@ func joint_separation(_joint: Node, body_a: Node, body_b: Node) -> float:
 func to_native_length(norm: float, mode: String) -> float:
 	return ctx.mapper.length_x_to_pixels(norm, mode)
 
+# --- Joint debug overlay -------------------------------------------------
+
+func make_joint_debug() -> Node:
+	var root := Node2D.new()
+	root.name = "JointDebug"
+	root.top_level = true                   # canvas (world) space, independent of the joint transform
+	root.z_index = 4096                      # draw over bodies
+	var conn := Line2D.new(); conn.name = "conn"; conn.width = 2.0
+	conn.default_color = Color(1.0, 0.85, 0.2); root.add_child(conn)   # connection A<->B
+	var piv := Line2D.new(); piv.name = "piv"; piv.width = 2.0
+	piv.default_color = Color(0.4, 1.0, 0.55); root.add_child(piv)     # pivot marker at A
+	return root
+
+func update_joint_debug(vis: Node, _joint_node: Node, body_a: Node, body_b: Node, _jtype: String) -> void:
+	if not (vis is Node2D) or not (body_a is Node2D and body_b is Node2D):
+		return
+	var pa: Vector2 = (body_a as Node2D).global_position
+	var pb: Vector2 = (body_b as Node2D).global_position
+	var conn := vis.get_node_or_null("conn") as Line2D
+	if conn != null:
+		conn.points = PackedVector2Array([pa, pb])
+	var piv := vis.get_node_or_null("piv") as Line2D
+	if piv != null:
+		var s := 7.0
+		piv.points = PackedVector2Array([
+			pa + Vector2(0, -s), pa + Vector2(s, 0), pa + Vector2(0, s),
+			pa + Vector2(-s, 0), pa + Vector2(0, -s)])   # small diamond around the pivot
+
 func joint_set_param(joint: Node, _jtype: String, key: String, args: Array, _active_dof: String, mode: String) -> bool:
 	match key:
 		"stiffness":
