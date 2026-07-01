@@ -1045,11 +1045,13 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
 
 ## Next steps
 
-- **Creative example — a physics-driven sequencer:** `tools/example_double_pendulum.py` builds a
-  chaotic double pendulum (two hinges) whose tip strikes five pentatonic sensor zones as it swings,
-  emitting `/music/note <pad> <note> <speed>` — a never-repeating melody driven by real physics. Run
-  the project in 3D, then `python tools/example_double_pendulum.py`, and point a synth at
-  `/music/note`. It ties together joints, gravity, sensor zones, payload constants, and `otherspeed`.
+- **Creative example — a physics-driven sequencer:** `tools/example_chaos_globe.py` seals several
+  balls in a box and slowly **rotates the direction of gravity**, so they tumble chaotically forever
+  (an inexhaustible energy source — unlike a pendulum, which the engine's damping quickly winds down).
+  Five pentatonic sensor zones in a ring emit `/music/note <zone> <note> <speed>` as balls pass
+  through — a never-repeating melody driven by real physics. Run the project in 3D, then
+  `python tools/example_chaos_globe.py`, and point a synth at `/music/note`. It ties together gravity
+  control, sensor zones, payload constants, and `otherspeed`.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - Worked examples: `addons/gscore_osc/examples/` (2D and 3D) and `tools/osc_test.py`.
 - Architecture/design notes: `docs/superpowers/specs/`.
