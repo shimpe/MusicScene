@@ -4,7 +4,9 @@
 **Status:** Approved design, ready for implementation planning
 **Scope:** Add an OSC API to control the 3D `Camera3D` — position, aim (static point / track object /
 chase-follow), FOV, projection (perspective|orthographic), and reset. **3D only** for now (a 2D
-pan/zoom camera is a possible future follow-up). **Out of scope:** near/far clip planes, a dolly/zoom
+pan/zoom camera is a possible future follow-up). Also add **`/gscore/scene reset`** — a full "like
+first run" reset that clears the scene *and* the runtime simulation/view state (including the camera),
+which `scene clear` intentionally does not. **Out of scope:** near/far clip planes, a dolly/zoom
 shorthand, 2D camera.
 
 ---
@@ -121,7 +123,38 @@ cam.look_at(op, _up)
 
 ---
 
-## 6. Edge cases
+## 6. Scene clear vs scene reset (camera lifecycle)
+
+**`/gscore/scene clear`** (existing) clears the scene-bound id-spaces — objects, joints, time-maps —
+but intentionally keeps global config and the camera. So after `clear`, the camera keeps its
+position/fov/projection; if it was tracking an object that got cleared, `step` reverts tracking to
+`none` gracefully. **No change to `clear`.**
+
+**`/gscore/scene reset`** (new) is a full "like first run" reset. Routed in `OscDispatcher._handle_scene`
+alongside `clear`, it runs:
+
+```
+ctx.registry.clear()          # objects
+ctx.joints.clear()            # joints
+ctx.timemapper.clear()        # time-maps
+ctx.emitter.clear()           # drop buffered queued/bundle/quantized events   (new: GScoreEmissionScheduler.clear)
+ctx.physics_world.reset()     # enabled=false, paused=false, gravity=ZERO, debug=false, layer_names cleared, re-freeze  (new)
+ctx.camera.reset()            # default framing + tracking cleared; no-op in 2D
+ctx.mapper.app_mode / physics_mode = project-setting defaults          # reset coord modes
+```
+
+**Preserved (safety config):** permissions (`bindExisting`/`instantiate`/`callMethods`/`setProps`/
+`freeNodes`), the scene whitelist, and `developer_mode`. Transport is also preserved (playback is a
+separate concern).
+
+New small methods this requires: `GScorePhysicsWorld.reset()`, `GScoreEmissionScheduler.clear()`,
+and a public `GScoreCamera.reset()` (the same routine the `camera reset` verb uses). The coord-mode
+defaults are re-read from the `gscore_osc/app/coord_mode` / `gscore_osc/physics/coord_mode` settings
+(fallback `"normalized"`).
+
+---
+
+## 7. Edge cases
 
 - **2D space:** all camera commands error (guarded in `handle` and `step`).
 - **No active camera:** `_cam()` calls `ensure_camera()` first, so a camera always exists in 3D.
@@ -133,7 +166,7 @@ cam.look_at(op, _up)
 
 ---
 
-## 7. Verification
+## 8. Verification
 
 - **Headless `tools/test_camera.gd`** (3D; a 2D run asserts the error path):
   - `pos`/`lookAt` set the camera transform (world position matches the normalized input).
@@ -145,17 +178,32 @@ cam.look_at(op, _up)
   - `reset` restores default fov/projection/position and clears tracking.
   - In 2D space, a camera command produces a `bad_arguments` error (assert via a captured/guarded path)
     and does not crash.
-- **CI** runs `test_camera.gd`.
-- **Tutorial** gains a "Camera control (3D)" section.
+- **Headless `tools/test_scene_reset.gd`** (space-aware): after building objects + a joint + a
+  time-map + enabling physics with gravity (+ moving the camera in 3D), `/gscore/scene reset` leaves
+  registry/joints/time-maps empty, physics disabled with zero gravity, coord modes back to default,
+  and (3D) the camera at its default framing; a preserved permission flag set beforehand is still set.
+- **CI** runs `test_camera.gd` and `test_scene_reset.gd`.
+- **Documentation — both files:**
+  - `TUTORIAL.md` gains a "Camera control (3D)" section with examples, and documents `scene reset`
+    vs `scene clear`.
+  - `README.md` gains a "Camera control" section and adds `camera` + `scene reset` to the API
+    reference / command list, so the reference stays complete.
 - **CHANGELOG** `[0.6.0]`; version bump.
 
 ---
 
-## 8. File-change summary
+## 9. File-change summary
 
-**New:** `addons/gscore_osc/core/GScoreCamera.gd`, `tools/test_camera.gd`.
-**Modified:** `addons/gscore_osc/core/OscDispatcher.gd` (route `camera`),
-`addons/gscore_osc/nodes/GScoreRoot.gd` (`ctx.camera` + per-frame `step`),
-`addons/gscore_osc/core/GScoreSpatial3D.gd` (`configure_default_camera` helper, shared with
-`ensure_camera`), `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg` (version),
-`.github/workflows/ci.yml`.
+**New:** `addons/gscore_osc/core/GScoreCamera.gd`, `tools/test_camera.gd`, `tools/test_scene_reset.gd`.
+**Modified:**
+- `addons/gscore_osc/core/OscDispatcher.gd` — route `camera`; add `scene reset`.
+- `addons/gscore_osc/nodes/GScoreRoot.gd` — `ctx.camera` + per-frame `camera.step(delta)`.
+- `addons/gscore_osc/core/GScoreSpatial3D.gd` — `configure_default_camera` helper (shared with
+  `ensure_camera`).
+- `addons/gscore_osc/physics/GScorePhysicsWorld.gd` — `reset()` (disable/zero-gravity/unpause/debug-off/clear layer names).
+- `addons/gscore_osc/events/GScoreEmissionScheduler.gd` — `clear()` (drop buffered events).
+- `TUTORIAL.md` (camera section + `scene reset` vs `clear`), `README.md` (camera section + API
+  reference entries for `camera` and `scene reset`), `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg`
+  (version), `.github/workflows/ci.yml`.
+
+No changes to `GScoreRegistry.clear()` / `scene clear` semantics (unchanged).
