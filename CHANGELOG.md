@@ -3,6 +3,14 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.5.3] — 2026-07-01
+
+### Changed
+- **Default 3D `circle` primitive is smaller** — sphere radius `0.5` → `0.3` world (`0.06` normalized,
+  matching the 2D circle's relative size). At `0.5` the sphere spanned `0.2` normalized, so objects at
+  a normal `0.2` spacing (e.g. the tutorial's hinge example) visually overlapped and looked "glued
+  together" even though the joint was correctly maintaining their separation.
+
 ## [0.5.2] — 2026-07-01
 
 ### Fixed

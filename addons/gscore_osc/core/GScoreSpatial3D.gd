@@ -207,7 +207,9 @@ func create_primitive(type: String, args: Array) -> Node:
 			return mi
 		"circle":
 			var mi := MeshInstance3D.new(); mi.name = "Circle"
-			var s := SphereMesh.new(); s.radius = 0.5; s.height = 1.0
+			# radius 0.3 world (= 0.06 normalized, matching the 2D circle's relative size). At 0.5 the
+			# sphere was 0.1-normalized radius, so objects at a normal 0.2 spacing visually overlapped.
+			var s := SphereMesh.new(); s.radius = 0.3; s.height = 0.6
 			mi.mesh = s
 			mi.material_override = _unshaded(Color(0.95, 0.55, 0.45))
 			return mi
