@@ -22,6 +22,7 @@ const GScoreTransport := preload("res://addons/gscore_osc/transport/GScoreTransp
 const GScoreTimeMapper := preload("res://addons/gscore_osc/transport/GScoreTimeMapper.gd")
 const GScoreScriptRunner := preload("res://addons/gscore_osc/script/GScoreScriptRunner.gd")
 const GScoreEmissionScheduler := preload("res://addons/gscore_osc/events/GScoreEmissionScheduler.gd")
+const GScoreCamera := preload("res://addons/gscore_osc/core/GScoreCamera.gd")
 
 # Subsystems (accessed as ctx.* throughout the codebase)
 var server = null
@@ -39,6 +40,7 @@ var transport = null
 var timemapper = null
 var script_runner = null
 var emitter = null
+var camera = null
 var objects_root: Node = null
 
 var space: String = "2d"
@@ -66,6 +68,7 @@ func _ready() -> void:
 	spatial = GScoreSpatial3D.new(self) if space == "3d" else GScoreSpatial2D.new(self)
 
 	registry = GScoreRegistry.new(self)
+	camera = GScoreCamera.new(self)
 	physics_world = GScorePhysicsWorld.new(self)
 	joints = GScoreJointWorld.new(self)
 	transport = GScoreTransport.new(self)
@@ -126,6 +129,8 @@ func _process(delta: float) -> void:
 		timemapper.update(transport.time)
 	if emitter != null and transport != null:
 		emitter.flush(transport.beat)
+	if camera != null:
+		camera.step(delta)
 
 
 func _physics_process(delta: float) -> void:

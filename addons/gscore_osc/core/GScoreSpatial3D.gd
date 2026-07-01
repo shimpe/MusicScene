@@ -29,19 +29,28 @@ func create_objects_root() -> Node:
 	return n
 
 
+func default_camera_dist() -> float:
+	return H / tan(deg_to_rad(CAMERA_FOV * 0.5)) * 1.2
+
+
+func configure_default_camera(cam: Camera3D) -> void:
+	cam.fov = CAMERA_FOV
+	cam.projection = Camera3D.PROJECTION_PERSPECTIVE
+	# default orientation looks down -Z toward the origin
+	cam.transform = Transform3D(Basis(), Vector3(0, 0, default_camera_dist()))
+
+
 func ensure_camera() -> void:
 	var vp = ctx.get_viewport()
 	if vp == null or vp.get_camera_3d() != null:
 		return
 	var cam := Camera3D.new()
 	cam.name = "GScoreCamera"
-	cam.fov = CAMERA_FOV
-	var dist := H / tan(deg_to_rad(CAMERA_FOV * 0.5)) * 1.2
-	cam.position = Vector3(0, 0, dist)   # default orientation looks down -Z toward origin
+	configure_default_camera(cam)
 	cam.current = true
 	ctx.add_child(cam)
 	if ctx.verbose:
-		print("[GScoreOSC] auto-created Camera3D at z=%.1f" % dist)
+		print("[GScoreOSC] auto-created Camera3D at z=%.1f" % default_camera_dist())
 
 
 # --- Coordinate mapping --------------------------------------------------
