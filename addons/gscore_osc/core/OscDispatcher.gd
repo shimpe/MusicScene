@@ -191,9 +191,20 @@ func _handle_scene(rest, args: Array) -> void:
 				ctx.registry.clear()
 				ctx.joints.clear()
 				ctx.timemapper.clear()
+			"reset":
+				# Full "like first run" reset: scene contents + runtime sim/view state. Keeps safety
+				# config (permissions, whitelist, developer_mode) and the transport.
+				ctx.registry.clear()
+				ctx.joints.clear()
+				ctx.timemapper.clear()
+				ctx.emitter.clear()
+				ctx.physics_world.reset()
+				ctx.camera.reset()
+				ctx.mapper.app_mode = str(ctx._setting("app/coord_mode", "normalized"))
+				ctx.mapper.physics_mode = str(ctx._setting("physics/coord_mode", "normalized"))
 			"list": ctx.reply("scene/list", ctx.registry.list_ids())
 			"tree": _reply_tree()
-			_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|list|tree")
+			_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|reset|list|tree")
 		return
 
 	match rest[0]:

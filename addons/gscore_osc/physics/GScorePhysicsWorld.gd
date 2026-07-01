@@ -162,6 +162,18 @@ func physics_step(delta: float) -> void:
 		a.physics_step(delta, g_world)
 
 
+## Reset the runtime simulation state to startup defaults (used by /gscore/scene reset).
+func reset() -> void:
+	enabled = false
+	paused = false
+	gravity_norm = Vector3.ZERO
+	debug = false
+	layer_names.clear()
+	if ctx.is_inside_tree():
+		ctx.get_tree().debug_collisions_hint = false
+	_apply_freeze_state()
+
+
 func _apply_freeze_state() -> void:
 	var sim := is_simulating()
 	for a in _adapters:

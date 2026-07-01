@@ -46,6 +46,12 @@ func flush(now_beat: float) -> void:
 				keep.append(m)
 		_quantized = keep
 
+## Drop all buffered (queued/bundle/quantized) emissions — used by /gscore/scene reset.
+func clear() -> void:
+	_queued.clear()
+	_bundle.clear()
+	_quantized.clear()
+
 ## Returns the next grid line strictly after `beat` (an on-grid beat advances to the following
 ## line). grid<=0 returns beat (fires on the next flush).
 func _next_grid(beat: float, grid: float) -> float:
