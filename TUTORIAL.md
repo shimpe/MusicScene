@@ -14,14 +14,14 @@ client.
 - [3. Smoke test: ping](#3-smoke-test-ping)
 - [4. Getting started in 2D](#4-getting-started-in-2d)
 - [5. Getting started in 3D](#5-getting-started-in-3d)
-- [Camera control (3D)](#camera-control-3d)
-- [Physical notation: joints](#physical-notation-joints)
-- [Sensors & trigger zones](#sensors--trigger-zones)
-- [Displaying scores — every source option](#displaying-scores--every-source-option)
-- [6. Driving it from a `.gscore` script](#6-driving-it-from-a-gscore-script)
-- [7. Connecting from Max / Pd / SuperCollider](#7-connecting-from-max--pd--supercollider)
-- [8. Permissions & safety](#8-permissions--safety)
-- [9. Troubleshooting](#9-troubleshooting)
+- [6. Camera control (3D)](#6-camera-control-3d)
+- [7. Physical notation: joints](#7-physical-notation-joints)
+- [8. Sensors & trigger zones](#8-sensors--trigger-zones)
+- [9. Displaying scores — every source option](#9-displaying-scores--every-source-option)
+- [10. Driving it from a `.gscore` script](#10-driving-it-from-a-gscore-script)
+- [11. Connecting from Max / Pd / SuperCollider](#11-connecting-from-max--pd--supercollider)
+- [12. Permissions & safety](#12-permissions--safety)
+- [13. Troubleshooting](#13-troubleshooting)
 
 ---
 
@@ -30,7 +30,7 @@ client.
 - **Godot 4.4+** (developed and verified on **4.7**).
 - The **`addons/gscore_osc/`** folder from this repository.
 - An **OSC client**. This tutorial uses a tiny Python script (section 2); Max/Pd/SuperCollider
-  notes are in section 7.
+  notes are in section 11.
 
 You do **not** need any third-party Godot OSC library — gscore_osc has its own UDP OSC codec.
 
@@ -144,7 +144,7 @@ s("/gscore/version")       # ->  <- /gscore/reply ['version', '0.1.0']
 s("/gscore/info")          # ->  <- /gscore/reply ['info', 'gscore_osc', ...]
 ```
 
-If you see `<- /gscore/pong`, you're connected. If not, jump to [Troubleshooting](#9-troubleshooting).
+If you see `<- /gscore/pong`, you're connected. If not, jump to [Troubleshooting](#13-troubleshooting).
 
 ---
 
@@ -427,7 +427,7 @@ Set `gscore_osc/space = "2d"` (and choose a `Node2D` main scene) and restart. Sa
 
 ---
 
-## Camera control (3D)
+## 6. Camera control (3D)
 
 In 3D you can drive the camera over OSC (2D mode ignores these — it has no camera). Positions and
 look-at points use the same normalized coordinates as everything else; angles are degrees.
@@ -460,7 +460,7 @@ Setting `pos`/`lookAt`/`reset` stops tracking. If a tracked object is removed, t
 
 ---
 
-## Physical notation: joints
+## 7. Physical notation: joints
 
 Joints constrain physics bodies into strings, hinges, and springs. They live in their own namespace,
 `/gscore/joint/<id>`, with their own id space. Both endpoints must be scene objects with physics
@@ -540,7 +540,7 @@ s("/gscore/physics", "enable", 1)
 
 ---
 
-## Sensors & trigger zones
+## 8. Sensors & trigger zones
 
 An **area** is a sensor: it reports when bodies enter, leave, or stay inside it — ideal for form
 sections, presence, and spatial triggers.
@@ -599,7 +599,7 @@ s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "mode", "quantized", 
 
 ---
 
-## Displaying scores — every source option
+## 9. Displaying scores — every source option
 
 The PNG examples above are just one way to get a score onto a notation object. A score source can
 be a **file path**, **inline data sent over OSC**, or **symbolic music that gscore engraves at
@@ -852,7 +852,7 @@ s("/gscore/notation/cache","clear")
 | Symbolic music (file) | configure engraver, `notation musicxml "user://x.musicxml"` |
 | Symbolic music (inline) | `notationData musicxml "<…>"` |
 
-## 6. Driving it from a `.gscore` script
+## 10. Driving it from a `.gscore` script
 
 Instead of sending messages one by one, put them in a text file — one OSC-style command per line,
 `#` for comments, quoted strings stay strings:
@@ -888,7 +888,7 @@ exactly this.
 
 ---
 
-## 7. Connecting from Max / Pd / SuperCollider
+## 11. Connecting from Max / Pd / SuperCollider
 
 gscore_osc speaks plain OSC over UDP. Send to **`127.0.0.1:7400`** and listen on **`7401`**.
 
@@ -915,7 +915,7 @@ To make gscore_osc send replies/events to a **specific** host/port (e.g. a diffe
 
 ---
 
-## 8. Permissions & safety
+## 12. Permissions & safety
 
 Conservative defaults keep an open OSC port from doing anything dangerous:
 
@@ -930,7 +930,7 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
 
 ---
 
-## 9. Troubleshooting
+## 13. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
