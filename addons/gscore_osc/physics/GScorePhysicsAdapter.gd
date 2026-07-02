@@ -125,6 +125,9 @@ func apply_torque(t: float) -> void:
 func set_lock_rotation(b: bool) -> void:
 	ctx.spatial.body_set_lock_rotation(body, b)
 
+func set_planar(b: bool) -> void:
+	ctx.spatial.body_set_planar(body, b)
+
 func set_freeze(b: bool) -> void:
 	user_frozen = b
 	_update_freeze()

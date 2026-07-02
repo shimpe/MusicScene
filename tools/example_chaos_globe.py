@@ -62,6 +62,7 @@ def build():
         b = f"ball{i}"
         s(f"/gscore/scene/{b}", "new", "circle")
         s(f"/gscore/scene/{b}/physics", "enable", "rigid")
+        s(f"/gscore/scene/{b}/physics", "planar", 1)           # pin to the z=0 plane (no out-of-plane drift)
         s(f"/gscore/scene/{b}/physics", "friction", 0.0)
         s(f"/gscore/scene/{b}/physics", "bounce", 0.35)
         s(f"/gscore/scene/{b}/physics", "damping", 1.4, 0.0)   # linear, angular

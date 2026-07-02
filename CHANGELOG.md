@@ -3,6 +3,16 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.8.0] — 2026-07-02
+
+### Added
+- **`/gscore/scene/<id>/physics planar <0|1>`** — pin a rigid body to the z=0 plane (3D). gscore's 3D
+  is effectively "2D in a plane", but a `RigidBody3D` accumulates a small out-of-plane velocity from
+  collisions and solver drift that eventually carries it past the limited z-depth of colliders/areas,
+  so it silently stops colliding while still looking fine head-on. `planar 1` locks the linear z axis
+  and snaps z back to 0; no-op in 2D. The `example_chaos_globe.py` balls now use it so the piece keeps
+  emitting indefinitely.
+
 ## [0.7.0] — 2026-07-01
 
 ### Added

@@ -490,8 +490,14 @@ Per object (`static → StaticBody2D`, `rigid → RigidBody2D`, `area → Area2D
 /gscore/scene/<id>/physics damping <lin> <ang> | velocity <vx> <vy> | angularVelocity <f>
 /gscore/scene/<id>/physics force <fx> <fy> | impulse <ix> <iy> | torque <f>
 /gscore/scene/<id>/physics lockRotation <0|1> | freeze <0|1> | bindTransform <0|1>
+/gscore/scene/<id>/physics planar <0|1>          # 3D: pin body to the z=0 plane (no out-of-plane drift)
 /gscore/scene/<id>/physics layer <n_or_name> | mask <n_or_name> [...]
 ```
+
+> **`planar`** matters for long-running 3D physics: gscore's 3D is really "2D in a plane", but a
+> `RigidBody3D` accumulates a tiny out-of-plane (z) velocity from collisions/solver drift that
+> eventually carries it past the limited z-depth of colliders and areas — so it silently stops
+> colliding. `planar 1` locks the z axis (and snaps z back to 0) to keep it in the plane. No-op in 2D.
 
 Colliders (2D: `rect`/`circle`/`polygon`; 3D: `box`/`rect`→box, `sphere`/`circle`→sphere). Enabling
 physics **auto-creates a collision shape matching the visible mesh** (like `collider auto`), so a body

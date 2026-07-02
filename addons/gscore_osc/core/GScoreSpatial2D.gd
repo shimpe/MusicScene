@@ -301,6 +301,11 @@ func body_set_lock_rotation(body: Node, b: bool) -> void:
 		(body as RigidBody2D).lock_rotation = b
 
 
+## No-op in 2D: bodies are already confined to the plane.
+func body_set_planar(_body: Node, _b: bool) -> void:
+	pass
+
+
 func body_set_freeze(body: Node, b: bool) -> void:
 	if body is RigidBody2D:
 		(body as RigidBody2D).freeze = b

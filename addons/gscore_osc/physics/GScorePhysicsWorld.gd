@@ -102,6 +102,7 @@ func handle_object(obj, args: Array) -> void:
 		"impulse": a.apply_impulse(_f(args, 1), _f(args, 2), _f(args, 3))
 		"torque": a.apply_torque(_f(args, 1))
 		"lockrotation", "lockRotation": a.set_lock_rotation(_b(args, 1, true))
+		"planar": a.set_planar(_b(args, 1, true))
 		"freeze": a.set_freeze(_b(args, 1, true))
 		"bindtransform", "bindTransform": a.bind_transform = _b(args, 1, true)
 		"layer": a.set_layer(args[1] if args.size() > 1 else 1)

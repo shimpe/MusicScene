@@ -354,6 +354,22 @@ func body_set_lock_rotation(body: Node, b: bool) -> void:
 		rb.axis_lock_angular_z = b
 
 
+## Pin a body to the z=0 plane (gscore's 3D is really 2D-in-a-plane). Without this, collisions and
+## numerical drift accumulate a small out-of-plane velocity that eventually carries a body past the
+## limited z-depth of colliders/areas, so it silently stops colliding. Locking the linear z axis
+## (and clearing any z position/velocity) keeps it in-plane.
+func body_set_planar(body: Node, b: bool) -> void:
+	if body is RigidBody3D:
+		var rb := body as RigidBody3D
+		rb.axis_lock_linear_z = b
+		if b:
+			rb.linear_velocity.z = 0.0
+			var t := rb.global_transform
+			if absf(t.origin.z) > 0.00001:
+				t.origin.z = 0.0
+				PhysicsServer3D.body_set_state(rb.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, t)
+
+
 func body_set_freeze(body: Node, b: bool) -> void:
 	if body is RigidBody3D:
 		(body as RigidBody3D).freeze = b

@@ -72,6 +72,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_joint_debug.gd 2>&1 | tee jointdebug.log
           grep -q "fail=0" jointdebug.log && ! grep -q "FAIL:" jointdebug.log
 
+      - name: Self-tests — planar lock
+        run: |
+          ./godot --headless --path . --script res://tools/test_planar.gd 2>&1 | tee planar.log
+          grep -q "fail=0" planar.log && ! grep -q "FAIL:" planar.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
