@@ -3,14 +3,16 @@
 Pachinko music box — a gravity-fed generative sequencer for gscore_osc (3D space).
 
 Small balls rain through an offset grid of pegs and fall into five pentatonic bins
-(C D E G A). Each landing emits
+(C D E G A). Two streams of OSC come out:
 
-    /music/note  <bin>  <note>  <ball>  <ball-speed>
+    /music/pin   <ball>  <pin>   <ball-speed>    -- a "plink" every time a ball hits a pin
+    /music/note  <bin>   <note>  <ball>  <ball-speed>    -- a note when a ball lands in a bin
 
-and this client recycles that ball back to the top the instant it lands (it listens
-for its own /music/note messages), with a slow watchdog to re-drop any ball that gets
-stuck in the pegs. The peg scattering is genuinely unpredictable, so the melody never
-repeats. Point a synth at /music/note (note = pitch, ball-speed = velocity).
+The client recycles a ball back to the top the instant it lands (it listens for its own
+/music/note messages), with a slow watchdog to re-drop any ball that gets stuck in the
+pegs. The peg scattering is genuinely unpredictable, so it never repeats. Point a synth
+at /music/note for the melody (note = pitch) and /music/pin for percussive plinks
+(ball-speed = velocity for both).
 
 REQUIRES gscore_osc 0.8.x+ — this example leans on two features that make it possible:
   * sizable primitives: small balls/pegs via `new circle <r>` (a full-size ball can't
@@ -144,6 +146,10 @@ def build():
         s(f"/gscore/scene/{bid}/physics", "planar", 1)
         s(f"/gscore/scene/{bid}/physics", "friction", 0.0)
         s(f"/gscore/scene/{bid}/physics", "bounce", 0.5)
+        # plink whenever this ball hits a pin. `other peg*` matches any peg id; a small cooldown
+        # keeps rapid double-hits in check. Payload: <ball> <pin> <ball speed>.
+        s(f"/gscore/scene/{bid}/on", "collisionEnter", "/music/pin", "other", "peg*", "cooldown", 0.03)
+        s(f"/gscore/scene/{bid}/payload", "collisionEnter", "self", "other", "otherspeed")
         drop(i)
 
     s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
@@ -172,6 +178,8 @@ def listen():
                     drop(int(ball[4:]))
                 except ValueError:
                     pass
+        elif addr == "/music/pin" and len(args) >= 2:
+            print(f"  · plink ({args[1]})")   # a percussive hit on pin args[1]
 
 
 if __name__ == "__main__":
