@@ -210,15 +210,24 @@ func create_primitive(type: String, args: Array) -> Node:
 			return l
 		"rect":
 			var mi := MeshInstance3D.new(); mi.name = "Rect"
-			var q := QuadMesh.new(); q.size = Vector2(2.0, 1.3)
+			# optional size: `new rect [w] [h]` in the app coord mode (h defaults to w). Default 2.0 x 1.3 world.
+			var w := 2.0
+			var h := 1.3
+			if args.size() > 0:
+				var wn := _pf(args, 0, 0.4)
+				w = length_to_world(wn, ctx.mapper.app_mode)
+				h = length_to_world(_pf(args, 1, wn), ctx.mapper.app_mode)
+			var q := QuadMesh.new(); q.size = Vector2(w, h)
 			mi.mesh = q
 			mi.material_override = _unshaded(Color(0.8, 0.85, 0.95))
 			return mi
 		"circle":
 			var mi := MeshInstance3D.new(); mi.name = "Circle"
-			# radius 0.3 world (= 0.06 normalized, matching the 2D circle's relative size). At 0.5 the
-			# sphere was 0.1-normalized radius, so objects at a normal 0.2 spacing visually overlapped.
-			var s := SphereMesh.new(); s.radius = 0.3; s.height = 0.6
+			# optional radius: `new circle [r]` in the app coord mode. Default 0.3 world (= 0.06 normalized).
+			var r := 0.3
+			if args.size() > 0:
+				r = length_to_world(_pf(args, 0, 0.06), ctx.mapper.app_mode)
+			var s := SphereMesh.new(); s.radius = r; s.height = r * 2.0
 			mi.mesh = s
 			mi.material_override = _unshaded(Color(0.95, 0.55, 0.45))
 			return mi

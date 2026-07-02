@@ -160,10 +160,19 @@ func create_primitive(type: String, args: Array) -> Node:
 			return p
 		"rect":
 			var p := Primitive.new(); p.kind = Primitive.Kind.RECT; p.name = "Rect"; p.size = Vector2(120, 80)
+			# optional size: `new rect [w] [h]` in the app coord mode (h defaults to w). Default 120x80 px.
+			if args.size() > 0:
+				var wn := _pf(args, 0, 0.24)
+				var wpx: float = ctx.mapper.length_x_to_pixels(wn, ctx.mapper.app_mode)
+				var hpx: float = ctx.mapper.length_x_to_pixels(_pf(args, 1, wn), ctx.mapper.app_mode)
+				p.size = Vector2(wpx, hpx)
 			return p
 		"circle":
 			var p := Primitive.new(); p.kind = Primitive.Kind.CIRCLE; p.name = "Circle"
 			p.radius = 40.0; p.fill_color = Color(0.95, 0.55, 0.45, 1.0)
+			# optional radius: `new circle [r]` in the app coord mode. Default 40 px.
+			if args.size() > 0:
+				p.radius = ctx.mapper.length_x_to_pixels(_pf(args, 0, 0.08), ctx.mapper.app_mode)
 			return p
 		"line":
 			var p := Primitive.new(); p.kind = Primitive.Kind.LINE; p.name = "Line"

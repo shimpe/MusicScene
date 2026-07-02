@@ -1055,6 +1055,10 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
 - **Joints example:** `tools/example_pendulum_joints.py` builds a hinge-linked double pendulum whose
   tip strikes the same pentatonic pads — a focused demo of joints + sensor zones. (It swings and then
   settles, so it's a linkage demo rather than the endless generator above.)
+- **Pachinko music box:** `tools/example_pachinko.py` rains small balls through an offset peg grid into
+  five pentatonic bins — a gravity-fed generative sequencer. Shows sizable primitives (`new circle <r>`
+  for small balls/pegs), `physics planar` (keeps them in-plane so the bins keep firing), and
+  event-driven recycling (the client re-drops each ball the instant it lands).
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - Worked examples: `addons/gscore_osc/examples/` (2D and 3D) and `tools/osc_test.py`.
 - Architecture/design notes: `docs/superpowers/specs/`.

@@ -182,10 +182,16 @@ over the page rect, top-left origin, y-down (same in 2D and 3D).
 
 Built-in types: `group  text  rect  circle  line  image  sprite  area  notation`
 
+`rect` and `circle` accept an optional size (in the app coordinate mode): `new circle <r>` and
+`new rect <w> [h]` (h defaults to w). Omit for the default size. The auto-collider created on
+`physics enable` tracks the sized mesh, so a small primitive gets a small collider.
+
 ```
 /gscore/scene/title new text "Hello"
-/gscore/scene/box   new rect
-/gscore/scene/ball  new circle
+/gscore/scene/box   new rect                 # default 2.0 x 1.3 (world) / 120 x 80 (px)
+/gscore/scene/panel new rect 0.4 0.3         # sized (normalized -> 2.0 x 1.5 world)
+/gscore/scene/ball  new circle               # default
+/gscore/scene/pellet new circle 0.02         # small ball
 /gscore/scene/logo  new image "res://assets/logo.png"
 /gscore/scene/score new notation
 ```

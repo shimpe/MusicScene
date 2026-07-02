@@ -3,6 +3,24 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.9.0] — 2026-07-02
+
+### Added
+- **Sizable primitives** — `new circle <r>` and `new rect <w> [h]` now accept an optional size in the
+  app coordinate mode (h defaults to w); omit for the previous fixed default. The auto-collider created
+  on `physics enable` tracks the sized mesh, so a small primitive gets a small collider. This unblocks
+  physics-dense scenes (e.g. a pachinko board) that need many small bodies — the fixed-size primitives
+  were too coarse to build one.
+- **Example: `tools/example_pachinko.py`** — a gravity-fed pachinko music box. Small balls rain through
+  an offset peg grid into five pentatonic bins, each emitting `/music/note <bin> <note> <ball> <speed>`;
+  the client recycles a ball the instant it lands (listening for its own notes) with a watchdog for
+  stuck balls. Relies on sizable primitives (small balls/pegs) and `planar` (0.8.0) to stay reliable.
+
+### Notes
+- Getting the pachinko working surfaced why it failed before: out-of-plane **z-drift** (fixed by
+  `planar` in 0.8.0 — balls were slipping past pegs/floor/bins in z) *plus* the fixed-size primitives
+  being too coarse (fixed here). Both were real engine gaps for physics-heavy use.
+
 ## [0.8.0] — 2026-07-02
 
 ### Added

@@ -77,6 +77,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_planar.gd 2>&1 | tee planar.log
           grep -q "fail=0" planar.log && ! grep -q "FAIL:" planar.log
 
+      - name: Self-tests — sizable primitives
+        run: |
+          ./godot --headless --path . --script res://tools/test_sizable.gd 2>&1 | tee sizable.log
+          grep -q "fail=0" sizable.log && ! grep -q "FAIL:" sizable.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
