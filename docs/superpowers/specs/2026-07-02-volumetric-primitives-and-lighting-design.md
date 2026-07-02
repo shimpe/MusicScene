@@ -40,7 +40,7 @@ Added to `GScoreSpatial3D.create_primitive(type, args)`. Dimensions are in the a
 | Command | Mesh (3D) | Dims → params | Defaults (world) |
 |---|---|---|---|
 | `new sphere [r]` | `SphereMesh` | `r` = radius | r 0.3 |
-| `new box [w] [h] [d]` *(alias `cube`)* | `BoxMesh` | `size` = (w, h, d); h,d default to w | 1.0 × 1.0 × 1.0 |
+| `new box [w] [h] [d]` *(alias `cube`)* | `BoxMesh` | `size` = (w, h, d); h,d default to w | 0.6 × 0.6 × 0.6 (matches the sphere's 0.6 diameter) |
 | `new cylinder [r] [h]` | `CylinderMesh` (top=bottom=r) | radius r, height h | r 0.3, h 0.8 |
 | `new capsule [r] [h]` | `CapsuleMesh` | radius r, height h (total; clamped ≥ 2r) | r 0.3, h 0.9 |
 | `new cone [r] [h]` | `CylinderMesh` (top_radius = 0) | radius r, height h | r 0.3, h 0.8 |
@@ -92,8 +92,9 @@ returning without error.
 branch, beside `reset`/`clear`):
 
 - `auto` *(default)* — every object uses its per-type default from the table above.
-- `shaded` — force all volumetric objects (classified by `type_hint` ∈ {sphere, circle, box, cube,
-  cylinder, capsule, cone}) lit; flat/billboard objects left as-is.
+- `shaded` — force the volumetric solids (classified by `type_hint` ∈ {sphere, box, cube, cylinder,
+  capsule, cone}) lit; flat/billboard objects left as-is. **`circle` is deliberately excluded** — it
+  always stays flat; light an individual circle only with a per-object `shaded 1`.
 - `flat` — force **all** objects unshaded (the classic INScore look).
 
 The chosen mode is stored on the context and consulted by `create_primitive` for newly created
