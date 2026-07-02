@@ -110,14 +110,15 @@ def build():
             s(f"/gscore/scene/{pid}/physics", "bounce", 0.7)
             s(f"/gscore/scene/{pid}", "pos", x, y, 0.0)
 
-    # side walls + thick floor (thick so fast balls can't tunnel through)
+    # side walls + thick floor (thick so fast balls can't tunnel through).
+    # Size the VISUAL to match the collider so they look like walls/floor, not big default quads.
     for wx, nm in ((-0.58, "wallL"), (0.58, "wallR")):
-        s(f"/gscore/scene/{nm}", "new", "rect")
+        s(f"/gscore/scene/{nm}", "new", "rect", 0.08, 1.5)
         s(f"/gscore/scene/{nm}/physics", "enable", "static")
         s(f"/gscore/scene/{nm}/physics", "friction", 0.0)
         s(f"/gscore/scene/{nm}/collider", "rect", 0.08, 1.5)
         s(f"/gscore/scene/{nm}", "pos", wx, 0.5, 0.0)
-    s("/gscore/scene/floor", "new", "rect")
+    s("/gscore/scene/floor", "new", "rect", 1.2, 0.6)     # visual matches the collider (a slab)
     s("/gscore/scene/floor/physics", "enable", "static")
     s("/gscore/scene/floor/physics", "friction", 0.0)
     s("/gscore/scene/floor/collider", "rect", 1.2, 0.6)
@@ -126,7 +127,7 @@ def build():
     # five pentatonic bins (sensor areas) — each plays a note as a ball enters
     for b, (x, note) in enumerate(zip(BINX, NOTES)):
         bid = f"bin{b}"
-        s(f"/gscore/scene/{bid}", "new", "rect")
+        s(f"/gscore/scene/{bid}", "new", "rect", 0.2, 0.24)
         s(f"/gscore/scene/{bid}/physics", "enable", "area")
         s(f"/gscore/scene/{bid}/collider", "rect", 0.2, 0.24)
         s(f"/gscore/scene/{bid}", "pos", x, 0.12, 0.0)
@@ -147,6 +148,10 @@ def build():
 
     s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
     s("/gscore/physics", "enable", 1)
+
+    # frame the board (it sits a little above the default centre)
+    s("/gscore/camera", "pos", 0.0, 0.42, 2.1)
+    s("/gscore/camera", "lookAt", 0.0, 0.42, 0.0)
 
 # --- listen: recycle a ball the instant it lands, and print the note -------
 def listen():
