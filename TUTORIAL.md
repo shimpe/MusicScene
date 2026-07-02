@@ -1051,10 +1051,13 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
   Five pentatonic sensor zones in a ring emit `/music/note <zone> <note> <speed>` as balls pass
   through — a never-repeating melody driven by real physics. Run the project in 3D, then
   `python tools/example_chaos_globe.py`, and point a synth at `/music/note`. It ties together gravity
-  control, sensor zones, payload constants, and `otherspeed`.
+  control, sensor zones, payload constants, and `otherspeed`. A **SuperCollider** port,
+  `tools/example_chaos_globe.scd`, drives the board *and* synthesises the notes locally (a warm,
+  reverberant bell panned to each zone's place in the ring).
 - **Joints example:** `tools/example_pendulum_joints.py` builds a hinge-linked double pendulum whose
   tip strikes the same pentatonic pads — a focused demo of joints + sensor zones. (It swings and then
-  settles, so it's a linkage demo rather than the endless generator above.)
+  settles, so it's a linkage demo rather than the endless generator above.) A **SuperCollider** port,
+  `tools/example_pendulum_joints.scd`, plays each pad as a soft marimba/mallet, panned across the swing.
 - **Pachinko music box:** `tools/example_pachinko.py` rains small balls through an offset peg grid into
   five pentatonic bins — a gravity-fed generative sequencer. Shows sizable primitives (`new circle <r>`
   for small balls/pegs), `physics planar` (keeps them in-plane so the bins keep firing), and
