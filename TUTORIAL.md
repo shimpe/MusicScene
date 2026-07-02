@@ -1052,6 +1052,9 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
   through — a never-repeating melody driven by real physics. Run the project in 3D, then
   `python tools/example_chaos_globe.py`, and point a synth at `/music/note`. It ties together gravity
   control, sensor zones, payload constants, and `otherspeed`.
+- **Joints example:** `tools/example_pendulum_joints.py` builds a hinge-linked double pendulum whose
+  tip strikes the same pentatonic pads — a focused demo of joints + sensor zones. (It swings and then
+  settles, so it's a linkage demo rather than the endless generator above.)
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - Worked examples: `addons/gscore_osc/examples/` (2D and 3D) and `tools/osc_test.py`.
 - Architecture/design notes: `docs/superpowers/specs/`.
