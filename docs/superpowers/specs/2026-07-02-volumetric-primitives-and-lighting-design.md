@@ -91,11 +91,19 @@ returning without error.
 **Global toggle** — `/gscore/scene shading auto|shaded|flat` (new verb in `_handle_scene`'s empty-rest
 branch, beside `reset`/`clear`):
 
-- `auto` *(default)* — every object uses its per-type default from the table above.
-- `shaded` — force the volumetric solids (classified by `type_hint` ∈ {sphere, box, cube, cylinder,
-  capsule, cone}) lit; flat/billboard objects left as-is. **`circle` is deliberately excluded** — it
-  always stays flat; light an individual circle only with a per-object `shaded 1`.
+- `auto` *(default)* — every object uses its per-type default from the table above (volumetric solids
+  lit; `rect`, `circle`, and billboards/labels flat).
+- `shaded` — the "maximise 3D" mode: force the volumetric solids **and** flat `rect` panels lit, so
+  walls/floors/panels also catch the light. This is what distinguishes `shaded` from `auto`, which
+  leaves `rect` flat. `circle`, `text`, `image`, `line`, `notation` stay unshaded — `circle` by the
+  explicit rule (it always stays flat), the rest being billboards/labels/degenerate for lighting.
+  Light one of those individually with a per-object `shaded 1`. *(A lit double-sided `rect` can look
+  dark from behind — a minor cosmetic limitation.)*
 - `flat` — force **all** objects unshaded (the classic INScore look).
+
+Classification helpers (on the 3D backend): `_is_volumetric_solid(t)` = `t ∈ {sphere, box, cube,
+cylinder, capsule, cone}`; `_shaded_forceable(t)` = `_is_volumetric_solid(t) or t == "rect"`. `auto`
+lights `_is_volumetric_solid`; `shaded` lights `_shaded_forceable`; `flat` lights nothing.
 
 The chosen mode is stored on the context and consulted by `create_primitive` for newly created
 objects, and the command re-applies the mode to all existing registered objects.
