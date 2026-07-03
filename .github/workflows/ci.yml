@@ -97,6 +97,16 @@ jobs:
           ./godot --headless --path . --script res://tools/test_lighting.gd 2>&1 | tee lighting.log
           grep -q "fail=0" lighting.log && ! grep -q "FAIL:" lighting.log
 
+      - name: Self-tests — OSC output (port list)
+        run: |
+          ./godot --headless --path . --script res://tools/test_osc_output.gd 2>&1 | tee oscout.log
+          grep -q "fail=0" oscout.log && ! grep -q "FAIL:" oscout.log
+
+      - name: Self-tests — OSC output command
+        run: |
+          ./godot --headless --path . --script res://tools/test_osc_output_cmd.gd 2>&1 | tee oscoutcmd.log
+          grep -q "fail=0" oscoutcmd.log && ! grep -q "FAIL:" oscoutcmd.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
