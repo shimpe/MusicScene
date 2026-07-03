@@ -544,6 +544,16 @@ func _process(_d: float) -> bool:
 	if osc.space != "3d":
 		print("DONE pass=0 fail=0")   # 3D-only test; skip in 2D
 		return true
+	if _f == 2:
+		# _has_dir_light() drives the "skip if the scene already lights itself" guard.
+		# Test the predicate directly (headless --script has no current_scene, so the
+		# skip branch is otherwise never exercised).
+		var lit := Node3D.new(); lit.add_child(DirectionalLight3D.new())
+		check(osc.spatial._has_dir_light(lit), "_has_dir_light finds a light in a tree")
+		lit.free()
+		var dark := Node3D.new(); dark.add_child(Node3D.new())
+		check(not osc.spatial._has_dir_light(dark), "_has_dir_light false when tree has no light")
+		dark.free()
 	if _f == 3:
 		var lights = _dir_lights(osc)
 		check(lights.size() >= 2, "key + fill DirectionalLight3D created")
@@ -627,7 +637,7 @@ to
 - [ ] **Step 6: Run test to verify it passes**
 
 Run: `godot --headless --path . --script res://tools/test_lighting.gd`
-Expected: all `PASS:`, final `DONE pass=2 fail=0`.
+Expected: all `PASS:`, final `DONE pass=4 fail=0`.
 
 - [ ] **Step 7: Commit**
 
@@ -770,7 +780,7 @@ In `addons/gscore_osc/core/OscDispatcher.gd`, in `dispatch`'s `match head:`, add
 - [ ] **Step 6: Run test to verify it passes**
 
 Run: `godot --headless --path . --script res://tools/test_lighting.gd`
-Expected: all `PASS:`, final `DONE pass=8 fail=0`.
+Expected: all `PASS:`, final `DONE pass=9 fail=0` (2 from the `_f==2` predicate checks + 2 rig checks + 4 command checks + 1 reset check).
 
 - [ ] **Step 7: Commit**
 
