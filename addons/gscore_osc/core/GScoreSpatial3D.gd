@@ -13,6 +13,7 @@ const H := 5.0          # normalized half-extent in world units
 const CAMERA_FOV := 60.0
 
 var ctx = null
+var shade_mode: String = "auto"          # global material default: auto | shaded | flat
 
 
 func _init(p_ctx) -> void:
@@ -223,13 +224,15 @@ func create_primitive(type: String, args: Array) -> Node:
 			return mi
 		"circle":
 			var mi := MeshInstance3D.new(); mi.name = "Circle"
-			# optional radius: `new circle [r]` in the app coord mode. Default 0.3 world (= 0.06 normalized).
-			var r := 0.3
-			if args.size() > 0:
-				r = length_to_world(_pf(args, 0, 0.06), ctx.mapper.app_mode)
-			var s := SphereMesh.new(); s.radius = r; s.height = r * 2.0
-			mi.mesh = s
-			mi.material_override = _unshaded(Color(0.95, 0.55, 0.45))
+			# Unchanged: a SphereMesh with an unshaded material (the flat INScore token).
+			mi.mesh = _sphere_mesh(args)
+			mi.material_override = _material_for("circle", Color(0.95, 0.55, 0.45))
+			return mi
+		"sphere":
+			var mi := MeshInstance3D.new(); mi.name = "Sphere"
+			# Same geometry as circle, but lit by default.
+			mi.mesh = _sphere_mesh(args)
+			mi.material_override = _material_for("sphere", Color(0.65, 0.72, 0.85))
 			return mi
 		"line":
 			var mi := MeshInstance3D.new(); mi.name = "Line"
@@ -568,6 +571,40 @@ func _unshaded(color: Color) -> StandardMaterial3D:
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
+
+
+func _lit(color: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = color
+	m.roughness = 0.7
+	m.metallic = 0.0
+	m.cull_mode = BaseMaterial3D.CULL_BACK
+	return m
+
+
+func _is_volumetric_solid(type: String) -> bool:
+	return type in ["sphere", "box", "cube", "cylinder", "capsule", "cone"]
+
+
+func _shaded_forceable(type: String) -> bool:
+	return _is_volumetric_solid(type) or type == "rect"
+
+
+## Pick the default material for a freshly-created primitive, honoring the global shade_mode.
+func _material_for(type: String, color: Color) -> StandardMaterial3D:
+	var lit := _is_volumetric_solid(type)          # "auto" per-type default
+	match shade_mode:
+		"flat": lit = false
+		"shaded": lit = _shaded_forceable(type)
+	return _lit(color) if lit else _unshaded(color)
+
+
+func _sphere_mesh(args: Array) -> SphereMesh:
+	var r := 0.3
+	if args.size() > 0:
+		r = length_to_world(_pf(args, 0, 0.06), ctx.mapper.app_mode)
+	var s := SphereMesh.new(); s.radius = r; s.height = r * 2.0
+	return s
 
 
 func _material_of(node: Node) -> StandardMaterial3D:
