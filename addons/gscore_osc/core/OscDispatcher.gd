@@ -38,6 +38,8 @@ func dispatch(address: String, args: Array) -> void:
 			_handle_app(parts.slice(2), args)
 		"camera":
 			ctx.camera.handle(parts.slice(2), args)
+		"light":
+			ctx.spatial.handle_light(parts.slice(2), args)
 		"physics":
 			if parts.size() > 2 and parts[2] == "layer":
 				ctx.physics_world.handle_layer(args)

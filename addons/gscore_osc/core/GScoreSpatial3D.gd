@@ -87,6 +87,64 @@ func _has_dir_light(n: Node) -> bool:
 	return false
 
 
+func handle_light(rest, args: Array) -> void:
+	ensure_lighting()
+	if _key_light == null or not is_instance_valid(_key_light):
+		ctx.error("internal_error", "/gscore/light", "no active light"); return
+	var verb: String
+	var p: Array
+	if rest.size() > 0:
+		verb = str(rest[0]).to_lower(); p = args
+	else:
+		verb = str(args[0]).to_lower() if args.size() > 0 else ""; p = args.slice(1)
+	match verb:
+		"dir":
+			var dir := Vector3(_pf(p, 0, 0.0), _pf(p, 1, -1.0), _pf(p, 2, 0.0))
+			if dir.length() > 0.0001:
+				var o: Vector3 = _key_light.global_position
+				_key_light.look_at_from_position(o, o + dir.normalized(), _safe_up(dir))
+		"color":
+			_key_light.light_color = Color(_pf(p, 0, 1.0), _pf(p, 1, 1.0), _pf(p, 2, 1.0))
+		"energy":
+			_key_light.light_energy = _pf(p, 0, 1.0)
+		"ambient":
+			if _fill_light != null and is_instance_valid(_fill_light):
+				_fill_light.light_energy = _pf(p, 0, 0.35)
+		"shadows":
+			_key_light.shadow_enabled = _arg_truthy(p, 0)
+		"reset":
+			reset_lighting()
+		_:
+			ctx.error("bad_arguments", "/gscore/light", "Unknown light cmd: " + verb)
+
+
+func reset_lighting() -> void:
+	if _key_light != null and is_instance_valid(_key_light):
+		_key_light.rotation_degrees = Vector3(-50, -35, 0)
+		_key_light.light_color = Color.WHITE
+		_key_light.light_energy = 1.0
+		_key_light.shadow_enabled = false
+	if _fill_light != null and is_instance_valid(_fill_light):
+		_fill_light.light_energy = 0.35
+
+
+func _safe_up(d: Vector3) -> Vector3:
+	return Vector3.UP if absf(d.normalized().dot(Vector3.UP)) < 0.99 else Vector3.FORWARD
+
+
+func _arg_truthy(a: Array, i: int) -> bool:
+	if i >= a.size():
+		return false
+	var v = a[i]
+	if v is bool:
+		return v
+	if v is int or v is float:
+		return float(v) != 0.0
+	if v is String:
+		return v == "1" or v.to_lower() == "true"
+	return false
+
+
 # --- Coordinate mapping --------------------------------------------------
 
 func to_world_point(x: float, y: float, z: float, mode: String) -> Vector3:
