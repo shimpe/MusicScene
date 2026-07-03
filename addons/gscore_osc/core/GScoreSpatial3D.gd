@@ -194,6 +194,22 @@ func set_color(node: Node, c: Color) -> void:
 		node.modulate = c
 
 
+func set_shaded(node: Node, b: bool) -> void:
+	if node is MeshInstance3D:
+		var mat := _material_of(node)
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL if b else BaseMaterial3D.SHADING_MODE_UNSHADED
+
+
+func set_metallic(node: Node, v: float) -> void:
+	if node is MeshInstance3D:
+		_material_of(node).metallic = clampf(v, 0.0, 1.0)
+
+
+func set_roughness(node: Node, v: float) -> void:
+	if node is MeshInstance3D:
+		_material_of(node).roughness = clampf(v, 0.0, 1.0)
+
+
 # --- Factory -------------------------------------------------------------
 
 func create_primitive(type: String, args: Array) -> Node:

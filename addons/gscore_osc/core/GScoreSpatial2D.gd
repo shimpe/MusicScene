@@ -147,6 +147,18 @@ func set_color(node: Node, c: Color) -> void:
 		node.modulate = c
 
 
+func set_shaded(_node: Node, _b: bool) -> void:
+	pass
+
+
+func set_metallic(_node: Node, _v: float) -> void:
+	pass
+
+
+func set_roughness(_node: Node, _v: float) -> void:
+	pass
+
+
 # --- Factory -------------------------------------------------------------
 
 func create_primitive(type: String, args: Array) -> Node:
