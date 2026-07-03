@@ -46,11 +46,14 @@ func _process(_d: float) -> bool:
 		d.dispatch("/gscore/scene", ["shading", "flat"])
 	elif _f == 8:
 		check(not _lit(osc, "s") and not _lit(osc, "c"), "shading flat -> all unshaded")
+		check(not _lit(osc, "r"), "shading flat -> rect unshaded")
 		d.dispatch("/gscore/scene", ["shading", "shaded"])
+		d.dispatch("/gscore/scene/r2", ["new", "rect"])   # created while shade_mode == shaded
 	elif _f == 10:
 		check(_lit(osc, "s"), "shading shaded -> sphere lit")
 		check(_lit(osc, "r"), "shading shaded -> rect lit")
 		check(not _lit(osc, "c"), "shading shaded -> circle still flat")
+		check(_lit(osc, "r2"), "rect created under shaded mode is lit (create-time honors mode)")
 		d.dispatch("/gscore/scene", ["shading", "auto"])
 	elif _f == 12:
 		check(_lit(osc, "s"), "shading auto -> sphere lit")

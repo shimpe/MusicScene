@@ -306,16 +306,13 @@ func set_global_shade_mode(mode: String) -> void:
 		ctx.error("bad_arguments", "/gscore/scene", "Unknown shading mode: " + mode)
 		return
 	shade_mode = mode
+	# Re-shade only gscore-created primitives; never overwrite a bound or instantiated
+	# node's own material (it may be a shader/imported material we'd silently destroy).
 	for id in ctx.registry.list_ids():
 		var obj = ctx.registry.get_object(id)
-		if obj == null or not (obj.node is MeshInstance3D):
+		if obj == null or obj.ownership != ctx.registry.OWN_CREATED or not (obj.node is MeshInstance3D):
 			continue
-		var lit: bool
-		match mode:
-			"flat": lit = false
-			"shaded": lit = _shaded_forceable(obj.type_hint)
-			_: lit = _is_volumetric_solid(obj.type_hint)   # auto
-		set_shaded(obj.node, lit)
+		set_shaded(obj.node, _lit_for(obj.type_hint, mode))
 
 
 # --- Factory -------------------------------------------------------------
@@ -344,7 +341,7 @@ func create_primitive(type: String, args: Array) -> Node:
 				h = length_to_world(_pf(args, 1, wn), ctx.mapper.app_mode)
 			var q := QuadMesh.new(); q.size = Vector2(w, h)
 			mi.mesh = q
-			mi.material_override = _unshaded(Color(0.8, 0.85, 0.95))
+			mi.material_override = _material_for("rect", Color(0.8, 0.85, 0.95))
 			return mi
 		"circle":
 			var mi := MeshInstance3D.new(); mi.name = "Circle"
@@ -772,13 +769,18 @@ func _shaded_forceable(type: String) -> bool:
 	return _is_volumetric_solid(type) or type == "rect"
 
 
+## Whether a primitive of `type` should be lit under shade `mode`:
+## auto = volumetric solids only; shaded = those solids + flat rect panels; flat = nothing.
+func _lit_for(type: String, mode: String) -> bool:
+	match mode:
+		"flat": return false
+		"shaded": return _shaded_forceable(type)
+		_: return _is_volumetric_solid(type)   # auto
+
+
 ## Pick the default material for a freshly-created primitive, honoring the global shade_mode.
 func _material_for(type: String, color: Color) -> StandardMaterial3D:
-	var lit := _is_volumetric_solid(type)          # "auto" per-type default
-	match shade_mode:
-		"flat": lit = false
-		"shaded": lit = _shaded_forceable(type)
-	return _lit(color) if lit else _unshaded(color)
+	return _lit(color) if _lit_for(type, shade_mode) else _unshaded(color)
 
 
 func _sphere_mesh(args: Array) -> SphereMesh:
