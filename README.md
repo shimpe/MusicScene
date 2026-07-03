@@ -133,10 +133,17 @@ UDP. Defaults (Project Settings → `gscore_osc/network/`):
 | `listen_port` | `7400` | port the server receives OSC on |
 | `send_host` | `127.0.0.1` | fallback reply/event host (used until a client has sent something) |
 | `send_port` | `7401` | port replies and events are sent to |
+| `send_ports` | *(empty)* | comma/space-separated output ports; when non-empty it **replaces** `send_port` (e.g. `"7401,7402"`) so a client and monitors each get a copy |
 | `autostart` | `true` | start the server on boot |
 
-Replies/events are sent to the **most recent sender's IP** on `send_port`. Override at runtime
-with `/gscore/app/output <host> <port>`.
+Replies/events are sent to the **most recent sender's IP** on every configured output port. By
+default that's the single `send_port` (7401). To let a client **and** monitors each receive a copy
+(only one process can bind a UDP port), set `send_ports` to a list, or change it at runtime — the
+command takes any number of ports:
+
+    /gscore/app/output 127.0.0.1 7401 7402      # replaces the whole list; one port = classic behavior
+
+`/gscore/info` reports the active output ports.
 
 ---
 

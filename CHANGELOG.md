@@ -3,6 +3,18 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.11.0] — 2026-07-04
+
+### Added
+- **Multi-port OSC output.** gscore can now fan every reply and event out to a list of ports, so a
+  client and one or more monitors each receive a copy. Configure a static list with the
+  `gscore_osc/network/send_ports` project setting (e.g. `"7401,7402"`), or at runtime with
+  `/gscore/app/output <host> <port> [port2 …]`. `/gscore/info` now reports the active output ports.
+
+### Notes
+- Fully backward-compatible: with `network/send_ports` unset the list is the single `network/send_port`
+  (default 7401), identical to before; `/gscore/app/output <host> <port>` with one port is unchanged.
+
 ## [0.10.0] — 2026-07-03
 
 ### Added

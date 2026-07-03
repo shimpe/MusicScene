@@ -1066,6 +1066,17 @@ Or globally: `/gscore/scene shading flat` for the classic all-flat look, `shaded
 `/gscore/light dir 0 -1 -0.5`, `/gscore/light color 1 0.9 0.8`, or turn on shadows with
 `/gscore/light shadows 1`.
 
+## Monitoring alongside your client (multiple output ports)
+
+Only one process can bind a UDP port, so a monitor and your client can't both listen on 7401. Tell
+gscore to mirror its output to several ports instead:
+
+    /gscore/app/output 127.0.0.1 7401 7402
+
+Now a client on 7401 and a monitor on 7402 each receive every reply and event. You can also set it
+statically in Project Settings under `gscore_osc/network/send_ports` (e.g. `"7401,7402"`). Send
+`/gscore/info` to see the active ports.
+
 ## Next steps
 
 - **Creative example — a physics-driven sequencer:** `tools/example_chaos_globe.py` seals several
