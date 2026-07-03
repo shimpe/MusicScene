@@ -21,6 +21,7 @@ func check(cond: bool, msg: String) -> void:
 
 func _unit_tests() -> void:
 	check(Array(OscServer.parse_ports("7401, 7402 7403")) == [7401, 7402, 7403], "parse csv + spaces")
+	check(Array(OscServer.parse_ports("7401\t7402\n 7403 ")) == [7401, 7402, 7403], "parse tabs/newlines + edge whitespace")
 	check(Array(OscServer.parse_ports("7401 abc 0 70000 7402")) == [7401, 7402], "parse drops invalid/out-of-range")
 	check(Array(OscServer.parse_ports("")) == [], "parse empty -> []")
 	check(Array(OscServer._normalize_ports([7401, 7401, 7402])) == [7401, 7402], "normalize de-dupes")
@@ -52,11 +53,16 @@ func _process(_d: float) -> bool:
 	var got_b := _rx_b.get_available_packet_count() > 0
 	if got_a and got_b:
 		check(true, "one send() reached BOTH ports (fan-out)")
-		print("DONE pass=%d fail=%d" % [_pass, _fail])
-		return true
+		return _finish()
 	if _f >= 120:
 		check(got_a, "port A received")
 		check(got_b, "port B received")
-		print("DONE pass=%d fail=%d" % [_pass, _fail])
-		return true
+		return _finish()
 	return false
+
+func _finish() -> bool:
+	# Free the manually-created server + receiver sockets so the run exits clean (no leaked-instance notices).
+	_srv.stop(); _srv.free()
+	_rx_a.close(); _rx_b.close()
+	print("DONE pass=%d fail=%d" % [_pass, _fail])
+	return true

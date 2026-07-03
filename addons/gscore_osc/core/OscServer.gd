@@ -78,6 +78,7 @@ static func parse_ports(text: String) -> PackedInt32Array:
 
 
 ## De-duplicate (order-preserving), drop out-of-range ports, and never return empty.
+## `raw` is left untyped so it accepts either a plain Array (test literals) or a PackedInt32Array.
 static func _normalize_ports(raw) -> PackedInt32Array:
 	var out := PackedInt32Array()
 	for v in raw:
