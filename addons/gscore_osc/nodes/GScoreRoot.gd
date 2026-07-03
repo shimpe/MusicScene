@@ -108,6 +108,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	spatial.ensure_camera()
+	spatial.ensure_lighting()
 	registry.auto_bind_exposed()
 	if verbose:
 		print("[GScoreOSC] ready (space=%s). Send /gscore/ping to test." % space)

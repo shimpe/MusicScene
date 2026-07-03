@@ -14,6 +14,8 @@ const CAMERA_FOV := 60.0
 
 var ctx = null
 var shade_mode: String = "auto"          # global material default: auto | shaded | flat
+var _key_light: DirectionalLight3D = null
+var _fill_light: DirectionalLight3D = null
 
 
 func _init(p_ctx) -> void:
@@ -52,6 +54,37 @@ func ensure_camera() -> void:
 	ctx.add_child(cam)
 	if ctx.verbose:
 		print("[GScoreOSC] auto-created Camera3D at z=%.1f" % default_camera_dist())
+
+
+func ensure_lighting() -> void:
+	if _key_light != null and is_instance_valid(_key_light):
+		return
+	var tree = ctx.get_tree()
+	if tree != null and tree.current_scene != null and _has_dir_light(tree.current_scene):
+		return   # the running scene already provides its own lighting; don't double it
+	_key_light = DirectionalLight3D.new()
+	_key_light.name = "GScoreKeyLight"
+	_key_light.rotation_degrees = Vector3(-50, -35, 0)
+	_key_light.light_energy = 1.0
+	_key_light.shadow_enabled = false
+	ctx.add_child(_key_light)
+	_fill_light = DirectionalLight3D.new()
+	_fill_light.name = "GScoreFillLight"
+	_fill_light.rotation_degrees = Vector3(-20, 145, 0)
+	_fill_light.light_energy = 0.35
+	_fill_light.shadow_enabled = false
+	ctx.add_child(_fill_light)
+	if ctx.verbose:
+		print("[GScoreOSC] auto-created 3D lighting (key + fill)")
+
+
+func _has_dir_light(n: Node) -> bool:
+	if n is DirectionalLight3D:
+		return true
+	for c in n.get_children():
+		if _has_dir_light(c):
+			return true
+	return false
 
 
 # --- Coordinate mapping --------------------------------------------------

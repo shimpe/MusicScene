@@ -31,6 +31,10 @@ func ensure_camera() -> void:
 	pass  # 2D needs no camera
 
 
+func ensure_lighting() -> void:
+	pass
+
+
 # --- Transforms ----------------------------------------------------------
 
 func set_position(node: Node, x: float, y: float, _z: float, mode: String) -> void:
