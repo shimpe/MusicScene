@@ -1043,6 +1043,29 @@ For frictionless local prototyping, set `gscore_osc/developer_mode = true` to re
 
 ---
 
+## Volumetric shapes & lighting (3D)
+
+In 3D mode you can build real solids, not just flat tokens:
+
+    new mysphere sphere            # a lit ball
+    new mybox box 0.4 0.4 0.4      # a lit box
+    new mycyl cylinder 0.2 0.6     # a lit cylinder (radius, height)
+
+These are **lit** by default. gscore adds a default key + fill light to 3D scenes automatically, so
+solids read as volumes out of the box (it steps aside if your scene already has a light). `circle`
+stays flat/unshaded — it's the classic INScore token; use `sphere` when you want a 3D ball.
+
+Tweak the look per object:
+
+    /gscore/scene/mybox roughness 0.2      # shinier
+    /gscore/scene/mybox metallic 0.8
+    /gscore/scene/mysphere shaded 0        # force flat
+
+Or globally: `/gscore/scene shading flat` for the classic all-flat look, `shaded` to also light flat
+`rect` panels (walls/floors), `auto` for the default. Adjust the light with `/gscore/light energy 2`,
+`/gscore/light dir 0 -1 -0.5`, `/gscore/light color 1 0.9 0.8`, or turn on shadows with
+`/gscore/light shadows 1`.
+
 ## Next steps
 
 - **Creative example — a physics-driven sequencer:** `tools/example_chaos_globe.py` seals several

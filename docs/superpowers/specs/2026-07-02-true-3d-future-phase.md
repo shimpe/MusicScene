@@ -1,6 +1,6 @@
 # Future phase — "True 3D" (deferred)
 
-**Status: deferred / backlog** (recorded 2026-07-02). Not scheduled — captured so it isn't lost.
+**Status: (a) volumetric primitives + (b) lighting LANDED in 0.10.0** (see `2026-07-02-volumetric-primitives-and-lighting-design.md`). **(c) runtime model loading still deferred / backlog.**
 
 ## Context
 

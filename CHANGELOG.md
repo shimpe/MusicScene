@@ -3,6 +3,23 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.10.0] — 2026-07-03
+
+### Added
+- **Volumetric primitives (3D):** `new sphere [r]`, `new box [w] [h] [d]` (alias `cube`),
+  `new cylinder [r] [h]`, `new capsule [r] [h]`, `new cone [r] [h]`. Sized in the app coord mode,
+  each with a matching auto-collider; `collider cylinder`/`collider capsule` shapes added.
+- **Lighting (3D):** a default key + fill `DirectionalLight3D` rig is added automatically (skipped if
+  the running scene already has a light). `/gscore/light dir|color|energy|ambient|shadows|reset`.
+- **Lit materials (3D):** volumetric primitives are lit by default; `circle` and flat/billboard
+  elements stay unshaded. Per-object `shaded [1|0]`, `metallic <0..1>`, `roughness <0..1>`. Global
+  `/gscore/scene shading auto|shaded|flat`.
+
+### Notes
+- Fully backward-compatible: `circle`, `rect`, `text`, notation, etc. render exactly as before; the
+  default lights only affect lit materials, which only the new primitives use by default.
+- 2D: the new primitive names alias to the nearest flat shape; the material/light commands are no-ops.
+
 ## [0.9.0] — 2026-07-02
 
 ### Added

@@ -535,7 +535,7 @@ func body_set_lock_rotation(body: Node, b: bool) -> void:
 		rb.axis_lock_angular_z = b
 
 
-## Pin a body to the z=0 plane (gscore's 3D is really 2D-in-a-plane). Without this, collisions and
+## Pin a body to the z=0 plane — an opt-in constraint for flat/2.5D scenes. Without this, collisions and
 ## numerical drift accumulate a small out-of-plane velocity that eventually carries a body past the
 ## limited z-depth of colliders/areas, so it silently stops colliding. Locking the linear z axis
 ## (and clearing any z position/velocity) keeps it in-plane.

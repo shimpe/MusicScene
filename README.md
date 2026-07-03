@@ -691,6 +691,40 @@ command stops tracking. If a tracked object is removed, tracking stops automatic
 
 ---
 
+## Volumetric primitives & lighting (3D)
+
+Volumetric mesh primitives (lit by default):
+
+    new sphere [r]                 lit ball (r in app coord mode; default 0.3 world)
+    new box [w] [h] [d]            lit box (alias: cube; h,d default to w; default 0.6^3)
+    new cylinder [r] [h]           lit cylinder (default r 0.3, h 0.8)
+    new capsule [r] [h]            lit capsule (default r 0.3, h 0.9; h clamped >= 2r)
+    new cone [r] [h]               lit cone (default r 0.3, h 0.8)
+
+`circle` is unchanged — a flat/unshaded token (same geometry as `sphere`). `collider cylinder`/
+`collider capsule` match the new meshes.
+
+Per-object material:
+
+    /gscore/scene/<id> shaded [1|0]     lit vs unshaded
+    /gscore/scene/<id> metallic <0..1>
+    /gscore/scene/<id> roughness <0..1>
+    /gscore/scene shading auto|shaded|flat   global default (auto=per-type, flat=all unshaded,
+                                             shaded=solids + rect panels lit; circle stays flat)
+
+Lighting (a default key + fill light is added automatically):
+
+    /gscore/light dir <x> <y> <z>       aim the key light along a world direction
+    /gscore/light color <r> <g> <b>
+    /gscore/light energy <e>
+    /gscore/light ambient <e>           fill-light strength
+    /gscore/light shadows <0|1>         opt-in, off by default
+    /gscore/light reset
+
+In 2D these material/light commands are no-ops and the volumetric names alias to flat shapes.
+
+---
+
 ## Controlled method / property access
 
 Only members exposed via `OscExposable` / metadata are reachable (unless developer mode is on):
