@@ -205,9 +205,11 @@ func _handle_scene(rest, args: Array) -> void:
 				ctx.spatial.reset_lighting()
 				ctx.mapper.app_mode = str(ctx._setting("app/coord_mode", "normalized"))
 				ctx.mapper.physics_mode = str(ctx._setting("physics/coord_mode", "normalized"))
+				ctx.spatial.set_global_shade_mode("auto")
 			"list": ctx.reply("scene/list", ctx.registry.list_ids())
 			"tree": _reply_tree()
-			_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|reset|list|tree")
+			"shading": ctx.spatial.set_global_shade_mode(_s(args, 1))
+			_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|reset|list|tree|shading")
 		return
 
 	match rest[0]:

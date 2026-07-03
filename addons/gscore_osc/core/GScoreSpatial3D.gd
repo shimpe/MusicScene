@@ -301,6 +301,23 @@ func set_roughness(node: Node, v: float) -> void:
 		_material_of(node).roughness = clampf(v, 0.0, 1.0)
 
 
+func set_global_shade_mode(mode: String) -> void:
+	if not (mode in ["auto", "shaded", "flat"]):
+		ctx.error("bad_arguments", "/gscore/scene", "Unknown shading mode: " + mode)
+		return
+	shade_mode = mode
+	for id in ctx.registry.list_ids():
+		var obj = ctx.registry.get_object(id)
+		if obj == null or not (obj.node is MeshInstance3D):
+			continue
+		var lit: bool
+		match mode:
+			"flat": lit = false
+			"shaded": lit = _shaded_forceable(obj.type_hint)
+			_: lit = _is_volumetric_solid(obj.type_hint)   # auto
+		set_shaded(obj.node, lit)
+
+
 # --- Factory -------------------------------------------------------------
 
 func create_primitive(type: String, args: Array) -> Node:

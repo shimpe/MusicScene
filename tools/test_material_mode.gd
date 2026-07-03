@@ -42,6 +42,20 @@ func _process(_d: float) -> bool:
 		check(_lit(osc, "c"), "shaded 1 -> circle lit")
 		check(absf(_mat(osc, "s").metallic - 0.5) < 0.001, "metallic set to 0.5")
 		check(absf(_mat(osc, "s").roughness - 0.2) < 0.001, "roughness set to 0.2")
+		d.dispatch("/gscore/scene/r", ["new", "rect"])
+		d.dispatch("/gscore/scene", ["shading", "flat"])
+	elif _f == 8:
+		check(not _lit(osc, "s") and not _lit(osc, "c"), "shading flat -> all unshaded")
+		d.dispatch("/gscore/scene", ["shading", "shaded"])
+	elif _f == 10:
+		check(_lit(osc, "s"), "shading shaded -> sphere lit")
+		check(_lit(osc, "r"), "shading shaded -> rect lit")
+		check(not _lit(osc, "c"), "shading shaded -> circle still flat")
+		d.dispatch("/gscore/scene", ["shading", "auto"])
+	elif _f == 12:
+		check(_lit(osc, "s"), "shading auto -> sphere lit")
+		check(not _lit(osc, "r"), "shading auto -> rect flat")
+		check(not _lit(osc, "c"), "shading auto -> circle flat")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

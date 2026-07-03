@@ -171,6 +171,10 @@ func set_roughness(_node: Node, _v: float) -> void:
 	pass
 
 
+func set_global_shade_mode(_mode: String) -> void:
+	pass
+
+
 # --- Factory -------------------------------------------------------------
 
 func create_primitive(type: String, args: Array) -> Node:
