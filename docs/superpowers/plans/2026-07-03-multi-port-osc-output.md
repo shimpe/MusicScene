@@ -236,7 +236,7 @@ Generate the sidecar and check the whole project still compiles:
 ```
 timeout 120 "<godot>" --headless --import --path . > "<scratchpad>/imp.log" 2>&1; echo "exit=$?"; grep -iE "SCRIPT ERROR|Parse Error" "<scratchpad>/imp.log" || echo "no parse errors"
 ```
-Confirm `tools/test_osc_output.gd.uid` now exists. Then run the test (see Conventions). Expected final line: `DONE pass=12 fail=0`, and no `FAIL:` line.
+Confirm `tools/test_osc_output.gd.uid` now exists. Then run the test (see Conventions). Expected final line: `DONE pass=11 fail=0`, and no `FAIL:` line. (8 unit + 2 setup + 1 happy-path fan-out check; the `_f >= 120` timeout branch only runs — and only fails — if a receiver never got the packet, so a clean run is 11, not 12.)
 
 - [ ] **Step 6: Commit**
 
