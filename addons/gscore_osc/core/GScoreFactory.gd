@@ -5,6 +5,7 @@ extends RefCounted
 
 const BUILTIN_TYPES := [
 	"group", "text", "rect", "circle", "line", "image", "sprite", "area", "notation",
+	"sphere", "box", "cube", "cylinder", "capsule", "cone",
 ]
 
 
