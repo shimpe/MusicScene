@@ -59,7 +59,7 @@ s.waitForBoot({
 
     // ---- configuration ------------------------------------------------------
     ~engine  = NetAddr("127.0.0.1", 7400);          // where gscore listens
-    ~nb      = 6;                                    // number of balls in play
+    ~nb      = 5;                                    // number of balls in play
     ~notes   = ["C4", "D4", "E4", "G4", "A4"];       // pentatonic bins (literals sent to gscore)
     ~binx    = [-0.44, -0.22, 0.0, 0.22, 0.44];      // bin x positions (normalized)
     ~even    = [-0.48, -0.32, -0.16, 0.0, 0.16, 0.32, 0.48];  // peg columns, even rows
@@ -73,7 +73,7 @@ s.waitForBoot({
 
     // ---- paced OSC send (0.03 s between messages, like the Python `s()`) -----
     // Only call from inside a Routine — `.wait` yields the enclosing thread.
-    ~snd = { |... m| ~engine.sendMsg(*m); 0.03.wait; };
+    ~snd = { |... m| ~engine.sendMsg(*m); 0.0001.wait; };
 
     // Recycle a ball to the top. Called from OSC callbacks / the watchdog, so it
     // forks its own Routine to get the little pause between velocity and pos.
@@ -138,7 +138,8 @@ s.waitForBoot({
             var xs = if(r % 2 == 0, { ~even }, { ~odd });
             xs.do({ |x, c|
                 var pid = "peg" ++ (r * 100 + c);   // stable unique id per (row, col)
-                ~snd.("/gscore/scene/" ++ pid, "new", "circle", 0.022);
+                ~snd.("/gscore/scene/" ++ pid, "new", "circle", 0.025);
+				~snd.("/gscore/scene/" ++ pid, "color", 0.8, 0.6, 0.0);
                 ~snd.("/gscore/scene/" ++ pid ++ "/physics", "enable", "static");
                 ~snd.("/gscore/scene/" ++ pid ++ "/collider", "sphere", 0.022);
                 ~snd.("/gscore/scene/" ++ pid ++ "/physics", "friction", 0.0);
@@ -180,6 +181,7 @@ s.waitForBoot({
         ~nb.do({ |i|
             var bid = "ball" ++ i;
             ~snd.("/gscore/scene/" ++ bid, "new", "circle", 0.02);
+			~snd.("/gscore/scene/" ++ bid, "color", 0.1.rrand(0.7), 0.1.rrand(0.7), 0.1.rrand(0.7));
             ~snd.("/gscore/scene/" ++ bid ++ "/physics", "enable", "rigid");
             ~snd.("/gscore/scene/" ++ bid ++ "/collider", "sphere", 0.02);
             ~snd.("/gscore/scene/" ++ bid ++ "/physics", "planar", 1);
