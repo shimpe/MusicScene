@@ -125,6 +125,8 @@ func handle_collider(obj, args: Array) -> void:
 		"polygon": a.set_collider("polygon", args.slice(1))
 		"box": a.set_collider("box", args.slice(1))
 		"sphere": a.set_collider("sphere", args.slice(1))
+		"cylinder": a.set_collider("cylinder", args.slice(1))
+		"capsule": a.set_collider("capsule", args.slice(1))
 		"disabled": a.set_collider_disabled(_b(args, 1, true))
 		"offset": a.set_collider_offset(_f(args, 1), _f(args, 2), _f(args, 3))
 		_:

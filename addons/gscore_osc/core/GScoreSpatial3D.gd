@@ -259,6 +259,54 @@ func create_primitive(type: String, args: Array) -> Node:
 			return a
 		"notation":
 			var n := NotationObject3D.new(); n.name = "Notation"; return n
+		"box", "cube":
+			var mi := MeshInstance3D.new(); mi.name = "Box"
+			var w := 0.6
+			var h := 0.6
+			var d := 0.6
+			if args.size() > 0:
+				var wn := _pf(args, 0, 0.12)
+				w = length_to_world(wn, ctx.mapper.app_mode)
+				h = length_to_world(_pf(args, 1, wn), ctx.mapper.app_mode)
+				d = length_to_world(_pf(args, 2, wn), ctx.mapper.app_mode)
+			var b := BoxMesh.new(); b.size = Vector3(w, h, d)
+			mi.mesh = b
+			mi.material_override = _material_for(type, Color(0.6, 0.7, 0.85))
+			return mi
+		"cylinder":
+			var mi := MeshInstance3D.new(); mi.name = "Cylinder"
+			var r := 0.3
+			var hh := 0.8
+			if args.size() > 0:
+				r = length_to_world(_pf(args, 0, 0.06), ctx.mapper.app_mode)
+				hh = length_to_world(_pf(args, 1, 0.16), ctx.mapper.app_mode)
+			var c := CylinderMesh.new(); c.top_radius = r; c.bottom_radius = r; c.height = hh
+			mi.mesh = c
+			mi.material_override = _material_for(type, Color(0.6, 0.7, 0.85))
+			return mi
+		"capsule":
+			var mi := MeshInstance3D.new(); mi.name = "Capsule"
+			var r := 0.3
+			var hh := 0.9
+			if args.size() > 0:
+				r = length_to_world(_pf(args, 0, 0.06), ctx.mapper.app_mode)
+				hh = length_to_world(_pf(args, 1, 0.18), ctx.mapper.app_mode)
+			hh = maxf(hh, r * 2.0)          # Godot CapsuleMesh requires height >= 2*radius
+			var c := CapsuleMesh.new(); c.radius = r; c.height = hh
+			mi.mesh = c
+			mi.material_override = _material_for(type, Color(0.6, 0.7, 0.85))
+			return mi
+		"cone":
+			var mi := MeshInstance3D.new(); mi.name = "Cone"
+			var r := 0.3
+			var hh := 0.8
+			if args.size() > 0:
+				r = length_to_world(_pf(args, 0, 0.06), ctx.mapper.app_mode)
+				hh = length_to_world(_pf(args, 1, 0.16), ctx.mapper.app_mode)
+			var c := CylinderMesh.new(); c.top_radius = 0.0; c.bottom_radius = r; c.height = hh
+			mi.mesh = c
+			mi.material_override = _material_for(type, Color(0.6, 0.7, 0.85))
+			return mi
 		_:
 			ctx.error("bad_arguments", "/gscore/scene", "Unknown built-in type: " + type)
 			return null
@@ -446,6 +494,16 @@ func make_collider(kind: String, params: Array, mode: String, visual: Node = nul
 			var s := SphereShape3D.new()
 			s.radius = length_to_world(_pf(params, 0, 0.05), mode)
 			cs.shape = s
+		"cylinder":
+			var cy := CylinderShape3D.new()
+			cy.radius = length_to_world(_pf(params, 0, 0.05), mode)
+			cy.height = length_to_world(_pf(params, 1, 0.16), mode)
+			cs.shape = cy
+		"capsule":
+			var cap := CapsuleShape3D.new()
+			cap.radius = length_to_world(_pf(params, 0, 0.05), mode)
+			cap.height = maxf(length_to_world(_pf(params, 1, 0.18), mode), cap.radius * 2.0)
+			cs.shape = cap
 		"auto":
 			var b := BoxShape3D.new()
 			var size := Vector3(1, 1, 1)
