@@ -169,6 +169,7 @@ Adds the remaining volumetric meshes (lit by default) and the matching `cylinder
 
 **Files:**
 - Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (new `create_primitive` cases; new `make_collider` cases)
+- Modify: `addons/gscore_osc/physics/GScorePhysicsWorld.gd` (route `cylinder`/`capsule` collider commands — `handle_collider` has its own allow-list)
 - Test: `tools/test_volumetric.gd` (extend)
 
 - [ ] **Step 1: Extend the failing test**
@@ -181,8 +182,10 @@ In `tools/test_volumetric.gd`, in the `if _f == 2:` block, add after the existin
 		d.dispatch("/gscore/scene/cap", ["new", "capsule"])
 		d.dispatch("/gscore/scene/cn", ["new", "cone"])
 		d.dispatch("/gscore/scene/cyc", ["new", "cylinder"])
+		d.dispatch("/gscore/scene/cyc/physics", ["enable", "static"])   # body must exist before a collider attaches
 		d.dispatch("/gscore/scene/cyc/collider", ["cylinder", 0.06, 0.16])
 		d.dispatch("/gscore/scene/capc", ["new", "capsule"])
+		d.dispatch("/gscore/scene/capc/physics", ["enable", "static"])
 		d.dispatch("/gscore/scene/capc/collider", ["capsule", 0.06, 0.2])
 ```
 
@@ -289,15 +292,24 @@ In `make_collider`, add these arms after the `"circle", "sphere":` arm (around l
 				cs.shape = cap
 ```
 
+- [ ] **Step 4b: Route the new collider kinds**
+
+`make_collider` is only reached through the collider router, which keeps its own allow-list. In `addons/gscore_osc/physics/GScorePhysicsWorld.gd` `handle_collider`, add after the `"sphere":` arm (around line 127):
+
+```gdscript
+			"cylinder": a.set_collider("cylinder", args.slice(1))
+			"capsule": a.set_collider("capsule", args.slice(1))
+```
+
 - [ ] **Step 5: Run test to verify it passes**
 
 Run: `godot --headless --path . --script res://tools/test_volumetric.gd`
-Expected: all `PASS:`, final `DONE pass=15 fail=0`.
+Expected: all `PASS:`, final `DONE pass=13 fail=0`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial3D.gd tools/test_volumetric.gd
+git add addons/gscore_osc/core/GScoreSpatial3D.gd addons/gscore_osc/physics/GScorePhysicsWorld.gd tools/test_volumetric.gd
 git commit -m "feat(3d): box/cylinder/capsule/cone primitives + cylinder/capsule colliders"
 ```
 
