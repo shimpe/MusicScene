@@ -82,6 +82,21 @@ jobs:
           ./godot --headless --path . --script res://tools/test_sizable.gd 2>&1 | tee sizable.log
           grep -q "fail=0" sizable.log && ! grep -q "FAIL:" sizable.log
 
+      - name: Self-tests — volumetric primitives
+        run: |
+          ./godot --headless --path . --script res://tools/test_volumetric.gd 2>&1 | tee volumetric.log
+          grep -q "fail=0" volumetric.log && ! grep -q "FAIL:" volumetric.log
+
+      - name: Self-tests — material mode
+        run: |
+          ./godot --headless --path . --script res://tools/test_material_mode.gd 2>&1 | tee materialmode.log
+          grep -q "fail=0" materialmode.log && ! grep -q "FAIL:" materialmode.log
+
+      - name: Self-tests — lighting
+        run: |
+          ./godot --headless --path . --script res://tools/test_lighting.gd 2>&1 | tee lighting.log
+          grep -q "fail=0" lighting.log && ! grep -q "FAIL:" lighting.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
