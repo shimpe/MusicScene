@@ -21,7 +21,13 @@ func _process(_d: float) -> bool:
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if osc.space != "3d":
-		print("DONE pass=0 fail=0")   # 3D-only test; skip in 2D
+		# 2D backend: /gscore/light and lighting-reset must no-op without error.
+		var d2 = osc.dispatcher
+		d2.dispatch("/gscore/light", ["energy", 2.0])
+		d2.dispatch("/gscore/light", ["dir", 1, 0, 0])
+		d2.dispatch("/gscore/scene", ["reset"])   # exercises the 2D reset_lighting no-op
+		check(true, "2D: /gscore/light + scene reset no-op without error")
+		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	if _f == 2:
 		# _has_dir_light() drives the "skip if the scene already lights itself" guard.
@@ -50,10 +56,18 @@ func _process(_d: float) -> bool:
 		check(fill != null and absf(fill.light_energy - 0.7) < 0.001, "ambient -> fill light 0.7")
 		check(key != null and key.light_color.is_equal_approx(Color(1.0, 0.5, 0.25)), "color -> key light")
 		check(key != null and key.shadow_enabled, "shadows 1 -> key shadows on")
+		# dir aims the key light so its -Z axis points along the given world vector.
+		osc.dispatcher.dispatch("/gscore/light", ["dir", 1, 0, 0])
+		check(key != null and (-key.global_transform.basis.z).dot(Vector3(1, 0, 0)) > 0.99, "dir -> key light aims +x")
+		osc.dispatcher.dispatch("/gscore/light", ["dir", 0, 1, 0])   # parallel to UP: exercises _safe_up fallback
+		check(key != null and (-key.global_transform.basis.z).dot(Vector3(0, 1, 0)) > 0.99, "dir straight-up (safe_up) aims +y")
 		osc.dispatcher.dispatch("/gscore/light", ["reset"])
 	elif _f == 7:
 		var key = osc.get_node_or_null("GScoreKeyLight")
-		check(key != null and absf(key.light_energy - 1.0) < 0.001 and not key.shadow_enabled, "reset restores key light defaults")
+		var fill = osc.get_node_or_null("GScoreFillLight")
+		check(key != null and absf(key.light_energy - 1.0) < 0.001 and not key.shadow_enabled, "reset restores key light energy + shadows")
+		check(key != null and key.light_color.is_equal_approx(Color.WHITE), "reset restores key light color")
+		check(fill != null and absf(fill.light_energy - 0.35) < 0.001, "reset restores fill light energy")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

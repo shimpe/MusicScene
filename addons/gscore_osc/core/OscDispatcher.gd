@@ -202,6 +202,7 @@ func _handle_scene(rest, args: Array) -> void:
 				ctx.emitter.clear()
 				ctx.physics_world.reset()
 				ctx.camera.reset()
+				ctx.spatial.reset_lighting()
 				ctx.mapper.app_mode = str(ctx._setting("app/coord_mode", "normalized"))
 				ctx.mapper.physics_mode = str(ctx._setting("physics/coord_mode", "normalized"))
 			"list": ctx.reply("scene/list", ctx.registry.list_ids())

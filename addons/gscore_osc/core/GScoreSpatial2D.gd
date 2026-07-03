@@ -39,6 +39,10 @@ func handle_light(_rest, _args: Array) -> void:
 	pass
 
 
+func reset_lighting() -> void:
+	pass
+
+
 # --- Transforms ----------------------------------------------------------
 
 func set_position(node: Node, x: float, y: float, _z: float, mode: String) -> void:
