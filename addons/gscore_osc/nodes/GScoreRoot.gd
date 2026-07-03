@@ -98,10 +98,13 @@ func _ready() -> void:
 	server.message_received.connect(_on_message)
 
 	if bool(_setting("network/autostart", true)):
+		var send_ports := OscServer.startup_ports(
+			String(_setting("network/send_ports", "")),
+			int(_setting("network/send_port", 7401)))
 		server.start(
 			int(_setting("network/listen_port", 7400)),
 			String(_setting("network/send_host", "127.0.0.1")),
-			PackedInt32Array([int(_setting("network/send_port", 7401))]))
+			send_ports)
 
 	# Defer until the running scene is in the tree: auto-bind exposed nodes and (3D) add a
 	# camera only if the scene didn't provide one.
