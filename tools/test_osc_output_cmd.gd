@@ -22,6 +22,8 @@ func _process(_d: float) -> bool:
 		check(Array(osc.server.get_send_ports()) == [7411], "output with one port")
 		d.dispatch("/gscore/app/output", ["127.0.0.1"])   # no ports
 		check(Array(osc.server.get_send_ports()) == [7411], "output with no port leaves the list unchanged")
+		d.dispatch("/gscore/app/output", ["127.0.0.1", 99999])   # only out-of-range ports
+		check(Array(osc.server.get_send_ports()) == [7411], "output with only invalid ports leaves the list unchanged")
 		var payload = osc.dispatcher._info_payload()
 		check(payload.has("output") and payload.has(7411), "/gscore/info payload includes the output ports")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])

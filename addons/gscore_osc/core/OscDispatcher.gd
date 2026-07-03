@@ -124,9 +124,11 @@ func _handle_app(rest, args: Array) -> void:
 			var out_host := _s(args, 0)
 			var out_ports := PackedInt32Array()
 			for i in range(1, args.size()):
-				out_ports.append(int(_f(args, i)))
+				var p := int(_f(args, i))
+				if p >= 1 and p <= 65535:
+					out_ports.append(p)
 			if out_ports.is_empty():
-				ctx.error("bad_arguments", "/gscore/app/output", "output needs at least one port")
+				ctx.error("bad_arguments", "/gscore/app/output", "output needs at least one valid port")
 			else:
 				ctx.server.set_output(out_host, out_ports)
 		"developer", "developer_mode":
