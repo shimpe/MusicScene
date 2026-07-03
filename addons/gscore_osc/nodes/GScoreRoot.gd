@@ -101,7 +101,7 @@ func _ready() -> void:
 		server.start(
 			int(_setting("network/listen_port", 7400)),
 			String(_setting("network/send_host", "127.0.0.1")),
-			int(_setting("network/send_port", 7401)))
+			PackedInt32Array([int(_setting("network/send_port", 7401))]))
 
 	# Defer until the running scene is in the tree: auto-bind exposed nodes and (3D) add a
 	# camera only if the scene didn't provide one.

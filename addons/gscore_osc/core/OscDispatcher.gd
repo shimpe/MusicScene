@@ -114,7 +114,7 @@ func _handle_app(rest, args: Array) -> void:
 		"permissions":
 			_handle_permissions(args)
 		"output":
-			ctx.server.set_output(_s(args, 0), int(_f(args, 1, 7401)))
+			ctx.server.set_output(_s(args, 0), PackedInt32Array([int(_f(args, 1, 7401))]))
 		"developer", "developer_mode":
 			ctx.permissions.developer_mode = _b(args, 0)
 		_:
