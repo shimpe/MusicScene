@@ -90,12 +90,19 @@ func _handle_root(args: Array) -> void:
 
 
 func _handle_info() -> void:
-	ctx.reply("info", [
+	ctx.reply("info", _info_payload())
+
+
+func _info_payload() -> Array:
+	var out := [
 		"gscore_osc", "0.10.0",
 		"listen", ctx.server.get_listen_port(),
 		"coord", ctx.mapper.app_mode,
 		"objects", ctx.registry.list_ids().size(),
-	])
+		"output",
+	]
+	out.append_array(Array(ctx.server.get_send_ports()))
+	return out
 
 
 # --- App -----------------------------------------------------------------
@@ -114,7 +121,14 @@ func _handle_app(rest, args: Array) -> void:
 		"permissions":
 			_handle_permissions(args)
 		"output":
-			ctx.server.set_output(_s(args, 0), PackedInt32Array([int(_f(args, 1, 7401))]))
+			var out_host := _s(args, 0)
+			var out_ports := PackedInt32Array()
+			for i in range(1, args.size()):
+				out_ports.append(int(_f(args, i)))
+			if out_ports.is_empty():
+				ctx.error("bad_arguments", "/gscore/app/output", "output needs at least one port")
+			else:
+				ctx.server.set_output(out_host, out_ports)
 		"developer", "developer_mode":
 			ctx.permissions.developer_mode = _b(args, 0)
 		_:
