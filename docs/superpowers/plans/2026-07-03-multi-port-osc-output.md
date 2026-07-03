@@ -386,7 +386,7 @@ func _info_payload() -> Array:
 
 - [ ] **Step 5: Generate the `.uid`, run the test**
 
-Run the import check (Task 1 Step 5) to generate `tools/test_osc_output_cmd.gd.uid` and confirm no parse errors. Then run the test. Expected: `DONE pass=4 fail=0`, no `FAIL:`.
+Run the import check (Task 1 Step 5) to generate `tools/test_osc_output_cmd.gd.uid` and confirm no parse errors. Then run the test. Expected: `DONE pass=4 fail=0`, no `FAIL:`. (Final-review follow-up `b607872` later range-validates each port in the `output` case — dropping out-of-range values while building `out_ports`, so an all-invalid message errors and leaves the list intact — and adds a 5th check for it; after that follow-up the expected count is `pass=5 fail=0`.)
 
 - [ ] **Step 6: Commit**
 
