@@ -47,8 +47,8 @@ var _f := 0
 var _pass := 0
 var _fail := 0
 var _srv
-var _rx_a
-var _rx_b
+var _rx_a: PacketPeerUDP
+var _rx_b: PacketPeerUDP
 
 const LISTEN := 7490
 const PA := 7491
