@@ -69,5 +69,27 @@ func _bounce(obj, other: Node) -> void:
 		v_out += n * (min_speed_w - outward)
 	ctx.spatial.body_set_velocity_world(other, v_out)
 
-func _teleport(_obj, _other: Node) -> void:
-	pass   # implemented in Task 4
+func _teleport(obj, other: Node) -> void:
+	var now: int = Time.get_ticks_msec()
+	var bid: int = other.get_instance_id()
+	if _recent.has(bid):
+		if now < _recent[bid]:
+			return                     # just arrived somewhere; ignore to avoid ping-pong
+		_recent.erase(bid)
+	var targets: Array = _portals.get(obj.osc_id, [])
+	var live: Array = []
+	for tid in targets:
+		var t = ctx.registry.get_object(tid)
+		if t != null and t.node != null:
+			live.append(t)
+	if live.is_empty():
+		return
+	var dst = live[randi() % live.size()]
+	var mode: String = ctx.mapper.physics_mode
+	var dst_norm = ctx.spatial.point_to_norm(ctx.spatial.body_global_position(dst.node), mode)
+	var v = ctx.spatial.body_get_velocity(other)
+	var vnorm = ctx.spatial.vector_to_norm(v, mode)
+	var vdir = vnorm.normalized() if vnorm.length() > 0.0 else Vector3.ZERO
+	var target = dst_norm + vdir * PORTAL_NUDGE
+	ctx.spatial.set_position(other, target.x, target.y, target.z, mode)   # velocity untouched -> preserved
+	_recent[bid] = now + PORTAL_COOLDOWN_MS
