@@ -11,7 +11,7 @@ All notable changes to **gscore_osc** are documented here. Format loosely follow
     bumper. The surface normal is exact for round (circle/sphere) and box/rect colliders (the face the
     body enters, honoring rotation). Configure with
     `/gscore/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>` (defaults `gain 1.0`, `strength 0`;
-    `strength`/`minSpeed` are in normalized units like velocity/radii).
+    `strength`/`minSpeed` are in normalized units — the same scale as a collider radius).
   - `new portal` teleports a colliding body to a random one of its linked targets, preserving velocity,
     with a short re-entry cooldown to prevent ping-pong. Configure with
     `/gscore/scene/<id>/portal link <id...>` (directional; A→B does not imply B→A) and `portal unlink`.

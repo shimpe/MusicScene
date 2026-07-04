@@ -420,7 +420,8 @@ s("/gscore/scene/pa/portal", "link", "pb", "pc")   # enter pa -> random of {pb, 
 
 **Bouncer** sets the outgoing velocity to `reflect(v, n)·gain + n·strength`, where `n` is the outward
 surface normal — exact for round colliders (center-to-center) and box/rect colliders (the face the body
-enters, honoring rotation). `strength`/`minSpeed` are normalized units (like velocity/radii); `gain` is a
+enters, honoring rotation). `strength`/`minSpeed` are normalized units — the same scale as a collider
+radius (not per-axis like a normalized velocity); `gain` is a
 dimensionless restitution (1.0 = energy-preserving).
 
 **Portal** teleports an entering body to a uniform-random one of its linked targets, preserving velocity.

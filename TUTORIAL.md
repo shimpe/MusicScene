@@ -1097,7 +1097,7 @@ s("/gscore/scene/p2", "new", "portal"); s("/gscore/scene/p2/collider", "sphere",
 s("/gscore/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
 ```
 
-`strength`/`minSpeed` are in the same normalized units as velocity and radii. Reactors are pass-through
+`strength`/`minSpeed` are in normalized units — the same scale as a collider radius. Reactors are pass-through
 (they don't physically block) — contain a play area with static walls that have `bounce`.
 
 ## Next steps

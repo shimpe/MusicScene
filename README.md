@@ -584,7 +584,8 @@ is auto-enabled) and still emit `areaEnter`, so you can attach sound/scoring wit
 /gscore/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>
         # mirror-reflect the body's velocity + kick it outward by `strength`.
         # normal is exact for round (center-to-center) and box (entered face) colliders.
-        # gain=1.0 (energy-preserving), strength=0 by default; strength/minSpeed are normalized units.
+        # gain=1.0 (energy-preserving), strength=0 by default; strength/minSpeed are normalized units
+        # (the same scale as a collider radius).
 
 /gscore/scene/<id> new portal
 /gscore/scene/<id>/collider circle <r>
