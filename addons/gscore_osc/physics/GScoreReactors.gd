@@ -8,9 +8,10 @@ var ctx = null
 var _bouncers: Dictionary = {}
 # id -> Array[String] of target ids
 var _portals: Dictionary = {}
-# body instance id -> cooldown expiry (ms) after a teleport. Load-bearing anti-ping-pong
-# guarantee: a just-arrived body is still inside the destination Area, so this window (not the
-# nudge) is what stops it from being instantly re-grabbed and oscillating between portals.
+# body instance id -> { "portal": <destination id>, "until": <expiry ms> }. Destination-scoped
+# anti-ping-pong: a just-arrived body is still inside its destination Area, so it's skipped ONLY at
+# that portal until it leaves/the window lapses — other portals stay live, so multi-portal scenes
+# (e.g. a pinball with several pairs) don't suppress legitimate teleports.
 var _recent: Dictionary = {}
 
 const PORTAL_COOLDOWN_MS := 250
@@ -74,14 +75,16 @@ func _bounce(obj, other: Node) -> void:
 
 func _teleport(obj, other: Node) -> void:
 	var now: int = Time.get_ticks_msec()
-	# Prune expired cooldowns so _recent stays bounded to bodies currently within the window,
-	# instead of retaining an entry for every body that ever teleported this session.
-	for k in _recent.keys():
-		if now >= _recent[k]:
-			_recent.erase(k)
 	var bid: int = other.get_instance_id()
-	if _recent.has(bid):
-		return                     # still within its post-teleport cooldown; skip to avoid ping-pong
+	# Prune expired immunities so _recent stays bounded to bodies currently within a window.
+	for k in _recent.keys():
+		if now >= _recent[k]["until"]:
+			_recent.erase(k)
+	# Skip ONLY re-entry to the portal this body just arrived at — that alone stops ping-pong (the
+	# just-teleported body is still inside its destination Area). Other portals are unaffected, so a
+	# fast body crossing several portals in quick succession still teleports at each one.
+	if _recent.has(bid) and _recent[bid]["portal"] == obj.osc_id:
+		return
 	var targets: Array = _portals.get(obj.osc_id, [])
 	var live: Array = []
 	for tid in targets:
@@ -98,4 +101,4 @@ func _teleport(obj, other: Node) -> void:
 	var vdir = vnorm.normalized() if vnorm.length() > 0.0 else Vector3.ZERO
 	var target = dst_norm + vdir * PORTAL_NUDGE
 	ctx.spatial.set_position(other, target.x, target.y, target.z, mode)   # velocity untouched -> preserved
-	_recent[bid] = now + PORTAL_COOLDOWN_MS
+	_recent[bid] = {"portal": dst.osc_id, "until": now + PORTAL_COOLDOWN_MS}

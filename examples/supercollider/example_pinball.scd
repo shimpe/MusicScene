@@ -367,13 +367,13 @@ s.waitForBoot({
         ~mkBumper.("bumpF",  0.0, -0.56, 4.4, 0.075, 0.95, 0.85, 0.20);   // jackpot
 
         // portals: 2 directional pairs (each linked both ways -> a true two-way warp)
-        ~mkPortal.("portA", -0.50,  0.08, 0.05, 0.25, 0.85, 0.90);
-        ~mkPortal.("portB",  0.50,  0.08, 0.05, 0.25, 0.85, 0.90);
+        ~mkPortal.("portA", -0.50,  0.08, 0.09, 0.25, 0.85, 0.90);   // bigger radius = easier for fast balls to hit
+        ~mkPortal.("portB",  0.50,  0.08, 0.09, 0.25, 0.85, 0.90);
         ~snd.("/gscore/scene/portA/portal", "link", "portB");
         ~snd.("/gscore/scene/portB/portal", "link", "portA");
 
-        ~mkPortal.("portC", -0.30, -0.56, 0.05, 0.75, 0.40, 0.95);
-        ~mkPortal.("portD",  0.30, -0.56, 0.05, 0.75, 0.40, 0.95);
+        ~mkPortal.("portC", -0.30, -0.56, 0.09, 0.75, 0.40, 0.95);
+        ~mkPortal.("portD",  0.30, -0.56, 0.09, 0.75, 0.40, 0.95);
         ~snd.("/gscore/scene/portC/portal", "link", "portD");
         ~snd.("/gscore/scene/portD/portal", "link", "portC");
 
