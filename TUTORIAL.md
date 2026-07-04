@@ -18,7 +18,7 @@ client.
 - [7. Physical notation: joints](#7-physical-notation-joints)
 - [8. Sensors & trigger zones](#8-sensors--trigger-zones)
 - [9. Displaying scores — every source option](#9-displaying-scores--every-source-option)
-- [10. Driving it from a `.gscore` script](#10-driving-it-from-a-MusicScene-script)
+- [10. Driving it from a `.ms` script](#10-driving-it-from-a-ms-script)
 - [11. Connecting from Max / Pd / SuperCollider](#11-connecting-from-max--pd--supercollider)
 - [12. Permissions & safety](#12-permissions--safety)
 - [13. Troubleshooting](#13-troubleshooting)
@@ -949,12 +949,12 @@ s("/ms/notation/cache","clear")
 | Symbolic music (file) | configure engraver, `notation musicxml "user://x.musicxml"` |
 | Symbolic music (inline) | `notationData musicxml "<…>"` |
 
-## 10. Driving it from a `.gscore` script
+## 10. Driving it from a `.ms` script
 
 Instead of sending messages one by one, put them in a text file — one OSC-style command per line,
 `#` for comments, quoted strings stay strings:
 
-`res://my_score.gscore`
+`res://my_score.ms`
 ```text
 # A tiny scene
 /ms/scene clear
@@ -969,7 +969,7 @@ Instead of sending messages one by one, put them in a text file — one OSC-styl
 Run it over OSC:
 
 ```python
-s("/ms/script/load", "res://my_score.gscore")
+s("/ms/script/load", "res://my_score.ms")
 ```
 
 …or from GDScript (e.g. in your `Main` scene's `_ready`, after a short delay so the autoload has
@@ -977,7 +977,7 @@ booted):
 
 ```gdscript
 await get_tree().create_timer(0.5).timeout
-MusicSceneOSC.script_runner.run_file("res://my_score.gscore")
+MusicSceneOSC.script_runner.run_file("res://my_score.ms")
 ```
 
 The bundled examples (`addons/musicscene/examples/ExampleMain.tscn` and `ExampleMain3D.tscn`) do

@@ -38,4 +38,4 @@ offset_left = 24.0
 offset_top = 80.0
 offset_right = 760.0
 offset_bottom = 160.0
-text = "MusicScene demo — OSC in udp:7400, replies/events udp:7401. Send /ms/ping or load example_score.gscore. See README.md."
+text = "MusicScene demo — OSC in udp:7400, replies/events udp:7401. Send /ms/ping or load example_score.ms. See README.md."

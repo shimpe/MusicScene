@@ -68,7 +68,7 @@ ownership (`created_by_osc`, `instantiated_by_osc`, `bound_existing`, `auto_boun
 - **Transport/time**: `MSTransport` (play/stop/pause/seek/tempo/time/beat/state) drives
   `MSTimeMapper` interpolations (`/scene/<id> map …`, cursor map) each frame.
 - **Script runner**: `MSScriptRunner` tokenizes OSC-style text lines (quotes, typed
-  literals, `#` comments) and feeds the dispatcher; loads `.gscore` files.
+  literals, `#` comments) and feeds the dispatcher; loads `.ms` files.
 
 ## 4. Module map
 

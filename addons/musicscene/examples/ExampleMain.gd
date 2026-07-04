@@ -1,10 +1,10 @@
 extends Node2D
 ## Main example scene controller. Provides a couple of pre-exposed existing nodes (for the
-## binding / signal-forwarding acceptance tests) and, on start, runs the example .gscore so the
+## binding / signal-forwarding acceptance tests) and, on start, runs the example .ms so the
 ## project shows a score + physics demo without needing an external OSC client.
 
 @export var auto_run_demo: bool = true
-@export var demo_script: String = "res://addons/musicscene/examples/example_score.gscore"
+@export var demo_script: String = "res://addons/musicscene/examples/example_score.ms"
 
 
 func _ready() -> void:

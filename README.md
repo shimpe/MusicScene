@@ -88,7 +88,7 @@ The addon is wired to run **out of the box**:
 1. Open the project in Godot 4.7. The plugin is enabled and the `MusicSceneOSC` autoload is
    registered in `project.godot`.
 2. Press **Play**. The project defaults to **3D** (`ExampleMain3D.tscn`): the OSC server starts,
-   a Camera3D is auto-created, and `example_score_3d.gscore` plays automatically — a notation
+   a Camera3D is auto-created, and `example_score_3d.ms` plays automatically — a notation
    page on a quad in world space, a red cursor sweep, a highlighted measure region, and a note
    that falls onto a floor and emits OSC on impact.
 3. Send `/ms/ping` from any OSC client → you get `/ms/pong`.
@@ -821,10 +821,10 @@ One OSC-style command per line; `#` comments; quoted strings stay strings; numbe
 
 ```
 /ms/script/run "<one line>"
-/ms/script/load "<path.gscore>"
+/ms/script/load "<path.ms>"
 ```
 
-See `addons/musicscene/examples/example_score.gscore`.
+See `addons/musicscene/examples/example_score.ms`.
 
 ---
 
@@ -984,8 +984,8 @@ addons/musicscene/
   transport/ MSTransport  MSTimeMapper
   script/    MSScriptRunner
   nodes/     MSRoot  OscExposable
-  examples/  ExampleMain.tscn / .gd          (2D)   example_score.gscore
-             ExampleMain3D.tscn / .gd        (3D)   example_score_3d.gscore
+  examples/  ExampleMain.tscn / .gd          (2D)   example_score.ms
+             ExampleMain3D.tscn / .gd        (3D)   example_score_3d.ms
              ExamplePhysicalNote.tscn  ExampleNotationScore.tscn / .gd
 osc_spawnable/PhysicalNote.tscn  PhysicalNote3D.tscn   # whitelisted spawnables
 scores/page1.png                       # placeholder engraved page
