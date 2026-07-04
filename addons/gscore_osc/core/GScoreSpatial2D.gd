@@ -330,6 +330,13 @@ func body_set_velocity_world(body: Node, v) -> void:
 		(body as RigidBody2D).linear_velocity = v
 
 
+## World-space (pixel) magnitude of a normalized scalar length. Reuses the SAME uniform-length
+## conversion as a circle collider radius (half the viewport height), so bouncer strength/minSpeed
+## share one scale with radii and velocities.
+func length_to_world(len: float, mode: String) -> float:
+	return ctx.mapper.length_to_pixels(len, mode)
+
+
 ## Outward world-space unit normal at the contact between reactor and other.
 ## Circle collider -> center-to-center; box collider -> the face `other` is moving into.
 func reactor_normal(reactor: Node, other: Node):

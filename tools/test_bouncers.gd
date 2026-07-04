@@ -4,6 +4,7 @@ extends SceneTree
 var _f := 0
 var _pass := 0
 var _fail := 0
+var _spd_before := 0.0
 
 func check(cond: bool, msg: String) -> void:
 	if cond: _pass += 1; print("PASS: ", msg)
@@ -14,6 +15,12 @@ func _vx(osc, id: String) -> float:
 	if o == null or o.physics_adapter == null or o.physics_adapter.body == null:
 		return 0.0
 	return osc.spatial.body_get_velocity(o.physics_adapter.body).x
+
+func _speed(osc, id: String) -> float:
+	var o = osc.registry.get_object(id)
+	if o == null or o.physics_adapter == null or o.physics_adapter.body == null:
+		return 0.0
+	return osc.spatial.body_get_velocity(o.physics_adapter.body).length()
 
 func _process(_d: float) -> bool:
 	_f += 1
@@ -62,9 +69,11 @@ func _process(_d: float) -> bool:
 		osc.dispatcher.dispatch("/gscore/scene/ball2/physics", ["velocity", 0.6, 0.0, 0.0])
 	if _f == 6:
 		check(_vx(osc, "ball") > 0.0, "ball moving +x before contact")
+		_spd_before = _speed(osc, "ball")
 	if _f == 60:
 		check(_vx(osc, "ball") < 0.0, "ball reflected off circle bouncer (vx reversed)")
 		check(_vx(osc, "ball2") < 0.0, "ball2 reflected off box wall (vx reversed)")
+		check(_speed(osc, "ball") > _spd_before, "strength boosts the ball's outgoing speed above its incoming speed")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false
