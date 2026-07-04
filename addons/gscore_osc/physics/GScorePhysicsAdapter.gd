@@ -45,6 +45,7 @@ func enable(kind: String) -> void:
 	if ctx.spatial.is_physics_body(current):
 		body = current
 		visual = ctx.spatial.find_visual_child(current)
+		collider = ctx.spatial.find_collider_child(current)
 		ctx.spatial.connect_collision(self, body)
 		return
 
@@ -156,6 +157,11 @@ func set_collider(kind: String, params: Array) -> void:
 		ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/collider", "Bad collider: " + kind)
 		return
 	if collider != null and is_instance_valid(collider):
+		# Detach immediately (not just queue_free, which is deferred) so the replaced shape is gone
+		# from the body this frame — otherwise both shapes co-exist for a frame and a collision query
+		# can still see the stale default shape.
+		if collider.get_parent() != null:
+			collider.get_parent().remove_child(collider)
 		collider.queue_free()
 	collider = cs
 	body.add_child(cs)

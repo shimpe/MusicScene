@@ -21,6 +21,12 @@ func _process(_d: float) -> bool:
 		check(obj != null and obj.type_hint == "bouncer", "type_hint is bouncer")
 		var body = obj.physics_adapter.body if (obj != null and obj.physics_adapter != null) else null
 		check(body != null and osc.spatial.is_area(body), "bouncer body is an Area (area adapter auto-enabled)")
+		osc.dispatcher.dispatch("/gscore/scene/bmp/collider", ["circle", 0.15])
+		var nshapes := 0
+		for c in body.get_children():
+			if c is CollisionShape2D or c is CollisionShape3D:
+				nshapes += 1
+		check(nshapes == 1, "collider override replaces the default shape (no double shape)")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

@@ -474,6 +474,13 @@ func find_visual_child(n: Node) -> Node:
 	return null
 
 
+func find_collider_child(n: Node) -> Node:
+	for c in n.get_children():
+		if c is CollisionShape3D:
+			return c
+	return null
+
+
 func gravity_world(gx: float, gy: float, gz: float, mode: String) -> Vector3:
 	return to_world_vector(gx, gy, gz, mode)
 
