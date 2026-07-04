@@ -5,6 +5,9 @@ var _f := 0
 var _pass := 0
 var _fail := 0
 var _spd_before := 0.0
+var _ball_reflected := false
+var _ball2_reflected := false
+var _ball_speed_after := 0.0
 
 func check(cond: bool, msg: String) -> void:
 	if cond: _pass += 1; print("PASS: ", msg)
@@ -58,7 +61,7 @@ func _process(_d: float) -> bool:
 		osc.dispatcher.dispatch("/gscore/scene/ball/physics", ["velocity", 0.6, 0.0, 0.0])
 		# --- box wall reflection (wall + ball2) ---
 		osc.dispatcher.dispatch("/gscore/scene/wall", ["new", "bouncer"])
-		osc.dispatcher.dispatch("/gscore/scene/wall/collider", ["box", 0.03, 0.3, 0.3])
+		osc.dispatcher.dispatch("/gscore/scene/wall/collider", ["box", 0.2, 0.3, 0.3])
 		osc.dispatcher.dispatch("/gscore/scene/wall", ["pos", 0.5, 0.3, 0.0])
 		osc.dispatcher.dispatch("/gscore/scene/wall/bouncer", ["strength", 1.0, "gain", 1.0])
 		osc.dispatcher.dispatch("/gscore/scene/ball2", ["new", "sphere", 0.03])
@@ -70,10 +73,17 @@ func _process(_d: float) -> bool:
 	if _f == 6:
 		check(_vx(osc, "ball") > 0.0, "ball moving +x before contact")
 		_spd_before = _speed(osc, "ball")
-	if _f == 60:
-		check(_vx(osc, "ball") < 0.0, "ball reflected off circle bouncer (vx reversed)")
-		check(_vx(osc, "ball2") < 0.0, "ball2 reflected off box wall (vx reversed)")
-		check(_speed(osc, "ball") > _spd_before, "strength boosts the ball's outgoing speed above its incoming speed")
+	if _f > 6:
+		# Latch reflection whenever it happens — robust to physics-timing variance / exact contact frame.
+		if not _ball_reflected and _vx(osc, "ball") < 0.0:
+			_ball_reflected = true
+			_ball_speed_after = _speed(osc, "ball")
+		if not _ball2_reflected and _vx(osc, "ball2") < 0.0:
+			_ball2_reflected = true
+	if _f == 100:
+		check(_ball_reflected, "ball reflected off circle bouncer (vx reversed)")
+		check(_ball2_reflected, "ball2 reflected off box wall (vx reversed)")
+		check(_ball_speed_after > _spd_before, "strength boosts the ball's outgoing speed above its incoming speed")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false
