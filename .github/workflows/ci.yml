@@ -107,6 +107,16 @@ jobs:
           ./godot --headless --path . --script res://tools/test_osc_output_cmd.gd 2>&1 | tee oscoutcmd.log
           grep -q "fail=0" oscoutcmd.log && ! grep -q "FAIL:" oscoutcmd.log
 
+      - name: Self-tests — bouncers
+        run: |
+          ./godot --headless --path . --script res://tools/test_bouncers.gd 2>&1 | tee bouncers.log
+          grep -q "fail=0" bouncers.log && ! grep -q "FAIL:" bouncers.log
+
+      - name: Self-tests — portals
+        run: |
+          ./godot --headless --path . --script res://tools/test_portals.gd 2>&1 | tee portals.log
+          grep -q "fail=0" portals.log && ! grep -q "FAIL:" portals.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
