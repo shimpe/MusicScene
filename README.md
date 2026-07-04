@@ -21,7 +21,8 @@ project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-a
 > codec, SVG and signal-forwarding self-tests. The project ships defaulting to **3D**.
 
 > **New here?** Start with the step-by-step **[TUTORIAL.md](TUTORIAL.md)** — it walks through using
-> the addon in a fresh project, in both 2D and 3D, with a copy-paste OSC client.
+> the addon in a fresh project, in both 2D and 3D, with a copy-paste OSC client. For the mechanics and
+> edge cases behind the more advanced features, see **[ADVANCED.md](ADVANCED.md)**.
 
 ---
 

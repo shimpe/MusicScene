@@ -1100,5 +1100,8 @@ statically in Project Settings under `gscore_osc/network/send_ports` (e.g. `"740
   streams locally — a bell for `/music/note`, a percussive plink for `/music/pin` — so it needs no
   external synth. Boot the server, then evaluate the block.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
+- **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,
+  `discover`, bulk binding, the permission model, `payload` and signal forwarding, emission modes, and
+  continuous physics events, each with the non-obvious gotchas.
 - Worked examples: `addons/gscore_osc/examples/` (Godot 2D/3D scenes), `examples/python/` and `examples/supercollider/` (OSC client demos), and `tools/osc_test.py` (reference client).
 - Architecture/design notes: `docs/superpowers/specs/`.
