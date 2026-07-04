@@ -51,8 +51,19 @@ func on_contact(obj, other: Node) -> void:
 		"bouncer": _bounce(obj, other)
 		"portal": _teleport(obj, other)
 
-func _bounce(_obj, _other: Node) -> void:
-	pass   # implemented in Task 3
+func _bounce(obj, other: Node) -> void:
+	var cfg: Dictionary = _bouncers.get(obj.osc_id, {"strength": 0.0, "gain": 1.0, "min_speed": 0.0})
+	var strength: float = cfg.get("strength", 0.0)
+	var gain: float = cfg.get("gain", 1.0)
+	var min_speed: float = cfg.get("min_speed", 0.0)
+	var v = ctx.spatial.body_get_velocity(other)
+	var n = ctx.spatial.reactor_normal(obj.node, other)
+	var v_ref = v - 2.0 * v.dot(n) * n            # mirror reflection
+	var v_out = v_ref * gain + n * strength        # + outward impulse kick
+	var outward: float = v_out.dot(n)
+	if outward < min_speed:                         # guarantee it leaves the bouncer
+		v_out += n * (min_speed - outward)
+	ctx.spatial.body_set_velocity_world(other, v_out)
 
 func _teleport(_obj, _other: Node) -> void:
 	pass   # implemented in Task 4

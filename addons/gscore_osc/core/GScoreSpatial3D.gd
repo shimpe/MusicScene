@@ -518,6 +518,45 @@ func body_get_velocity(body: Node):
 	return (body as RigidBody3D).linear_velocity if body is RigidBody3D else Vector3.ZERO
 
 
+## Set a body's velocity directly in world/raw units (no coordinate-mode conversion).
+func body_set_velocity_world(body: Node, v) -> void:
+	if body is RigidBody3D:
+		(body as RigidBody3D).linear_velocity = v
+
+
+## Outward world-space unit normal at the contact between reactor and other.
+## Circle collider -> center-to-center; box collider -> the face `other` is moving into.
+func reactor_normal(reactor: Node, other: Node):
+	var rpos: Vector3 = body_global_position(reactor)
+	var opos: Vector3 = body_global_position(other)
+	if not _reactor_is_box(reactor):
+		var d: Vector3 = opos - rpos
+		return d.normalized() if d.length() > 0.0 else Vector3.UP
+	var v: Vector3 = body_get_velocity(other)
+	if v.length() < 0.001:
+		var d2: Vector3 = opos - rpos
+		return d2.normalized() if d2.length() > 0.0 else Vector3.UP
+	var b: Basis = (reactor as Node3D).global_transform.basis if reactor is Node3D else Basis.IDENTITY
+	var axes := [b.x.normalized(), b.y.normalized(), b.z.normalized()]
+	var vhat: Vector3 = v.normalized()
+	var best: Vector3 = Vector3.UP
+	var bestdot: float = -1e30
+	for a in axes:
+		for s in [1.0, -1.0]:
+			var face: Vector3 = a * s
+			var d3: float = -vhat.dot(face)
+			if d3 > bestdot:
+				bestdot = d3; best = face
+	return best
+
+
+func _reactor_is_box(reactor: Node) -> bool:
+	for c in reactor.get_children():
+		if c is CollisionShape3D and (c as CollisionShape3D).shape is BoxShape3D:
+			return true
+	return false
+
+
 func body_set_angular_velocity(body: Node, a: float) -> void:
 	if body is RigidBody3D:
 		(body as RigidBody3D).angular_velocity = Vector3(0, 0, a)
