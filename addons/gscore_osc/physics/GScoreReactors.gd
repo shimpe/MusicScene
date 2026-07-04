@@ -8,11 +8,14 @@ var ctx = null
 var _bouncers: Dictionary = {}
 # id -> Array[String] of target ids
 var _portals: Dictionary = {}
-# body instance id -> cooldown expiry (ms) after a teleport, to stop ping-pong
+# body instance id -> cooldown expiry (ms) after a teleport. Load-bearing anti-ping-pong
+# guarantee: a just-arrived body is still inside the destination Area, so this window (not the
+# nudge) is what stops it from being instantly re-grabbed and oscillating between portals.
 var _recent: Dictionary = {}
 
 const PORTAL_COOLDOWN_MS := 250
-const PORTAL_NUDGE := 0.02   # normalized-space exit offset along travel direction
+const PORTAL_NUDGE := 0.02   # small cosmetic center-offset along travel dir; does NOT clear the
+                             # destination collider — the cooldown (above) is what prevents re-trigger
 
 func _init(context) -> void:
 	ctx = context
@@ -71,11 +74,14 @@ func _bounce(obj, other: Node) -> void:
 
 func _teleport(obj, other: Node) -> void:
 	var now: int = Time.get_ticks_msec()
+	# Prune expired cooldowns so _recent stays bounded to bodies currently within the window,
+	# instead of retaining an entry for every body that ever teleported this session.
+	for k in _recent.keys():
+		if now >= _recent[k]:
+			_recent.erase(k)
 	var bid: int = other.get_instance_id()
 	if _recent.has(bid):
-		if now < _recent[bid]:
-			return                     # just arrived somewhere; ignore to avoid ping-pong
-		_recent.erase(bid)
+		return                     # still within its post-teleport cooldown; skip to avoid ping-pong
 	var targets: Array = _portals.get(obj.osc_id, [])
 	var live: Array = []
 	for tid in targets:
