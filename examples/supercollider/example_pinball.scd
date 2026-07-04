@@ -123,7 +123,7 @@ s.waitForBoot({
     // top bumper row (3 of the 6 bumpers)
     ~bumpTopId       = ["bumpA", "bumpB", "bumpC"];
     ~bumpTopX        = [-0.34, 0.0, 0.34];
-    ~bumpTopStrength = [3.0, 3.6, 3.0];
+    ~bumpTopStrength = [1.6, 1.9, 1.6];
     ~bumpTopColor    = [[0.95, 0.20, 0.25], [0.95, 0.75, 0.15], [0.90, 0.30, 0.50]];
 
     // scoring zones: 5 pentatonic tones (C D E G A) x 2 octaves = 10 zones
@@ -179,7 +179,10 @@ s.waitForBoot({
         ~snd.("/gscore/scene/" ++ id, "new", "bouncer");
         ~snd.("/gscore/scene/" ++ id ++ "/collider", "circle", r);
         ~snd.("/gscore/scene/" ++ id, "pos", x, y, 0.0);
-        ~snd.("/gscore/scene/" ++ id ++ "/bouncer", "strength", strength, "gain", 1.0, "minSpeed", 0.35);
+        // gain < 1.0 makes each bounce slightly inelastic so bumper kicks don't compound into
+        // runaway speed (which would eventually tunnel a ball through the walls). Pair with mild
+        // ball damping (see ~mkBall) for a stable energy equilibrium.
+        ~snd.("/gscore/scene/" ++ id ++ "/bouncer", "strength", strength, "gain", 0.92, "minSpeed", 0.3);
         ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);   // no visible effect (bare Area) — see Vis twin
         ~snd.("/gscore/scene/" ++ id ++ "/on", "areaEnter", "/pin/bump", "cooldown", 0.05);
         ~snd.("/gscore/scene/" ++ id ++ "/payload", "areaEnter", "self", "otherspeed");
@@ -231,6 +234,9 @@ s.waitForBoot({
         ~snd.("/gscore/scene/" ++ id ++ "/physics", "planar", 1);
         ~snd.("/gscore/scene/" ++ id ++ "/physics", "friction", 0.05);
         ~snd.("/gscore/scene/" ++ id ++ "/physics", "bounce", 0.58);
+        // mild linear damping bleeds energy continuously so bumper kicks reach a terminal speed
+        // instead of compounding until the ball tunnels out of the table.
+        ~snd.("/gscore/scene/" ++ id ++ "/physics", "damping", 0.2, 0.1);
         // click whenever THIS ball hits a pin (collisionEnter only fires on rigid
         // bodies — static pins can't emit it themselves, so the binding lives here).
         ~snd.("/gscore/scene/" ++ id ++ "/on", "collisionEnter", "/pin/click", "other", "pin*", "cooldown", 0.03);
@@ -362,9 +368,9 @@ s.waitForBoot({
             var col = ~bumpTopColor[i];
             ~mkBumper.(~bumpTopId[i], x, 0.72, ~bumpTopStrength[i], 0.055, col[0], col[1], col[2]);
         });
-        ~mkBumper.("bumpD", -0.20, 0.08, 2.6, 0.05, 0.25, 0.55, 0.95);
-        ~mkBumper.("bumpE",  0.20, 0.08, 2.6, 0.05, 0.35, 0.65, 0.90);
-        ~mkBumper.("bumpF",  0.0, -0.56, 4.4, 0.075, 0.95, 0.85, 0.20);   // jackpot
+        ~mkBumper.("bumpD", -0.20, 0.08, 1.5, 0.05, 0.25, 0.55, 0.95);
+        ~mkBumper.("bumpE",  0.20, 0.08, 1.5, 0.05, 0.35, 0.65, 0.90);
+        ~mkBumper.("bumpF",  0.0, -0.56, 2.4, 0.075, 0.95, 0.85, 0.20);   // jackpot (a bit stronger)
 
         // portals: 2 directional pairs (each linked both ways -> a true two-way warp)
         ~mkPortal.("portA", -0.50,  0.08, 0.09, 0.25, 0.85, 0.90);   // bigger radius = easier for fast balls to hit
