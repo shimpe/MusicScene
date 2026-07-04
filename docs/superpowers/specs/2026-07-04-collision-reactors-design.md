@@ -4,7 +4,7 @@
 
 ## Motivation
 
-gscore can create physics bodies and emit OSC on collision, but bodies only interact through Godot's
+MusicScene can create physics bodies and emit OSC on collision, but bodies only interact through Godot's
 default physics response. Two new **collision reactors** add active, scriptable behavior when a body
 touches them:
 
@@ -18,24 +18,24 @@ live-simulating `RigidBody`).
 
 ## Key architectural facts (from research)
 
-- Discrete collision events are Godot-signal driven per body via `GScorePhysicsAdapter`. **`Area` bodies
+- Discrete collision events are Godot-signal driven per body via `MSPhysicsAdapter`. **`Area` bodies
   get `area_entered`/`body_entered` wired; `StaticBody` gets no signals.** So a reactor that must detect
   "who touched me" is an **Area** (pass-through sensor), exactly like existing zones.
-- The signal handler `GScorePhysicsAdapter._on_area_enter(other)` (and `_on_enter`) is the single hook
+- The signal handler `MSPhysicsAdapter._on_area_enter(other)` (and `_on_enter`) is the single hook
   where a reactor acts on the touching body.
-- `GScoreObject.type_hint` already carries the creation type and is used elsewhere to special-case
+- `MSObject.type_hint` already carries the creation type and is used elsewhere to special-case
   behavior — the natural key for "is this a bouncer / portal".
 - Velocity set, impulse, and **teleport of a simulating RigidBody** (`ctx.spatial.set_position` →
   `PhysicsServer*.body_set_state`) already exist and are symmetric across 2D/3D. No new actuation
   machinery is required.
-- Only a center-to-center normal is available from the signal pipeline, but because reactors are gscore
+- Only a center-to-center normal is available from the signal pipeline, but because reactors are MusicScene
   objects whose collider **shape and orientation we control**, the true surface normal is computed
   **analytically** — exact for circle/sphere and box/rect (the supported collider shapes) — with no
   `PhysicsServer` force-integration plumbing.
 
 ## Architecture
 
-A new manager **`GScoreReactors`** (`addons/gscore_osc/physics/GScoreReactors.gd`) owns all reactor config
+A new manager **`MSReactors`** (`addons/musicscene/physics/MSReactors.gd`) owns all reactor config
 and behavior, keyed by object id:
 
 - `configure_bouncer(obj, args)` / `configure_portal(obj, args)` — apply the OSC config commands.
@@ -47,20 +47,20 @@ Wiring:
 
 | File | Change |
 |---|---|
-| `physics/GScoreReactors.gd` (new) | The manager: config + reflect/teleport logic. |
-| `nodes/GScoreRoot.gd` | Instantiate `ctx.reactors = GScoreReactors.new(ctx)` alongside the other managers; give it a per-frame tick for cooldown expiry if needed. |
-| `physics/GScorePhysicsAdapter.gd` | In `_on_area_enter(other)` — the handler wired to an Area's `body_entered`/`area_entered`, so a rigid body entering a reactor routes here — after the existing `CollisionEvents.emit(...)`, call `ctx.reactors.on_contact(obj, other)`. (Reactors act **in addition to** normal event emission, so `on areaEnter …` bindings on a bouncer/portal still fire — that's how the example attaches sound.) |
-| `core/GScoreFactory.gd` | Add `"bouncer"`, `"portal"` to `BUILTIN_TYPES`. |
-| `core/GScoreSpatial2D.gd` / `GScoreSpatial3D.gd` | Add `"bouncer"`/`"portal"` cases to `create_primitive`, cloning the `"area"` case (Area2D/3D + default collider). |
-| `core/GScoreRegistry.gd` | In `create_builtin`, after creating a `bouncer`/`portal`, auto-enable its area adapter (so signals are wired without a separate `physics enable area`). |
+| `physics/MSReactors.gd` (new) | The manager: config + reflect/teleport logic. |
+| `nodes/MSRoot.gd` | Instantiate `ctx.reactors = MSReactors.new(ctx)` alongside the other managers; give it a per-frame tick for cooldown expiry if needed. |
+| `physics/MSPhysicsAdapter.gd` | In `_on_area_enter(other)` — the handler wired to an Area's `body_entered`/`area_entered`, so a rigid body entering a reactor routes here — after the existing `CollisionEvents.emit(...)`, call `ctx.reactors.on_contact(obj, other)`. (Reactors act **in addition to** normal event emission, so `on areaEnter …` bindings on a bouncer/portal still fire — that's how the example attaches sound.) |
+| `core/MSFactory.gd` | Add `"bouncer"`, `"portal"` to `BUILTIN_TYPES`. |
+| `core/MSSpatial2D.gd` / `MSSpatial3D.gd` | Add `"bouncer"`/`"portal"` cases to `create_primitive`, cloning the `"area"` case (Area2D/3D + default collider). |
+| `core/MSRegistry.gd` | In `create_builtin`, after creating a `bouncer`/`portal`, auto-enable its area adapter (so signals are wired without a separate `physics enable area`). |
 | `core/OscDispatcher.gd` | Add `"bouncer"` / `"portal"` cases to `_handle_scene_subsystem`, dispatching to `ctx.reactors`. |
 
 ### Object creation
 
 ```
-/gscore/scene/<id> new bouncer          # Area2D/3D + default collider, type_hint="bouncer", area adapter auto-enabled
-/gscore/scene/<id> new portal           # same, type_hint="portal"
-/gscore/scene/<id>/collider box 0.1 0.4 # override the shape as usual (rect/box/circle/sphere)
+/ms/scene/<id> new bouncer          # Area2D/3D + default collider, type_hint="bouncer", area adapter auto-enabled
+/ms/scene/<id> new portal           # same, type_hint="portal"
+/ms/scene/<id>/collider box 0.1 0.4 # override the shape as usual (rect/box/circle/sphere)
 ```
 
 Auto-enabling the area on creation (a small, justified special-case for these intrinsically-Area types)
@@ -72,7 +72,7 @@ area/zone is ignored.
 
 Config command:
 ```
-/gscore/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>
+/ms/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>
 ```
 Defaults `gain = 1.0` (energy-preserving mirror), `strength = 0.0` (opt-in outward kick), `minSpeed = 0.0`.
 Options are parsed as case-insensitive key/value pairs (like event options); unknown keys are ignored.
@@ -98,8 +98,8 @@ The normal derivation, reflection, and combination are pure vector math on the w
 
 Config commands:
 ```
-/gscore/scene/<id>/portal link <id1> [<id2> …]    # directional targets (A→B does NOT imply B→A)
-/gscore/scene/<id>/portal unlink                    # clear this portal's targets
+/ms/scene/<id>/portal link <id1> [<id2> …]    # directional targets (A→B does NOT imply B→A)
+/ms/scene/<id>/portal unlink                    # clear this portal's targets
 ```
 Targets are stored as an ordered `Array[String]` of object ids on the reactor config. Directional per the
 chosen model: entering portal A teleports to a random one of **A's** listed targets.
@@ -108,7 +108,7 @@ On a body entering the portal's Area, `_teleport(obj, other)`:
 
 1. If the body's instance id is in `_recent` (still within cooldown), **skip** (this is a just-arrived
    body; prevents ping-pong).
-2. Resolve valid targets: for each linked id, look up the `GScoreObject` and its node; drop ids that no
+2. Resolve valid targets: for each linked id, look up the `MSObject` and its node; drop ids that no
    longer resolve. If none remain, skip (optionally emit a `bad_arguments`-style warning once).
 3. Pick a uniform-random target `dst` (`randi() % n`).
 4. Read the destination position `p = ctx.spatial.body_global_position(dst.node)` and the body velocity
@@ -127,7 +127,7 @@ Randomness uses runtime `randi()`; tests assert the body arrived at **one of** t
 ```
 rigid body enters reactor's Area
   → Godot area_entered/body_entered signal
-  → GScorePhysicsAdapter._on_area_enter(other)
+  → MSPhysicsAdapter._on_area_enter(other)
       → CollisionEvents.emit(ctx, obj, "areaEnter", other)   # unchanged: `on areaEnter …` still fires
       → ctx.reactors.on_contact(obj, other)
           type_hint == "bouncer" → _bounce  → body_set_velocity(other, v_out)
@@ -147,7 +147,7 @@ rigid body enters reactor's Area
 ## 2D + 3D
 
 Everything goes through `ctx.spatial` (identical method surface in both backends) and world-space vector
-math, so a single implementation serves both. Tests run once per `gscore_osc/space` value.
+math, so a single implementation serves both. Tests run once per `ms/space` value.
 
 ## Testing (headless `--script`, `SceneTree` pattern)
 
@@ -166,7 +166,7 @@ math, so a single implementation serves both. Tests run once per `gscore_osc/spa
 ## Documentation
 
 - **README.md** — add `bouncer` and `portal` to the object-types / command reference, with the
-  `/gscore/scene/<id>/bouncer …` and `/portal …` command grammar and a one-line behavior note each.
+  `/ms/scene/<id>/bouncer …` and `/portal …` command grammar and a one-line behavior note each.
 - **TUTORIAL.md** — a short worked section introducing bouncers and portals with `s()`-helper examples
   (create a bumper that kicks a ball; link two portals and watch a ball warp), and a pointer to the
   pinball example.

@@ -2,7 +2,7 @@ extends SceneTree
 ## Headless test for OscServer's multi-port output: the pure parse/normalize helpers
 ## plus a real loopback check that one send() reaches TWO bound receiver sockets.
 ##   <godot> --headless --path . --script res://tools/test_osc_output.gd
-const OscServer := preload("res://addons/gscore_osc/core/OscServer.gd")
+const OscServer := preload("res://addons/musicscene/core/OscServer.gd")
 
 var _f := 0
 var _pass := 0

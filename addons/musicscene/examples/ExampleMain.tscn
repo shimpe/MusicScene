@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://bnc7tiusqtes3"]
+
+[ext_resource type="Script" uid="uid://y5ubpt7iorgj" path="res://addons/musicscene/nodes/OscExposable.gd" id="1"]
+[ext_resource type="Script" uid="uid://bo3qxy6mmcwe" path="res://addons/musicscene/examples/ExampleMain.gd" id="2"]
+
+[node name="Main" type="Node2D" unique_id=46854777]
+script = ExtResource("2")
+
+[node name="Stage" type="Node2D" parent="." unique_id=620401303]
+
+[node name="Actors" type="Node2D" parent="Stage" unique_id=8437828]
+
+[node name="ExistingBall" type="Node2D" parent="Stage/Actors" unique_id=1392647299]
+position = Vector2(1040, 320)
+
+[node name="Visual" type="Polygon2D" parent="Stage/Actors/ExistingBall" unique_id=988365542]
+color = Color(0.4, 0.7, 1, 1)
+polygon = PackedVector2Array(-26, -26, 26, -26, 26, 26, -26, 26)
+
+[node name="OscExposable" type="Node" parent="Stage/Actors/ExistingBall" unique_id=2089585624]
+script = ExtResource("1")
+osc_id = "existingBall"
+osc_auto_bind = false
+
+[node name="PlayButton" type="Button" parent="." unique_id=1526301031]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 244.0
+offset_bottom = 64.0
+text = "Press me (signal demo)"
+
+[node name="OscExposable" type="Node" parent="PlayButton" unique_id=1879491952]
+script = ExtResource("1")
+osc_id = "button"
+
+[node name="Info" type="Label" parent="." unique_id=48196637]
+offset_left = 24.0
+offset_top = 80.0
+offset_right = 760.0
+offset_bottom = 160.0
+text = "MusicScene demo — OSC in udp:7400, replies/events udp:7401. Send /ms/ping or load example_score.gscore. See README.md."

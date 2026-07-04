@@ -2,7 +2,7 @@ extends SceneTree
 ## Quick test of the LilyPond SVG note-position parser.
 ##   godot --headless --path . --script res://tools/test_lilypos.gd
 func _init() -> void:
-	var L = load("res://addons/gscore_osc/notation/GScoreNotationLilyPositions.gd")
+	var L = load("res://addons/musicscene/notation/MSNotationLilyPositions.gd")
 	var svg := "C:/Scripts/Temp/claude/D--Projects-MusicScene/4ede0533-d976-4a03-a010-fa7d8dd4b832/scratchpad/timed.cropped.svg"
 	var els = L._parse(svg)
 	print("elements: ", els.size())

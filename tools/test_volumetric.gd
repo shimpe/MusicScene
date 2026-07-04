@@ -20,25 +20,25 @@ func _unshaded(node) -> bool:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	var d = osc.dispatcher
 	if _f == 2:
-		d.dispatch("/gscore/scene", ["reset"])
-		d.dispatch("/gscore/scene/sph", ["new", "sphere"])
-		d.dispatch("/gscore/scene/sph2", ["new", "sphere", 0.06])
-		d.dispatch("/gscore/scene/cir", ["new", "circle"])
-		d.dispatch("/gscore/scene/bx", ["new", "box"])
-		d.dispatch("/gscore/scene/cy", ["new", "cylinder"])
-		d.dispatch("/gscore/scene/cap", ["new", "capsule"])
-		d.dispatch("/gscore/scene/cn", ["new", "cone"])
-		d.dispatch("/gscore/scene/cyc", ["new", "cylinder"])
-		d.dispatch("/gscore/scene/cyc/physics", ["enable", "static"])
-		d.dispatch("/gscore/scene/cyc/collider", ["cylinder", 0.06, 0.16])
-		d.dispatch("/gscore/scene/capc", ["new", "capsule"])
-		d.dispatch("/gscore/scene/capc/physics", ["enable", "static"])
-		d.dispatch("/gscore/scene/capc/collider", ["capsule", 0.06, 0.2])
+		d.dispatch("/ms/scene", ["reset"])
+		d.dispatch("/ms/scene/sph", ["new", "sphere"])
+		d.dispatch("/ms/scene/sph2", ["new", "sphere", 0.06])
+		d.dispatch("/ms/scene/cir", ["new", "circle"])
+		d.dispatch("/ms/scene/bx", ["new", "box"])
+		d.dispatch("/ms/scene/cy", ["new", "cylinder"])
+		d.dispatch("/ms/scene/cap", ["new", "capsule"])
+		d.dispatch("/ms/scene/cn", ["new", "cone"])
+		d.dispatch("/ms/scene/cyc", ["new", "cylinder"])
+		d.dispatch("/ms/scene/cyc/physics", ["enable", "static"])
+		d.dispatch("/ms/scene/cyc/collider", ["cylinder", 0.06, 0.16])
+		d.dispatch("/ms/scene/capc", ["new", "capsule"])
+		d.dispatch("/ms/scene/capc/physics", ["enable", "static"])
+		d.dispatch("/ms/scene/capc/collider", ["capsule", 0.06, 0.2])
 	elif _f == 4:
 		if osc.space == "3d":
 			var sph = osc.registry.get_object("sph").node

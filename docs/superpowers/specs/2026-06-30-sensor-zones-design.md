@@ -1,4 +1,4 @@
-# gscore_osc — Sensors & Trigger Zones (spec §12)
+# MusicScene — Sensors & Trigger Zones (spec §12)
 
 **Date:** 2026-06-30
 **Status:** Approved design, ready for implementation planning
@@ -14,9 +14,9 @@ should report **continuous presence** of each body inside it (rate-limited per b
 payload should be able to carry a **constant tag** (e.g. a form-section name):
 
 ```
-/gscore/scene/zoneA/on areaStay /zone/presence maxRate 20
-/gscore/scene/zoneA/payload areaStay self other otherx othery otherspeed
-/gscore/scene/zoneA/payload areaEnter self other =A
+/ms/scene/zoneA/on areaStay /zone/presence maxRate 20
+/ms/scene/zoneA/payload areaStay self other otherx othery otherspeed
+/ms/scene/zoneA/payload areaEnter self other =A
 ```
 
 ---
@@ -26,12 +26,12 @@ payload should be able to carry a **constant tag** (e.g. a form-section name):
 The zone path in §12's example is already implemented and needs nothing:
 
 - Area objects: `new rect` + `physics enable area` + `collider rect 0.4 0.3`
-  (`GScoreSpatial*.make_body("area")`, `connect_collision` wires the area signals).
-- `areaEnter` / `areaExit` → bound OSC target **and** canonical `/gscore/event/physics`
-  (`GScoreCollisionEvents.emit`), fired on body **or** area overlap.
+  (`MSSpatial*.make_body("area")`, `connect_collision` wires the area signals).
+- `areaEnter` / `areaExit` → bound OSC target **and** canonical `/ms/event/physics`
+  (`MSCollisionEvents.emit`), fired on body **or** area overlap.
 - Event-binding options already cover `minIntensity`, `cooldown`, **`maxRate`**, `other <id|prefix*>`,
-  `layer`, `mode` (`GScoreEventBinding`), and per-event `payload` field lists
-  (`GScoreEvents.handle_on` / `handle_payload`).
+  `layer`, `mode` (`MSEventBinding`), and per-event `payload` field lists
+  (`MSEvents.handle_on` / `handle_payload`).
 - The OSC routing for `on areaStay …` and `payload areaStay …` **already works** through the generic
   event-binding path — no dispatcher/handler changes are needed. The only missing pieces are the
   *emitter* for `areaStay` and *literal* payload values.
@@ -41,14 +41,14 @@ The zone path in §12's example is already implemented and needs nothing:
 ## 3. Design principles
 
 - **Reuse the continuous-event path.** `areaStay` is a per-frame continuous event, exactly like the
-  existing `velocityAbove`/`yBelow` events handled in `GScoreCollisionEvents.check_continuous`. Extend
+  existing `velocityAbove`/`yBelow` events handled in `MSCollisionEvents.check_continuous`. Extend
   that method rather than adding a new manager.
 - **Dimension-agnostic.** Overlap enumeration and area detection go through `ctx.spatial`
   (`is_area` / `overlapping_others`), like every other physics primitive.
 - **Per-body semantics.** A zone reports each contained body independently, each on its own `maxRate`
   clock — so two notes in the zone both stream at the full rate.
 - **No canonical spam.** Continuous events (incl. `areaStay`) emit **only to their bound target**
-  (already the convention for `velocityAbove` et al.), never to `/gscore/event/physics`, so the
+  (already the convention for `velocityAbove` et al.), never to `/ms/event/physics`, so the
   per-body `maxRate` actually bounds traffic.
 
 ---
@@ -56,15 +56,15 @@ The zone path in §12's example is already implemented and needs nothing:
 ## 4. Feature A — `areaStay` continuous presence
 
 ### 4.1 Registration (already works)
-`/gscore/scene/zoneA/on areaStay /zone/presence maxRate 20` registers a `GScoreEventBinding` with
+`/ms/scene/zoneA/on areaStay /zone/presence maxRate 20` registers a `MSEventBinding` with
 `event = "areaStay"`, `target = "/zone/presence"`, `max_rate = 20` — through the existing
-`GScoreEvents.handle_on` path (`areaStay` is not an input event, so it lands in `event_bindings`).
-`/gscore/scene/zoneA/payload areaStay …` sets the binding's `payload` list (existing
+`MSEvents.handle_on` path (`areaStay` is not an input event, so it lands in `event_bindings`).
+`/ms/scene/zoneA/payload areaStay …` sets the binding's `payload` list (existing
 `handle_payload`).
 
-### 4.2 Emission (new) — `GScoreCollisionEvents.check_continuous`
+### 4.2 Emission (new) — `MSCollisionEvents.check_continuous`
 `check_continuous(ctx, obj)` already runs once per physics frame per physics object (called from
-`GScorePhysicsAdapter.physics_step`, which runs while `ctx.physics_world.is_simulating()`). Add an
+`MSPhysicsAdapter.physics_step`, which runs while `ctx.physics_world.is_simulating()`). Add an
 `areaStay` block:
 
 ```
@@ -85,7 +85,7 @@ if b != null and ctx.spatial.is_area(obj.node):
 `areaStay` is *not* added to `PHYSICS_EVENTS` (that list drives the discrete Godot-signal callbacks in
 `emit`); it lives only in the continuous path.
 
-### 4.3 Per-body throttle (new) — `GScoreEventBinding`
+### 4.3 Per-body throttle (new) — `MSEventBinding`
 Add a per-other timer map and matching methods, factoring the shared filter checks out of the existing
 `should_emit`:
 
@@ -122,7 +122,7 @@ func prune_others(active: Dictionary) -> void:
 `should_emit_other`/`mark_other` serve `areaStay`. Re-running the existing checks through
 `_passes_filters` is a behavior-preserving refactor.
 
-### 4.4 Backend additions — `GScoreSpatial2D` / `GScoreSpatial3D`
+### 4.4 Backend additions — `MSSpatial2D` / `MSSpatial3D`
 ```
 func is_area(node) -> bool:
     return node is Area2D            # 3D: node is Area3D
@@ -143,7 +143,7 @@ presence — at worst one frame stale.)
 
 ## 5. Feature B — literal payload tags
 
-In `GScoreEventBinding.build_args`, a payload token beginning with `'` or `=` is emitted as the
+In `MSEventBinding.build_args`, a payload token beginning with `'` or `=` is emitted as the
 literal string after the marker; unmarked tokens resolve from the data dict as today (unknown → `0`,
 so typos stay visible):
 
@@ -171,7 +171,7 @@ signal bindings use separate payload paths and are out of scope.
 
 ---
 
-## 6. Data-dict additions — `GScoreCollisionEvents._build_data`
+## 6. Data-dict additions — `MSCollisionEvents._build_data`
 
 The current `x/y/speed/vx/vy` describe **self** (the zone). For a static zone these are constant/zero
 — useless for presence. Add **other-centric** fields, populated whenever `other != null` (else `0`):
@@ -193,7 +193,7 @@ as the zone's own values.
 ## 7. Behavior notes / edge cases
 
 - **Requires simulation.** `areaStay` runs in the continuous path, which executes while
-  `ctx.physics_world.is_simulating()` (i.e. after `/gscore/physics enable 1`), consistent with the
+  `ctx.physics_world.is_simulating()` (i.e. after `/ms/physics enable 1`), consistent with the
   other continuous events. Enter/exit (Godot signal callbacks) still fire independently. Documented.
 - **Filters apply per body.** `other <id|prefix*>` / `layer` / `minIntensity` gate each contained body
   via `_passes_filters`; only matching bodies stream.
@@ -230,14 +230,14 @@ as the zone's own values.
 ## 10. File-change summary
 
 **Modified:**
-- `addons/gscore_osc/physics/GScoreCollisionEvents.gd` — `areaStay` block in `check_continuous`;
+- `addons/musicscene/physics/MSCollisionEvents.gd` — `areaStay` block in `check_continuous`;
   other-centric fields in `_build_data`.
-- `addons/gscore_osc/events/GScoreEventBinding.gd` — `_last_emit_other`, `should_emit_other`,
+- `addons/musicscene/events/MSEventBinding.gd` — `_last_emit_other`, `should_emit_other`,
   `mark_other`, `prune_others`, `_passes_filters` refactor, literal handling in `build_args`.
-- `addons/gscore_osc/core/GScoreSpatial2D.gd` + `GScoreSpatial3D.gd` — `is_area`, `overlapping_others`.
-- `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg` (version), `.github/workflows/ci.yml`.
+- `addons/musicscene/core/MSSpatial2D.gd` + `MSSpatial3D.gd` — `is_area`, `overlapping_others`.
+- `TUTORIAL.md`, `CHANGELOG.md`, `addons/musicscene/plugin.cfg` (version), `.github/workflows/ci.yml`.
 
 **New:** `tools/test_zones.gd`.
 
-No changes needed to `GScoreEvents` (routing) or `OscDispatcher` — `areaStay`/`payload` already route
+No changes needed to `MSEvents` (routing) or `OscDispatcher` — `areaStay`/`payload` already route
 through the generic event-binding path.

@@ -1,5 +1,5 @@
 extends SceneTree
-## /gscore/scene reset must restore a "like first run" state (keeping safety config).
+## /ms/scene reset must restore a "like first run" state (keeping safety config).
 ## Run:  <godot> --headless --path . --script res://tools/test_scene_reset.gd   (space-aware)
 var _f := 0
 var _pass := 0
@@ -13,26 +13,26 @@ func check(cond: bool, msg: String) -> void:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if _f == 3:
-		osc.dispatcher.dispatch("/gscore/app/permissions", ["freeNodes", 1])   # safety flag: must be preserved
-		osc.dispatcher.dispatch("/gscore/scene/a", ["new", "circle"])
-		osc.dispatcher.dispatch("/gscore/scene/a/physics", ["enable", "static"])
-		osc.dispatcher.dispatch("/gscore/scene/b", ["new", "circle"])
-		osc.dispatcher.dispatch("/gscore/scene/b/physics", ["enable", "rigid"])
+		osc.dispatcher.dispatch("/ms/app/permissions", ["freeNodes", 1])   # safety flag: must be preserved
+		osc.dispatcher.dispatch("/ms/scene/a", ["new", "circle"])
+		osc.dispatcher.dispatch("/ms/scene/a/physics", ["enable", "static"])
+		osc.dispatcher.dispatch("/ms/scene/b", ["new", "circle"])
+		osc.dispatcher.dispatch("/ms/scene/b/physics", ["enable", "rigid"])
 		var jt: String = "slider" if osc.spatial.is_3d() else "dampedspring"
-		osc.dispatcher.dispatch("/gscore/joint/j", ["new", jt, "a", "b"])
-		osc.dispatcher.dispatch("/gscore/scene/b", ["map", 0.0, 10.0, "x", -0.5, 0.5])
-		osc.dispatcher.dispatch("/gscore/physics", ["gravity", 0.0, -1.0, 0.0])
-		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/ms/joint/j", ["new", jt, "a", "b"])
+		osc.dispatcher.dispatch("/ms/scene/b", ["map", 0.0, 10.0, "x", -0.5, 0.5])
+		osc.dispatcher.dispatch("/ms/physics", ["gravity", 0.0, -1.0, 0.0])
+		osc.dispatcher.dispatch("/ms/physics", ["enable", 1])
 		if osc.spatial.is_3d():
 			osc.camera.handle([], ["pos", 0.5, 0.5, 0.5])   # move camera off default
 	if _f == 5:
 		check(not osc.registry.list_ids().is_empty(), "precondition: objects exist")
 		check(osc.physics_world.is_simulating(), "precondition: physics simulating")
-		osc.dispatcher.dispatch("/gscore/scene", ["reset"])
+		osc.dispatcher.dispatch("/ms/scene", ["reset"])
 		check(osc.registry.list_ids().is_empty(), "reset clears objects")
 		check(osc.joints.list_ids().is_empty(), "reset clears joints")
 		check(osc.timemapper._maps.is_empty(), "reset clears time-maps")

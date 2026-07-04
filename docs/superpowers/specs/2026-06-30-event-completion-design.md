@@ -1,4 +1,4 @@
-# gscore_osc — Event-System Completion (spec §19 remainder)
+# MusicScene — Event-System Completion (spec §19 remainder)
 
 **Date:** 2026-06-30
 **Status:** Approved design, ready for implementation planning
@@ -14,8 +14,8 @@ and `guido`/`pdf`/native-glyph notation backends.
 - Events `collisionEnter/Exit`, `areaEnter/Exit`, `sleep`, `wake` (discrete, via `emit`);
   `velocityAbove/Below`, `yAbove/yBelow`, `areaStay` (continuous, via `check_continuous`).
 - Event options `minIntensity`, `cooldown`, `maxRate` (single + per-body), `other` filter.
-- Per-body throttle on `GScoreEventBinding` (`should_emit_other`/`mark_other`/`prune_others`).
-- Other-centric data fields (`otherx/othery/...`). Canonical `/gscore/event/physics` mirror for
+- Per-body throttle on `MSEventBinding` (`should_emit_other`/`mark_other`/`prune_others`).
+- Other-centric data fields (`otherx/othery/...`). Canonical `/ms/event/physics` mirror for
   discrete events.
 - `OscServer.send_bundle(elements, timetag)` already exists (accepts `{address, args}` dicts).
 
@@ -30,9 +30,9 @@ object, every physics frame, throttled per body.
 
 ### 2.1 Registration
 Already routes through the generic event-binding path:
-`/gscore/scene/ball/on collisionStay /synth/sustain maxRate 30`. No dispatcher change.
+`/ms/scene/ball/on collisionStay /synth/sustain maxRate 30`. No dispatcher change.
 
-### 2.2 Emission — `GScoreCollisionEvents.check_continuous`
+### 2.2 Emission — `MSCollisionEvents.check_continuous`
 Mirror the existing `areaStay` block, after it:
 
 ```
@@ -73,11 +73,11 @@ Rigid bodies already enable `contact_monitor` + `max_contacts_reported = 8` in `
 
 A new per-frame emission scheduler routes every physics/collision/area event by its binding's `mode`.
 
-### 3.1 Binding additions — `GScoreEventBinding`
+### 3.1 Binding additions — `MSEventBinding`
 - `mode` already exists (default `"immediate"`, set via `set_option("mode", …)`).
 - Add `var quantize_grid: float = 1.0` and `set_option("quantizegrid", v)` → `quantize_grid = max(v, 0.0)`.
 
-### 3.2 New file — `events/GScoreEmissionScheduler.gd` (RefCounted)
+### 3.2 New file — `events/MSEmissionScheduler.gd` (RefCounted)
 ```
 var ctx
 var _queued: Array = []     # {address, args}
@@ -116,18 +116,18 @@ Notes:
 - `quantized` holds until the transport beat crosses the next grid line; requires the transport to
   be advancing (documented). `quantizeGrid 0` degenerates to "fire on next flush".
 
-### 3.3 Wiring — `GScoreRoot`
-- `var emitter = null`; construct `emitter = GScoreEmissionScheduler.new(self)` after `transport`.
+### 3.3 Wiring — `MSRoot`
+- `var emitter = null`; construct `emitter = MSEmissionScheduler.new(self)` after `transport`.
 - In `_process(delta)`, after transport/timemapper updates: `emitter.flush(transport.beat)`.
 
 ### 3.4 Emission call sites switch to the scheduler
 Replace the three `ctx.send_event(binding.target, …)` emission points with
 `ctx.emitter.emit(binding.target, args, binding.mode, binding.quantize_grid)`:
-1. `GScoreCollisionEvents.emit` (discrete enter/exit/sleep/wake) — line ~26.
+1. `MSCollisionEvents.emit` (discrete enter/exit/sleep/wake) — line ~26.
 2. `check_continuous` velocity/position loop — line ~50.
 3. `check_continuous` `areaStay` (and new `collisionStay`) blocks.
 
-The canonical `/gscore/event/physics` mirror in `emit` stays an **immediate** `ctx.send_event`
+The canonical `/ms/event/physics` mirror in `emit` stays an **immediate** `ctx.send_event`
 (diagnostic stream, not subject to the binding's mode). Signal→OSC and input bindings are unchanged
 (immediate). `ctx.send_event` itself is untouched.
 
@@ -150,7 +150,7 @@ func layer_names_for(node) -> PackedStringArray:
                 out.append(str(ctx.physics_world.layer_names.get(i, i)))   # name, else bit number
     return out
 ```
-`physics_world.layer_names` maps layer number → name (set via `/gscore/physics/layer <n> <name>`).
+`physics_world.layer_names` maps layer number → name (set via `/ms/physics/layer <n> <name>`).
 Unnamed set bits resolve to their number as a string, so `layer 3` still matches.
 
 ### 4.2 Data — `_build_data`
@@ -160,7 +160,7 @@ Set `data["layer"]` to the **other** body's layers, comma-joined (empty when `ot
 ```
 (Usable verbatim as a payload field; `data["layer"]` replaces the current constant `""`.)
 
-### 4.3 Filter — `GScoreEventBinding._passes_filters`
+### 4.3 Filter — `MSEventBinding._passes_filters`
 Change the layer check from equality to membership:
 ```
 if layer_filter != "" and not (layer_filter in str(layer).split(",")):
@@ -175,7 +175,7 @@ The `other` filter is unchanged.
 
 - `collisionStay` only fires while physics is simulating (continuous path), like every other
   continuous event; requires the object to be a rigid body (contact source).
-- `mode` applies to physics/collision/area event bindings only. The `/gscore/event/physics` mirror,
+- `mode` applies to physics/collision/area event bindings only. The `/ms/event/physics` mirror,
   signal→OSC, and input events remain immediate.
 - `quantized` with a stopped transport never fires (beat frozen) — documented.
 - Layer membership: a body on multiple layers matches a filter naming any of them.
@@ -202,17 +202,17 @@ collisionStay, layer). CHANGELOG `[0.5.0]`, version bump.
 
 ## 7. File-change summary
 
-**New:** `addons/gscore_osc/events/GScoreEmissionScheduler.gd`, `tools/test_events.gd`.
+**New:** `addons/musicscene/events/MSEmissionScheduler.gd`, `tools/test_events.gd`.
 **Modified:**
-- `addons/gscore_osc/physics/GScoreCollisionEvents.gd` — `collisionStay` block; `layer` in `_build_data`;
+- `addons/musicscene/physics/MSCollisionEvents.gd` — `collisionStay` block; `layer` in `_build_data`;
   emission sites → `ctx.emitter.emit`.
-- `addons/gscore_osc/events/GScoreEventBinding.gd` — `quantize_grid` + `quantizegrid` option; layer
+- `addons/musicscene/events/MSEventBinding.gd` — `quantize_grid` + `quantizegrid` option; layer
   membership in `_passes_filters`.
-- `addons/gscore_osc/core/GScoreSpatial2D.gd` + `GScoreSpatial3D.gd` — `colliding_others`,
+- `addons/musicscene/core/MSSpatial2D.gd` + `MSSpatial3D.gd` — `colliding_others`,
   `layer_names_for`.
-- `addons/gscore_osc/nodes/GScoreRoot.gd` — `ctx.emitter` + per-frame `flush`.
-- `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg`, `addons/gscore_osc/core/OscDispatcher.gd`
+- `addons/musicscene/nodes/MSRoot.gd` — `ctx.emitter` + per-frame `flush`.
+- `TUTORIAL.md`, `CHANGELOG.md`, `addons/musicscene/plugin.cfg`, `addons/musicscene/core/OscDispatcher.gd`
   (version strings), `.github/workflows/ci.yml`.
 
-No `GScoreEvents`/`OscDispatcher` routing changes (`collisionStay`/options already route through the
+No `MSEvents`/`OscDispatcher` routing changes (`collisionStay`/options already route through the
 generic binding path).

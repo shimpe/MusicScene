@@ -3,14 +3,14 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/test_lilypond.gd
 
 func _init() -> void:
-	var R = load("res://addons/gscore_osc/notation/GScoreNotationRenderer.gd")
-	var Cache = load("res://addons/gscore_osc/notation/GScoreNotationCache.gd")
+	var R = load("res://addons/musicscene/notation/MSNotationRenderer.gd")
+	var Cache = load("res://addons/musicscene/notation/MSNotationCache.gd")
 	Cache.clear()
 
 	var wrapper := ProjectSettings.globalize_path("res://tools/ly_to_score.py")
 	var cmd := 'py "%s" {input} {output} --page {page} --dpi 150 --lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"' % wrapper
-	ProjectSettings.set_setting("gscore_osc/notation/engraver/lilypond", cmd)
-	ProjectSettings.set_setting("gscore_osc/notation/engraver_output", "png")
+	ProjectSettings.set_setting("ms/notation/engraver/lilypond", cmd)
+	ProjectSettings.set_setting("ms/notation/engraver_output", "png")
 
 	print("--- inline LilyPond (runtime-generated) ---")
 	var ly := FileAccess.get_file_as_string("res://scores/example.ly")

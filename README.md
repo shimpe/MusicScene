@@ -1,4 +1,4 @@
-# gscore_osc
+# MusicScene
 
 [![CI](https://github.com/shimpe/MusicScene/actions/workflows/ci.yml/badge.svg)](https://github.com/shimpe/MusicScene/actions/workflows/ci.yml)
 ![Godot 4.7](https://img.shields.io/badge/Godot-4.7-478cbf)
@@ -8,13 +8,13 @@ An **OSC-controlled, INScore-inspired interactive music-score / world system** f
 
 External OSC clients (Max/MSP, Pure Data, SuperCollider, Python, TouchDesigner, Ableton
 bridges, …) can **create, bind, control, animate, query, and receive events** from Godot scene
-objects under the root namespace `/gscore`. Beyond INScore it adds **Godot physics (2D and 3D),
+objects under the root namespace `/ms`. Beyond INScore it adds **Godot physics (2D and 3D),
 collision-driven OSC emission, binding to existing nodes, PackedScene instantiation, exposing
 methods/properties/signals over OSC, first-class music-notation display, lit 3D volumetric
 primitives, multi-port OSC output, and collision reactors (bouncers & portals)**.
 
-Built as a Godot addon at `addons/gscore_osc/`. Pure GDScript. Targets **Godot 4.7** (uses
-stable Godot 4.x APIs). **Works in both 2D and 3D** — selectable via the `gscore_osc/space`
+Built as a Godot addon at `addons/musicscene/`. Pure GDScript. Targets **Godot 4.7** (uses
+stable Godot 4.x APIs). **Works in both 2D and 3D** — selectable via the `ms/space`
 project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-and-3d)).
 
 > Status: the OSC API is implemented and verified headlessly against Godot 4.7 in **both 2D and
@@ -58,9 +58,9 @@ visual object
 The API is object-oriented and reads like a tree:
 
 ```
-/gscore/scene/note1/physics enable rigid
-/gscore/scene/note1/on collisionEnter /synth/hit
-/gscore/scene/score notation png "res://scores/page1.png"
+/ms/scene/note1/physics enable rigid
+/ms/scene/note1/on collisionEnter /synth/hit
+/ms/scene/score notation png "res://scores/page1.png"
 ```
 
 ## Core principle
@@ -68,14 +68,14 @@ The API is object-oriented and reads like a tree:
 **OSC identity is separate from Godot node identity.** Clients address stable OSC ids:
 
 ```
-/gscore/scene/cursor
-/gscore/scene/note42
-/gscore/scene/floor
-/gscore/scene/score
+/ms/scene/cursor
+/ms/scene/note42
+/ms/scene/floor
+/ms/scene/score
 ```
 
 …and never need to know whether that id was created over OSC, instantiated from a `.tscn`, or
-bound to `/root/Main/Stage/Cursor`. The `GScoreRegistry` maps id ⇄ wrapped node and tracks
+bound to `/root/Main/Stage/Cursor`. The `MSRegistry` maps id ⇄ wrapped node and tracks
 ownership (`created_by_osc`, `instantiated_by_osc`, `bound_existing`, `auto_bound`,
 `group_binding`).
 
@@ -85,20 +85,20 @@ ownership (`created_by_osc`, `instantiated_by_osc`, `bound_existing`, `auto_boun
 
 The addon is wired to run **out of the box**:
 
-1. Open the project in Godot 4.7. The plugin is enabled and the `GScoreOSC` autoload is
+1. Open the project in Godot 4.7. The plugin is enabled and the `MusicSceneOSC` autoload is
    registered in `project.godot`.
 2. Press **Play**. The project defaults to **3D** (`ExampleMain3D.tscn`): the OSC server starts,
    a Camera3D is auto-created, and `example_score_3d.gscore` plays automatically — a notation
    page on a quad in world space, a red cursor sweep, a highlighted measure region, and a note
    that falls onto a floor and emits OSC on impact.
-3. Send `/gscore/ping` from any OSC client → you get `/gscore/pong`.
+3. Send `/ms/ping` from any OSC client → you get `/ms/pong`.
 
-To run the **2D** example instead, set `gscore_osc/space = "2d"` and the main scene to
+To run the **2D** example instead, set `ms/space = "2d"` and the main scene to
 `ExampleMain.tscn` (Project Settings), or drop an `override.cfg` with those values.
 
-To use it in your own project: copy `addons/gscore_osc/` in, enable the **gscore_osc** plugin in
-*Project → Project Settings → Plugins* (this installs the `GScoreOSC` autoload). Configuration
-lives under *Project Settings → gscore_osc/…* (see below).
+To use it in your own project: copy `addons/musicscene/` in, enable the **MusicScene** plugin in
+*Project → Project Settings → Plugins* (this installs the `MusicSceneOSC` autoload). Configuration
+lives under *Project Settings → ms/…* (see below).
 
 ### Generating the placeholder score
 
@@ -113,9 +113,9 @@ A placeholder engraved page (`res://scores/page1.png`) is included. To regenerat
 ## Dimensions: 2D and 3D
 
 The whole framework runs in either **2D** or **3D**, chosen once at boot by the project setting
-`gscore_osc/space` (`"2d"` | `"3d"`). This repo's `project.godot` sets it to `"3d"`; if the setting
+`ms/space` (`"2d"` | `"3d"`). This repo's `project.godot` sets it to `"3d"`; if the setting
 is absent (e.g. a fresh project), the addon falls back to `"2d"`. The OSC API is identical; only the
-spatial behaviour differs, behind a backend (`GScoreSpatial2D` / `GScoreSpatial3D`):
+spatial behaviour differs, behind a backend (`MSSpatial2D` / `MSSpatial3D`):
 
 | | 2D | 3D |
 |---|---|---|
@@ -132,7 +132,7 @@ extra `z` in 3D (e.g. `pos x y z`, `gravity 0 -0.6 0`).
 
 ## Ports / networking
 
-UDP. Defaults (Project Settings → `gscore_osc/network/`):
+UDP. Defaults (Project Settings → `ms/network/`):
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -147,9 +147,9 @@ default that's the single `send_port` (7401). To let a client **and** monitors e
 (only one process can bind a UDP port), set `send_ports` to a list, or change it at runtime — the
 command takes any number of ports:
 
-    /gscore/app/output 127.0.0.1 7401 7402      # replaces the whole list; one port = classic behavior
+    /ms/app/output 127.0.0.1 7401 7402      # replaces the whole list; one port = classic behavior
 
-`/gscore/info` reports the active output ports.
+`/ms/info` reports the active output ports.
 
 ---
 
@@ -165,15 +165,15 @@ y: -1.0 bottom 0 center    1.0 top   (y-up)
 The viewport maps to the full `[-1,1] × [-1,1]` square. Switch modes:
 
 ```
-/gscore/app/coord normalized   # default
-/gscore/app/coord pixels        # raw viewport pixels, top-left origin, y-down
-/gscore/app/coord world         # global Node2D coords (== pixels with no camera)
+/ms/app/coord normalized   # default
+/ms/app/coord pixels        # raw viewport pixels, top-left origin, y-down
+/ms/app/coord world         # global Node2D coords (== pixels with no camera)
 ```
 
 Physics has its own independent mode:
 
 ```
-/gscore/physics coord normalized|pixels|world
+/ms/physics coord normalized|pixels|world
 ```
 
 In **3D** (`space = "3d"`), normalized space is x/y/z ∈ `[-1,1]` (y-up, +z toward the camera)
@@ -190,7 +190,7 @@ over the page rect, top-left origin, y-down (same in 2D and 3D).
 ## Creating objects
 
 ```
-/gscore/scene/<id> new <type> [args...]
+/ms/scene/<id> new <type> [args...]
 ```
 
 Built-in types: `group  text  rect  circle  line  image  sprite  area  notation` — plus 3D
@@ -201,24 +201,24 @@ volumetrics `sphere  box/cube  cylinder  capsule  cone` and reactors `bouncer  p
 `physics enable` tracks the sized mesh, so a small primitive gets a small collider.
 
 ```
-/gscore/scene/title new text "Hello"
-/gscore/scene/box   new rect                 # default 2.0 x 1.3 (world) / 120 x 80 (px)
-/gscore/scene/panel new rect 0.4 0.3         # sized (normalized -> 2.0 x 1.5 world)
-/gscore/scene/ball  new circle               # default
-/gscore/scene/pellet new circle 0.02         # small ball
-/gscore/scene/logo  new image "res://assets/logo.png"
-/gscore/scene/score new notation
+/ms/scene/title new text "Hello"
+/ms/scene/box   new rect                 # default 2.0 x 1.3 (world) / 120 x 80 (px)
+/ms/scene/panel new rect 0.4 0.3         # sized (normalized -> 2.0 x 1.5 world)
+/ms/scene/ball  new circle               # default
+/ms/scene/pellet new circle 0.02         # small ball
+/ms/scene/logo  new image "res://assets/logo.png"
+/ms/scene/score new notation
 ```
 
 Generic commands work on **every** object type:
 
 ```
-/gscore/scene/<id> show | hide | del | unbind | free
-/gscore/scene/<id> pos <x> <y>      x <f>   y <f>   z <f>
-/gscore/scene/<id> size <w> <h>     width <f>   height <f>
-/gscore/scene/<id> scale <s>        scale <sx> <sy>     rotate <deg>
-/gscore/scene/<id> opacity <f>      color <r> <g> <b> [a]      text "<str>"
-/gscore/scene/<id> get <prop> | get * | dump | capabilities | exists
+/ms/scene/<id> show | hide | del | unbind | free
+/ms/scene/<id> pos <x> <y>      x <f>   y <f>   z <f>
+/ms/scene/<id> size <w> <h>     width <f>   height <f>
+/ms/scene/<id> scale <s>        scale <sx> <sy>     rotate <deg>
+/ms/scene/<id> opacity <f>      color <r> <g> <b> [a]      text "<str>"
+/ms/scene/<id> get <prop> | get * | dump | capabilities | exists
 ```
 
 Lifecycle semantics: **`unbind`** drops the OSC registration but leaves the node alive;
@@ -233,28 +233,28 @@ Notation is a **first-class object type**. A notation object can be positioned, 
 given physics, clicked, and queried like anything else.
 
 ```
-/gscore/scene/score new notation
-/gscore/scene/score notation png "res://scores/page1.png"
-/gscore/scene/score pos 0 0
-/gscore/scene/score scale 0.9
+/ms/scene/score new notation
+/ms/scene/score notation png "res://scores/page1.png"
+/ms/scene/score pos 0 0
+/ms/scene/score scale 0.9
 ```
 
 Notation commands:
 
 ```
-/gscore/scene/<id> notation <format> <source_or_data>   # file path OR inline data (auto-detected)
-/gscore/scene/<id> notationData <format> <data>         # force inline text/blob-bytes data
-/gscore/scene/<id> notationSource <source_or_data>
-/gscore/scene/<id> notationFormat <format>
-/gscore/scene/<id> render | reload
-/gscore/scene/<id> page <n> | nextPage | prevPage | pages
-/gscore/scene/<id> system <n> | staff <n> | measure <n> | part <id>
-/gscore/scene/<id> notationInfo
+/ms/scene/<id> notation <format> <source_or_data>   # file path OR inline data (auto-detected)
+/ms/scene/<id> notationData <format> <data>         # force inline text/blob-bytes data
+/ms/scene/<id> notationSource <source_or_data>
+/ms/scene/<id> notationFormat <format>
+/ms/scene/<id> render | reload
+/ms/scene/<id> page <n> | nextPage | prevPage | pages
+/ms/scene/<id> system <n> | staff <n> | measure <n> | part <id>
+/ms/scene/<id> notationInfo
 ```
 
 ### Notation backends
 
-`format` selects a backend behind `GScoreNotationRenderer`:
+`format` selects a backend behind `MSNotationRenderer`:
 
 | Format | Backend | Notes |
 |---|---|---|
@@ -270,7 +270,7 @@ by exporting to PNG/SVG and pointing the image/svg backend at it.
 - a **file path** (`res://`, `user://`, or absolute) written at run-time;
 - **inline data** sent over OSC — an SVG/MusicXML/LilyPond/ABC **string**, or raster **bytes** as
   an OSC blob (use `notationData` to force, or just send markup/blob and it's auto-detected);
-- **symbolic music** that gscore engraves on the fly via a configured external engraver (below).
+- **symbolic music** that MusicScene engraves on the fly via a configured external engraver (below).
 
 See the tutorial's [Displaying scores](TUTORIAL.md#9-displaying-scores--every-source-option) section
 for every form with examples.
@@ -278,14 +278,14 @@ for every form with examples.
 **SVG tips.** Put the `.svg` under `res://` so Godot imports it — if it shows a thumbnail in the
 FileSystem dock, the notation backend will display it. Notation renders at the page's native pixel
 size centred on the object, so a large page can overflow the screen: scale it down (e.g.
-`/gscore/scene/score scale 0.3`). If a non-`res://` SVG fails at runtime (some engraver SVGs use
+`/ms/scene/score scale 0.3`). If a non-`res://` SVG fails at runtime (some engraver SVGs use
 features ThorVG can't rasterize), import it under `res://` or export to PNG.
 
 **Multi-page** raster/SVG: put `{page}` in the source path (e.g. `res://scores/p{page}.png`);
 the page count is probed automatically and `page`/`nextPage`/`prevPage` switch pages.
 
-**External engraver** configuration (Project Settings → `gscore_osc/notation/`). Set a per-format
-command (preferred) or the generic fallback; works for a file path or inline symbolic data (gscore
+**External engraver** configuration (Project Settings → `ms/notation/`). Set a per-format
+command (preferred) or the generic fallback; works for a file path or inline symbolic data (MusicScene
 writes inline source to a temp file, runs the command, and caches the output):
 
 ```
@@ -303,7 +303,7 @@ and polled, so the app stays responsive (verified: ~2 ms OSC latency during a mu
 MuseScore render). The notation object shows an "engraving…" placeholder and swaps the page in when
 ready; results are cached so repeats are instant.
 
-**Call the engraver directly** — no helper script. gscore finds the file the engraver actually wrote
+**Call the engraver directly** — no helper script. MusicScene finds the file the engraver actually wrote
 (`{output}` plus the usual `.cropped` / `-page{N}` / `-N` variants LilyPond/MuseScore emit) and
 caches it, so you normally just set the engraver's path. Quote paths with spaces; `res://`/`user://`
 in a command are resolved too. **LilyPond and MuseScore ship working defaults** — set your install
@@ -311,11 +311,11 @@ path and `notation musicxml/lilypond "<path-or-inline>"` (or `notationData`) wor
 auto-detecting wrappers are also bundled (`tools/ly_to_score.py`, `tools/mscore_to_score.py`).
 (MuseScore 4 can crash on a cold headless start; results are cached, so a retry succeeds.)
 
-Rendered pages are cached under `user://gscore_cache/notation/`:
+Rendered pages are cached under `user://musicscene_cache/notation/`:
 
 ```
-/gscore/notation/cache clear
-/gscore/notation/cache info
+/ms/notation/cache clear
+/ms/notation/cache info
 ```
 
 ### Notation cursor
@@ -323,12 +323,12 @@ Rendered pages are cached under `user://gscore_cache/notation/`:
 A vertical playback cursor in page-normalized `[0,1]` coords:
 
 ```
-/gscore/scene/<id>/cursor show <0|1>
-/gscore/scene/<id>/cursor pos <x> <y>
-/gscore/scene/<id>/cursor color <r> <g> <b> [a]
-/gscore/scene/<id>/cursor width <f>
-/gscore/scene/<id>/cursor map <t0> <t1> <property> <from> <to>      # property: x|y|opacity
-/gscore/scene/<id>/cursor measure <n> | beat <b> | time <s>          # stored; drive via pos/map in v1
+/ms/scene/<id>/cursor show <0|1>
+/ms/scene/<id>/cursor pos <x> <y>
+/ms/scene/<id>/cursor color <r> <g> <b> [a]
+/ms/scene/<id>/cursor width <f>
+/ms/scene/<id>/cursor map <t0> <t1> <property> <from> <to>      # property: x|y|opacity
+/ms/scene/<id>/cursor measure <n> | beat <b> | time <s>          # stored; drive via pos/map in v1
 ```
 
 ### Notation regions
@@ -336,12 +336,12 @@ A vertical playback cursor in page-normalized `[0,1]` coords:
 Addressable rectangles (page-normalized `[0,1]`) that can highlight and emit click events:
 
 ```
-/gscore/scene/<id>/region <rid> rect <x> <y> <w> <h>
-/gscore/scene/<id>/region <rid> measure <n> [staff]
-/gscore/scene/<id>/region <rid> on <event> <target_osc_address>
-/gscore/scene/<id>/region <rid> highlight <0|1>
-/gscore/scene/<id>/region <rid> color <r> <g> <b> [a]
-/gscore/scene/<id>/regions
+/ms/scene/<id>/region <rid> rect <x> <y> <w> <h>
+/ms/scene/<id>/region <rid> measure <n> [staff]
+/ms/scene/<id>/region <rid> on <event> <target_osc_address>
+/ms/scene/<id>/region <rid> highlight <0|1>
+/ms/scene/<id>/region <rid> color <r> <g> <b> [a]
+/ms/scene/<id>/regions
 ```
 
 Clicking a region with an `on click` binding emits, e.g.:
@@ -352,37 +352,37 @@ Clicking a region with an `on click` binding emits, e.g.:
 
 ### Addressable notation (auto measure regions)
 
-For MusicXML/MEI via **MuseScore**, gscore can extract real measure positions and make the score
+For MusicXML/MEI via **MuseScore**, MusicScene can extract real measure positions and make the score
 addressable automatically — no manual rects:
 
 ```
-/gscore/scene/<id> addressable 1            # enable, then (re)load a MusicXML source
-/gscore/scene/<id> notation musicxml "res://score.musicxml"   # or notationData musicxml <inline>
-/gscore/scene/<id> measures                  # -> reply measures <id> <n u v w h time> ...
-/gscore/scene/<id>/cursor measure <n> [beatFraction]          # jump cursor to a measure
+/ms/scene/<id> addressable 1            # enable, then (re)load a MusicXML source
+/ms/scene/<id> notation musicxml "res://score.musicxml"   # or notationData musicxml <inline>
+/ms/scene/<id> measures                  # -> reply measures <id> <n u v w h time> ...
+/ms/scene/<id>/cursor measure <n> [beatFraction]          # jump cursor to a measure
 ```
 
 It renders the full page, reads MuseScore's `.mpos` position export (one batched, async MuseScore
 run), crops to the music, and creates a clickable region `m1…mN` per measure (each emits
-`/gscore/event/measure <id> m<n> <u> <v>` on click). `measures` replies each measure's
+`/ms/event/measure <id> m<n> <u> <v>` on click). `measures` replies each measure's
 page-normalized rect and time position, so a client can drive cursor-following by sending
 `cursor measure <n>` as the music plays.
 
 For **LilyPond** the same `addressable 1` gives **note-level** addressing with automatic following:
-gscore injects a Scheme tagger so every note carries its musical moment, renders the point-and-click
+MusicScene injects a Scheme tagger so every note carries its musical moment, renders the point-and-click
 SVG, and extracts each note's time, source `line:char`, and position.
 
 ```
-/gscore/scene/<id> addressable 1
-/gscore/scene/<id> notation lilypond "res://score.ly"      # or notationData lilypond <inline>
-/gscore/scene/<id> elements                  # -> reply elements <id> <n when line char u v> ...
-/gscore/scene/<id>/cursor follow 1           # cursor tracks the transport across the notes
+/ms/scene/<id> addressable 1
+/ms/scene/<id> notation lilypond "res://score.ly"      # or notationData lilypond <inline>
+/ms/scene/<id> elements                  # -> reply elements <id> <n when line char u v> ...
+/ms/scene/<id>/cursor follow 1           # cursor tracks the transport across the notes
 ```
 
-Each note becomes region `n0…nK` (clicking emits `/gscore/event/note <id> n<i> <u> <v>`), and with
+Each note becomes region `n0…nK` (clicking emits `/ms/event/note <id> n<i> <u> <v>`), and with
 `cursor follow 1` + a playing transport the cursor moves note-to-note and emits
-`/gscore/event/note <id> n<i> <when> <line> <char>` as it passes each one — full score-following,
-driven entirely by gscore.
+`/ms/event/note <id> n<i> <when> <line> <char>` as it passes each one — full score-following,
+driven entirely by MusicScene.
 
 **Verovio** (for MEI/ABC, `pip install verovio`) gives the same note-level addressing + following and
 is the cleanest source: its SVG tags every note with a stable id and `renderToTimemap()` provides
@@ -396,12 +396,12 @@ MusicXML, so you can point `engraver/musicxml` at it instead of MuseScore if you
 Lightweight text/glyph overlays (move/scale with the score):
 
 ```
-/gscore/scene/<id>/annotation <aid> text "<str>"
-/gscore/scene/<id>/annotation <aid> rect <x> <y> <w> <h>
-/gscore/scene/<id>/annotation <aid> glyph <name>
-/gscore/scene/<id>/annotation <aid> color <r> <g> <b> [a]
-/gscore/scene/<id>/annotation <aid> show | hide | del
-/gscore/scene/<id>/annotations
+/ms/scene/<id>/annotation <aid> text "<str>"
+/ms/scene/<id>/annotation <aid> rect <x> <y> <w> <h>
+/ms/scene/<id>/annotation <aid> glyph <name>
+/ms/scene/<id>/annotation <aid> color <r> <g> <b> [a]
+/ms/scene/<id>/annotation <aid> show | hide | del
+/ms/scene/<id>/annotations
 ```
 
 > Glyphs render as text. Bundle a SMuFL music font and set it on `ThemeDB` for real glyphs.
@@ -418,9 +418,9 @@ events use a camera ray ↔ quad-plane intersection. The OSC commands are identi
 Notation objects accept physics like anything else:
 
 ```
-/gscore/scene/page1/physics enable rigid
-/gscore/scene/page1/collider rect 0.8 1.1
-/gscore/scene/page1/on collisionEnter /score/pageHit
+/ms/scene/page1/physics enable rigid
+/ms/scene/page1/collider rect 0.8 1.1
+/ms/scene/page1/on collisionEnter /score/pageHit
 ```
 
 ---
@@ -428,12 +428,12 @@ Notation objects accept physics like anything else:
 ## Binding existing Godot nodes
 
 ```
-/gscore/app/root "<absolute_node_path>"          # base for relative binds
-/gscore/bind <id> "<absolute_node_path>"
-/gscore/bindRel <id> "<relative_node_path>"
-/gscore/bindGroup <osc_group_id> <godot_group>
-/gscore/bindAll meta <key> [value]
-/gscore/scene/<id> bind "<abs>" | bindRel "<rel>" | unbind
+/ms/app/root "<absolute_node_path>"          # base for relative binds
+/ms/bind <id> "<absolute_node_path>"
+/ms/bindRel <id> "<relative_node_path>"
+/ms/bindGroup <osc_group_id> <godot_group>
+/ms/bindAll meta <key> [value]
+/ms/scene/<id> bind "<abs>" | bindRel "<rel>" | unbind
 ```
 
 By default only **exposed** nodes can be bound (see [Permissions](#permissions--safety)). Mark a
@@ -453,33 +453,33 @@ Nodes with `OscExposable` and `osc_auto_bind = true` are **auto-bound on startup
 ### Discovery
 
 ```
-/gscore/discover
-/gscore/discover group <group_name>
-/gscore/discover type <class_name>
-/gscore/discover meta <key> [value]
+/ms/discover
+/ms/discover group <group_name>
+/ms/discover type <class_name>
+/ms/discover meta <key> [value]
 ```
 
-Each match replies `/gscore/reply discover <suggested_id> <node_path> <class> <name>`.
+Each match replies `/ms/reply discover <suggested_id> <node_path> <class> <name>`.
 
 ---
 
 ## Instantiating PackedScenes
 
 ```
-/gscore/scene/<id> instantiate "<scene_path>" [parent]
+/ms/scene/<id> instantiate "<scene_path>" [parent]
 ```
 
 Only **whitelisted** scenes/prefixes are allowed. `res://osc_spawnable/` is whitelisted by
 default; add more:
 
 ```
-/gscore/assets/allowScene "<path>"
-/gscore/assets/allowPrefix "<path_prefix>"
-/gscore/assets/listAllowed
+/ms/assets/allowScene "<path>"
+/ms/assets/allowPrefix "<path_prefix>"
+/ms/assets/listAllowed
 ```
 
 ```
-/gscore/scene/note42 instantiate "res://osc_spawnable/PhysicalNote.tscn"
+/ms/scene/note42 instantiate "res://osc_spawnable/PhysicalNote.tscn"
 ```
 
 ---
@@ -489,32 +489,32 @@ default; add more:
 Global:
 
 ```
-/gscore/physics enable <0|1>      pause <0|1>      debug <0|1>
-/gscore/physics gravity <gx> <gy>
-/gscore/physics coord <normalized|pixels|world>
-/gscore/physics/layer <number> <name>
+/ms/physics enable <0|1>      pause <0|1>      debug <0|1>
+/ms/physics gravity <gx> <gy>
+/ms/physics coord <normalized|pixels|world>
+/ms/physics/layer <number> <name>
 ```
 
-> Gravity is applied by gscore as an explicit per-body force, so it responds immediately and is
+> Gravity is applied by MusicScene as an explicit per-body force, so it responds immediately and is
 > fully under OSC control. Set e.g. `gravity 0 -1` to make things fall.
 
 > `debug 1` shows Godot's collision shapes **and** draws a per-joint overlay (a line between the two
 > bodies, a pivot marker, and the working axis for a hinge/slider) — joints have no visual of their
 > own, so this is how you see them. `debug 0` removes both.
 
-Per object (`static → StaticBody2D/3D`, `rigid → RigidBody2D/3D`, `area → Area2D/3D`, depending on `gscore_osc/space`):
+Per object (`static → StaticBody2D/3D`, `rigid → RigidBody2D/3D`, `area → Area2D/3D`, depending on `ms/space`):
 
 ```
-/gscore/scene/<id>/physics enable <static|rigid|area>
-/gscore/scene/<id>/physics mass <f> | gravityScale <f> | friction <f> | bounce <f>
-/gscore/scene/<id>/physics damping <lin> <ang> | velocity <vx> <vy> | angularVelocity <f>
-/gscore/scene/<id>/physics force <fx> <fy> | impulse <ix> <iy> | torque <f>
-/gscore/scene/<id>/physics lockRotation <0|1> | freeze <0|1> | bindTransform <0|1>
-/gscore/scene/<id>/physics planar <0|1>          # 3D: pin body to the z=0 plane (no out-of-plane drift)
-/gscore/scene/<id>/physics layer <n_or_name> | mask <n_or_name> [...]
+/ms/scene/<id>/physics enable <static|rigid|area>
+/ms/scene/<id>/physics mass <f> | gravityScale <f> | friction <f> | bounce <f>
+/ms/scene/<id>/physics damping <lin> <ang> | velocity <vx> <vy> | angularVelocity <f>
+/ms/scene/<id>/physics force <fx> <fy> | impulse <ix> <iy> | torque <f>
+/ms/scene/<id>/physics lockRotation <0|1> | freeze <0|1> | bindTransform <0|1>
+/ms/scene/<id>/physics planar <0|1>          # 3D: pin body to the z=0 plane (no out-of-plane drift)
+/ms/scene/<id>/physics layer <n_or_name> | mask <n_or_name> [...]
 ```
 
-> **`planar`** matters for long-running 3D physics: gscore's 3D is really "2D in a plane", but a
+> **`planar`** matters for long-running 3D physics: MusicScene's 3D is really "2D in a plane", but a
 > `RigidBody3D` accumulates a tiny out-of-plane (z) velocity from collisions/solver drift that
 > eventually carries it past the limited z-depth of colliders and areas — so it silently stops
 > colliding. `planar 1` locks the z axis (and snaps z back to 0) to keep it in the plane. No-op in 2D.
@@ -526,17 +526,17 @@ Collider *sizes* use the physics coordinate mode (in normalized 3D they are ×5 
 so match them to the visual — or just rely on the automatic shape:
 
 ```
-/gscore/scene/<id>/collider rect <w> <h> | circle <r> | polygon <x1> <y1> ... | auto
-/gscore/scene/<id>/collider box <w> <h> [d] | sphere <r> | cylinder <r> <h> | capsule <r> <h>   # 3D
-/gscore/scene/<id>/collider disabled <0|1> | offset <x> <y> [z]
+/ms/scene/<id>/collider rect <w> <h> | circle <r> | polygon <x1> <y1> ... | auto
+/ms/scene/<id>/collider box <w> <h> [d] | sphere <r> | cylinder <r> <h> | capsule <r> <h>   # 3D
+/ms/scene/<id>/collider disabled <0|1> | offset <x> <y> [z]
 ```
 
 Events:
 
 ```
-/gscore/scene/<id>/on <event> <target> [options...]
-/gscore/scene/<id>/off <event> [target]
-/gscore/scene/<id>/payload <event> <fields...>
+/ms/scene/<id>/on <event> <target> [options...]
+/ms/scene/<id>/off <event> [target]
+/ms/scene/<id>/payload <event> <fields...>
 ```
 
 Events: `collisionEnter collisionExit areaEnter areaExit sleep wake` and continuous
@@ -548,7 +548,7 @@ Events: `collisionEnter collisionExit areaEnter areaExit sleep wake` and continu
 Options: `minIntensity <f>  cooldown <s>  maxRate <hz>  other <id_or_pattern>
 layer <name|number>  mode immediate|queued|bundle|quantized  quantizeGrid <beats>`.
 `layer` fires only when the other body is on that collision layer (name registered via
-`/gscore/physics/layer`, or the bit number). `mode`: `immediate` (default); `queued` flushes at
+`/ms/physics/layer`, or the bit number). `mode`: `immediate` (default); `queued` flushes at
 end of frame; `bundle` packs the frame's events as one OSC bundle; `quantized` holds until the
 next transport beat (`quantizeGrid <beats>`, default 1; transport must be playing).
 
@@ -559,25 +559,25 @@ normalX normalY time beat mass angle angularVelocity`. Default:
 A canonical message is also emitted for every physics event:
 
 ```
-/gscore/event/physics <event> <self> <other> <intensity> <x> <y> <vx> <vy>
+/ms/event/physics <event> <self> <other> <intensity> <x> <y> <vx> <vy>
 ```
 
 Example:
 
 ```
-/gscore/scene/note1/on collisionEnter /synth/hit minIntensity 0.2 cooldown 0.05
-/gscore/scene/note1/payload collisionEnter self other intensity x y time
+/ms/scene/note1/on collisionEnter /synth/hit minIntensity 0.2 cooldown 0.05
+/ms/scene/note1/payload collisionEnter self other intensity x y time
 # -> /synth/hit note1 floor 0.42 0.0 -0.8 3.12
 ```
 
 ### Interaction events
 
 ```
-/gscore/scene/<id>/on click|down|up|drag|enter|leave <target>
+/ms/scene/<id>/on click|down|up|drag|enter|leave <target>
 ```
 
 Any visual object or notation region is clickable (centralized hit-testing — no per-object
-Area2D needed). Canonical: `/gscore/event/input <event> <self> <x> <y>`.
+Area2D needed). Canonical: `/ms/event/input <event> <self> <x> <y>`.
 
 ### Collision reactors: bouncers & portals
 
@@ -585,18 +585,18 @@ Area sensors that act on a body the instant it enters. Both are created as first
 is auto-enabled) and still emit `areaEnter`, so you can attach sound/scoring with `on areaEnter …`.
 
 ```
-/gscore/scene/<id> new bouncer                        # a bumper
-/gscore/scene/<id>/collider circle|box <dims…>        # any collider shape
-/gscore/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>
+/ms/scene/<id> new bouncer                        # a bumper
+/ms/scene/<id>/collider circle|box <dims…>        # any collider shape
+/ms/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>
         # mirror-reflect the body's velocity + kick it outward by `strength`.
         # normal is exact for round (center-to-center) and box (entered face) colliders.
         # gain=1.0 (energy-preserving), strength=0 by default; strength/minSpeed are normalized units
         # (the same scale as a collider radius).
 
-/gscore/scene/<id> new portal
-/gscore/scene/<id>/collider circle <r>
-/gscore/scene/<id>/portal link <id1> [<id2> …]        # directional targets (A→B ≠ B→A)
-/gscore/scene/<id>/portal unlink
+/ms/scene/<id> new portal
+/ms/scene/<id>/collider circle <r>
+/ms/scene/<id>/portal link <id1> [<id2> …]        # directional targets (A→B ≠ B→A)
+/ms/scene/<id>/portal unlink
         # a body entering is teleported to a random linked target, velocity preserved,
         # with a re-entry cooldown so it doesn't instantly ping-pong.
 ```
@@ -608,15 +608,15 @@ See [ADVANCED.md](ADVANCED.md) for the mechanics and gotchas.
 
 ## Physics joints
 
-Joints constrain two physics bodies and live in their own namespace `/gscore/joint/<id>` with
+Joints constrain two physics bodies and live in their own namespace `/ms/joint/<id>` with
 their own id space (separate from scene objects). Both endpoints must have physics enabled; at
 least one must be non-static.
 
 ```
-/gscore/joint/<id> new <type> <a> <b>
-/gscore/joint/<id> <property> [args...]
-/gscore/joint/<id> del | info
-/gscore/joints list
+/ms/joint/<id> new <type> <a> <b>
+/ms/joint/<id> <property> [args...]
+/ms/joint/<id> del | info
+/ms/joints list
 ```
 
 **Types — native per space:**
@@ -636,7 +636,7 @@ least one must be non-static.
 | `motor <speed> <torque>` | 2D `pin`: target velocity (torque is a no-op). 3D `hinge`: velocity + max impulse |
 | `axis <x> <y> <z>` | 3D working axis for `hinge`/`slider`/`coneTwist` (default A→B) |
 | `dof <linX\|linY\|linZ\|angX\|angY\|angZ\|lin\|ang\|all>` | `generic6dof` DOF selector |
-| `breakForce <0..1>` | Snaps joint when overstretched; emits `/gscore/event/jointBreak <id> <a> <b>` |
+| `breakForce <0..1>` | Snaps joint when overstretched; emits `/ms/event/jointBreak <id> <a> <b>` |
 
 > `breakForce` is an overstretch proxy — Godot exposes no joint reaction force, so the joint snaps
 > when endpoints are pulled too far apart (most effective on spring/distance/slider; a rigid `pin`
@@ -646,23 +646,23 @@ least one must be non-static.
 **2D example — note hanging on a spring:**
 
 ```
-/gscore/scene/anchor/physics enable static
-/gscore/scene/note/physics enable rigid
-/gscore/joint/string1 new dampedSpring anchor note
-/gscore/joint/string1 stiffness 0.8
-/gscore/joint/string1 damping 0.1
-/gscore/joint/string1 restLength 0.4
+/ms/scene/anchor/physics enable static
+/ms/scene/note/physics enable rigid
+/ms/joint/string1 new dampedSpring anchor note
+/ms/joint/string1 stiffness 0.8
+/ms/joint/string1 damping 0.1
+/ms/joint/string1 restLength 0.4
 ```
 
 **3D example — swinging hinge:**
 
 ```
-/gscore/scene/post/physics enable static
-/gscore/scene/arm/physics enable rigid
-/gscore/joint/hinge1 new hinge post arm
-/gscore/joint/hinge1 axis 0 0 1
-/gscore/joint/hinge1 limit -60 60
-/gscore/joint/hinge1 motor 2.0 0.5
+/ms/scene/post/physics enable static
+/ms/scene/arm/physics enable rigid
+/ms/joint/hinge1 new hinge post arm
+/ms/joint/hinge1 axis 0 0 1
+/ms/joint/hinge1 limit -60 60
+/ms/joint/hinge1 motor 2.0 0.5
 ```
 
 ---
@@ -674,11 +674,11 @@ bodies enter, leave, or remain inside it — useful for form sections, presence 
 gates.
 
 ```
-/gscore/scene/zoneA/physics enable area
-/gscore/scene/zoneA/collider rect 0.4 0.3
-/gscore/scene/zoneA/on areaEnter /form/section
-/gscore/scene/zoneA/on areaExit  /form/leave
-/gscore/scene/zoneA/on areaStay  /zone/presence maxRate 20
+/ms/scene/zoneA/physics enable area
+/ms/scene/zoneA/collider rect 0.4 0.3
+/ms/scene/zoneA/on areaEnter /form/section
+/ms/scene/zoneA/on areaExit  /form/leave
+/ms/scene/zoneA/on areaStay  /zone/presence maxRate 20
 ```
 
 `areaEnter`/`areaExit` fire as bodies cross the boundary. `areaStay` fires every physics frame for
@@ -691,7 +691,7 @@ itself. Filters (`other <id|prefix*>`, `layer <name|number>`) restrict which bod
 **Literal payload tags** — prefix a payload token with `=` (or `'`) to embed a constant string:
 
 ```
-/gscore/scene/zoneA/payload areaEnter self other =A
+/ms/scene/zoneA/payload areaEnter self other =A
 # -> /form/section zoneA note17 A
 ```
 
@@ -703,16 +703,16 @@ itself. Filters (`other <id|prefix*>`, `layer <name|number>`) restrict which bod
 coordinates as everything else (`x/y/z ∈ [-1,1]`); FOV is degrees.
 
 ```
-/gscore/camera pos <x> <y> <z>                  # move camera (normalized, stops tracking)
-/gscore/camera lookAt <x> <y> <z>               # aim at a point (stops tracking)
-/gscore/camera up <x> <y> <z>                   # override the up vector
-/gscore/camera fov <degrees>                     # field of view
-/gscore/camera projection <perspective|orthographic>
-/gscore/camera orthoSize <norm>                  # orthographic extent (normalized)
-/gscore/camera target <id>                       # re-aim each frame at a scene object (stays put)
-/gscore/camera follow <id> [dist]                # chase-cam: keep current offset, aim at object
-/gscore/camera reset                             # restore default framing, clear tracking
-/gscore/camera info                              # -> /gscore/reply camera pos x y z fov projection tracking ...
+/ms/camera pos <x> <y> <z>                  # move camera (normalized, stops tracking)
+/ms/camera lookAt <x> <y> <z>               # aim at a point (stops tracking)
+/ms/camera up <x> <y> <z>                   # override the up vector
+/ms/camera fov <degrees>                     # field of view
+/ms/camera projection <perspective|orthographic>
+/ms/camera orthoSize <norm>                  # orthographic extent (normalized)
+/ms/camera target <id>                       # re-aim each frame at a scene object (stays put)
+/ms/camera follow <id> [dist]                # chase-cam: keep current offset, aim at object
+/ms/camera reset                             # restore default framing, clear tracking
+/ms/camera info                              # -> /ms/reply camera pos x y z fov projection tracking ...
 ```
 
 `target` keeps the camera stationary and re-aims it each frame; `follow` also moves it, preserving
@@ -722,8 +722,8 @@ command stops tracking. If a tracked object is removed, tracking stops automatic
 ### Scene clear vs reset
 
 ```
-/gscore/scene clear   # removes objects/joints/time-maps; keeps global config (physics, gravity, camera)
-/gscore/scene reset   # full "like first run" reset: clear + disable physics + zero gravity +
+/ms/scene clear   # removes objects/joints/time-maps; keeps global config (physics, gravity, camera)
+/ms/scene reset   # full "like first run" reset: clear + disable physics + zero gravity +
                       # reset camera + drop buffered events + restore default coord modes.
                       # Safety config (permissions, whitelist, developer mode) and transport preserved.
 ```
@@ -747,20 +747,20 @@ Volumetric mesh primitives (lit by default):
 
 Per-object material:
 
-    /gscore/scene/<id> shaded [1|0]     lit vs unshaded
-    /gscore/scene/<id> metallic <0..1>
-    /gscore/scene/<id> roughness <0..1>
-    /gscore/scene shading auto|shaded|flat   global default (auto=per-type, flat=all unshaded,
+    /ms/scene/<id> shaded [1|0]     lit vs unshaded
+    /ms/scene/<id> metallic <0..1>
+    /ms/scene/<id> roughness <0..1>
+    /ms/scene shading auto|shaded|flat   global default (auto=per-type, flat=all unshaded,
                                              shaded=solids + rect panels lit; circle stays flat)
 
 Lighting (a default key + fill light is added automatically):
 
-    /gscore/light dir <x> <y> <z>       aim the key light along a world direction
-    /gscore/light color <r> <g> <b>
-    /gscore/light energy <e>
-    /gscore/light ambient <e>           fill-light strength
-    /gscore/light shadows <0|1>         opt-in, off by default
-    /gscore/light reset
+    /ms/light dir <x> <y> <z>       aim the key light along a world direction
+    /ms/light color <r> <g> <b>
+    /ms/light energy <e>
+    /ms/light ambient <e>           fill-light strength
+    /ms/light shadows <0|1>         opt-in, off by default
+    /ms/light reset
 
 In 2D these material/light commands are no-ops and the volumetric names alias to flat shapes.
 
@@ -771,27 +771,27 @@ In 2D these material/light commands are no-ops and the volumetric names alias to
 Only members exposed via `OscExposable` / metadata are reachable (unless developer mode is on):
 
 ```
-/gscore/scene/<id> prop <property> <value...>
-/gscore/scene/<id> getProp <property>
-/gscore/scene/<id> call <method> [args...]
+/ms/scene/<id> prop <property> <value...>
+/ms/scene/<id> getProp <property>
+/ms/scene/<id> call <method> [args...]
 ```
 
 Multi-value `prop`/`call` args coerce by count: 2 → `Vector2`, 3 → `Vector3`, 4 → `Color`.
-Denied access replies `/gscore/error permission_denied <address> <message>`.
+Denied access replies `/ms/error permission_denied <address> <message>`.
 
 ---
 
 ## Signal-to-OSC forwarding
 
 ```
-/gscore/scene/<id>/signal <godot_signal> <target> [payload <tokens...>]
+/ms/scene/<id>/signal <godot_signal> <target> [payload <tokens...>]
 ```
 
 Default payload: `<osc_id> <signal_name> <signal_args...>`. Payload tokens:
 `self | signal | value | args | arg0..argN`.
 
 ```
-/gscore/scene/button/signal pressed /ui/buttonPressed
+/ms/scene/button/signal pressed /ui/buttonPressed
 # pressing the button -> /ui/buttonPressed button pressed
 ```
 
@@ -800,17 +800,17 @@ Default payload: `<osc_id> <signal_name> <signal_args...>`. Payload tokens:
 ## Transport & time mapping
 
 ```
-/gscore/transport play | stop | pause
-/gscore/transport seek <seconds> | tempo <bpm>
-/gscore/transport time | beat | state
+/ms/transport play | stop | pause
+/ms/transport seek <seconds> | tempo <bpm>
+/ms/transport time | beat | state
 ```
 
 Map transport time onto any property:
 
 ```
-/gscore/scene/<id> map <t0> <t1> <property> <from> <to>
-/gscore/scene/cursor map 0 60 x -0.9 0.9
-/gscore/scene/score/cursor map 0 60 x 0.05 0.95
+/ms/scene/<id> map <t0> <t1> <property> <from> <to>
+/ms/scene/cursor map 0 60 x -0.9 0.9
+/ms/scene/score/cursor map 0 60 x 0.05 0.95
 ```
 
 ---
@@ -820,17 +820,17 @@ Map transport time onto any property:
 One OSC-style command per line; `#` comments; quoted strings stay strings; numbers/bools auto-type.
 
 ```
-/gscore/script/run "<one line>"
-/gscore/script/load "<path.gscore>"
+/ms/script/run "<one line>"
+/ms/script/load "<path.gscore>"
 ```
 
-See `addons/gscore_osc/examples/example_score.gscore`.
+See `addons/musicscene/examples/example_score.gscore`.
 
 ---
 
 ## Permissions & safety
 
-Conservative defaults (Project Settings → `gscore_osc/permissions/`):
+Conservative defaults (Project Settings → `ms/permissions/`):
 
 | Capability | Default |
 |---|---|
@@ -843,18 +843,18 @@ Conservative defaults (Project Settings → `gscore_osc/permissions/`):
 Toggle at runtime:
 
 ```
-/gscore/app/permissions bindExisting|instantiate|callMethods|setProps|freeNodes <0|1>
-/gscore/app/developer <0|1>          # developer mode relaxes restrictions for local prototyping
+/ms/app/permissions bindExisting|instantiate|callMethods|setProps|freeNodes <0|1>
+/ms/app/developer <0|1>          # developer mode relaxes restrictions for local prototyping
 ```
 
-Set `gscore_osc/developer_mode = true` (Project Settings) for unrestricted local prototyping.
+Set `ms/developer_mode = true` (Project Settings) for unrestricted local prototyping.
 
 ---
 
 ## Errors
 
 ```
-/gscore/error <code> <address> <message>
+/ms/error <code> <address> <message>
 ```
 
 Codes: `unknown_object  unknown_property  bad_arguments  unsupported_type  load_failed
@@ -864,60 +864,60 @@ permission_denied  internal_error`.
 
 ## API reference
 
-Replies use `/gscore/reply <topic> ...`. Compact map:
+Replies use `/ms/reply <topic> ...`. Compact map:
 
 ```
 # system
-/gscore ping                         -> /gscore/pong
-/gscore/version | /gscore version    -> /gscore/reply version "0.12.0"
-/gscore/info    | /gscore info       -> /gscore/reply info ...
-/gscore/app coord <mode>
-/gscore/app root "<path>"
-/gscore/app output <host> <port>
-/gscore/app developer <0|1>
-/gscore/app permissions <flag> <0|1>
+/ms ping                         -> /ms/pong
+/ms/version | /ms version    -> /ms/reply version "0.12.0"
+/ms/info    | /ms info       -> /ms/reply info ...
+/ms/app coord <mode>
+/ms/app root "<path>"
+/ms/app output <host> <port>
+/ms/app developer <0|1>
+/ms/app permissions <flag> <0|1>
 
 # scene-wide
-/gscore/scene clear | reset | list | tree
-/gscore/scene/list                   -> /gscore/reply scene/list <ids...>
-/gscore/scene/tree                   -> /gscore/reply scene/tree <id type ownership path ...>
+/ms/scene clear | reset | list | tree
+/ms/scene/list                   -> /ms/reply scene/list <ids...>
+/ms/scene/tree                   -> /ms/reply scene/tree <id type ownership path ...>
 
 # object lifecycle / transform / style / query   (see "Creating objects")
-/gscore/scene/<id> new <type> [args] | instantiate "<path>" [parent]
-/gscore/scene/<id> bind "<abs>" | bindRel "<rel>" | unbind | del | free
-/gscore/scene/<id> show|hide|pos|x|y|z|size|width|height|scale|rotate|opacity|color|text
-/gscore/scene/<id> get <p> | get * | dump | capabilities | exists
-/gscore/scene/<id> methods | properties | signals
-/gscore/scene/<id> prop <p> <v...> | getProp <p> | call <m> [args]
-/gscore/scene/<id> map <t0> <t1> <prop> <from> <to>
+/ms/scene/<id> new <type> [args] | instantiate "<path>" [parent]
+/ms/scene/<id> bind "<abs>" | bindRel "<rel>" | unbind | del | free
+/ms/scene/<id> show|hide|pos|x|y|z|size|width|height|scale|rotate|opacity|color|text
+/ms/scene/<id> get <p> | get * | dump | capabilities | exists
+/ms/scene/<id> methods | properties | signals
+/ms/scene/<id> prop <p> <v...> | getProp <p> | call <m> [args]
+/ms/scene/<id> map <t0> <t1> <prop> <from> <to>
 
 # notation                                          (see "Music notation")
-/gscore/scene/<id> notation <fmt> <src_or_data> | notationData | notationSource | notationFormat | render | reload
-/gscore/scene/<id> page <n> | nextPage | prevPage | pages | notationInfo
-/gscore/scene/<id> addressable <0|1> | measures | elements   # MuseScore measures / LilyPond notes
-/gscore/scene/<id>/cursor show|pos|color|width|map|measure|beat|time|follow
-/gscore/scene/<id>/region <rid> rect|measure|on|highlight|color
-/gscore/scene/<id>/annotation <aid> text|rect|glyph|color|show|hide|del
-/gscore/scene/<id>/regions | /annotations | /notationInfo | /pages | /currentPage
-/gscore/notation/cache clear | info
+/ms/scene/<id> notation <fmt> <src_or_data> | notationData | notationSource | notationFormat | render | reload
+/ms/scene/<id> page <n> | nextPage | prevPage | pages | notationInfo
+/ms/scene/<id> addressable <0|1> | measures | elements   # MuseScore measures / LilyPond notes
+/ms/scene/<id>/cursor show|pos|color|width|map|measure|beat|time|follow
+/ms/scene/<id>/region <rid> rect|measure|on|highlight|color
+/ms/scene/<id>/annotation <aid> text|rect|glyph|color|show|hide|del
+/ms/scene/<id>/regions | /annotations | /notationInfo | /pages | /currentPage
+/ms/notation/cache clear | info
 
 # physics / events                                  (see "Physics & collision events")
-/gscore/physics enable|pause|gravity|debug|coord     /gscore/physics/layer <n> <name>
-/gscore/scene/<id>/physics enable|mass|gravityScale|friction|bounce|damping|velocity|...
-/gscore/scene/<id>/collider rect|circle|polygon|box|sphere|cylinder|capsule|auto|disabled|offset
-/gscore/scene/<id>/on <event> <target> [opts]   /off   /payload   /signal
+/ms/physics enable|pause|gravity|debug|coord     /ms/physics/layer <n> <name>
+/ms/scene/<id>/physics enable|mass|gravityScale|friction|bounce|damping|velocity|...
+/ms/scene/<id>/collider rect|circle|polygon|box|sphere|cylinder|capsule|auto|disabled|offset
+/ms/scene/<id>/on <event> <target> [opts]   /off   /payload   /signal
 
 # camera (3D only)
-/gscore/camera pos <x> <y> <z> | lookAt <x> <y> <z> | up <x> <y> <z>
-/gscore/camera fov <deg> | projection <perspective|orthographic> | orthoSize <norm>
-/gscore/camera target <id> | follow <id> [dist] | reset | info
+/ms/camera pos <x> <y> <z> | lookAt <x> <y> <z> | up <x> <y> <z>
+/ms/camera fov <deg> | projection <perspective|orthographic> | orthoSize <norm>
+/ms/camera target <id> | follow <id> [dist] | reset | info
 
 # binding / discovery / assets / transport / script
-/gscore/bind | /gscore/bindRel | /gscore/bindGroup | /gscore/bindAll meta
-/gscore/discover [group|type|meta] ...
-/gscore/assets allowScene|allowPrefix|listAllowed
-/gscore/transport play|stop|pause|seek|tempo|time|beat|state
-/gscore/script run "<line>" | load "<path>"
+/ms/bind | /ms/bindRel | /ms/bindGroup | /ms/bindAll meta
+/ms/discover [group|type|meta] ...
+/ms/assets allowScene|allowPrefix|listAllowed
+/ms/transport play|stop|pause|seek|tempo|time|beat|state
+/ms/script run "<line>" | load "<path>"
 ```
 
 ---
@@ -957,13 +957,13 @@ py tools/osc_test.py
   minimal. `positionEnter`/`positionExit` were intentionally not implemented — use area zones
   (`areaEnter`/`areaExit`/`areaStay`) or `yAbove`/`yBelow` instead.
 - OSC over UDP only (no TCP); no variables in the script runner.
-- The 2D/3D mode is global per run (`gscore_osc/space`), chosen at boot — not per-object, and not
+- The 2D/3D mode is global per run (`ms/space`), chosen at boot — not per-object, and not
   switchable at runtime.
 - In 3D: `pixels` coord mode falls back to world units; click picking uses the object's axis-
   aligned bounding box (not exact mesh geometry); a single `Camera3D` is auto-created only if the
   scene has none.
 - A bound RigidBody2D/RigidBody3D with non-zero `gravity_scale` will receive both Godot's gravity
-  and gscore's applied gravity — set its `gravity_scale` to 0, or use OSC-created bodies.
+  and MusicScene's applied gravity — set its `gravity_scale` to 0, or use OSC-created bodies.
 - SVG rasterization depends on the Godot build's SVG module (present in standard 4.7 builds).
 
 ---
@@ -971,19 +971,19 @@ py tools/osc_test.py
 ## Project layout
 
 ```
-addons/gscore_osc/
+addons/musicscene/
   plugin.cfg, plugin.gd
-  core/      OscServer  OscPacket  OscDispatcher  GScoreRegistry  GScoreObject
-             GScoreFactory  GScorePermissions  GScoreCoordinateMapper  GScorePrimitive2D
-             GScoreSpatial2D  GScoreSpatial3D          # spatial backends (2D / 3D)
-  notation/  GScoreNotation(Object|Renderer|RenderResult|Cache|Region|Cursor|Annotation)
-             GScoreNotationObject3D  GScoreNotationRegion3D   # 3D notation
-             GScoreNotationBackend(Image|Svg|MusicXML)
-  physics/   GScorePhysicsWorld  GScorePhysicsAdapter  GScoreColliderBuilder  GScoreCollisionEvents
-  events/    GScoreEvents  GScoreEventBinding  GScoreSignalBinding  GScoreInputEvents
-  transport/ GScoreTransport  GScoreTimeMapper
-  script/    GScoreScriptRunner
-  nodes/     GScoreRoot  OscExposable
+  core/      OscServer  OscPacket  OscDispatcher  MSRegistry  MSObject
+             MSFactory  MSPermissions  MSCoordinateMapper  MSPrimitive2D
+             MSSpatial2D  MSSpatial3D          # spatial backends (2D / 3D)
+  notation/  MSNotation(Object|Renderer|RenderResult|Cache|Region|Cursor|Annotation)
+             MSNotationObject3D  MSNotationRegion3D   # 3D notation
+             MSNotationBackend(Image|Svg|MusicXML)
+  physics/   MSPhysicsWorld  MSPhysicsAdapter  MSColliderBuilder  MSCollisionEvents
+  events/    MSEvents  MSEventBinding  MSSignalBinding  MSInputEvents
+  transport/ MSTransport  MSTimeMapper
+  script/    MSScriptRunner
+  nodes/     MSRoot  OscExposable
   examples/  ExampleMain.tscn / .gd          (2D)   example_score.gscore
              ExampleMain3D.tscn / .gd        (3D)   example_score_3d.gscore
              ExamplePhysicalNote.tscn  ExampleNotationScore.tscn / .gd
@@ -1004,5 +1004,5 @@ tools/  osc_test.py  gen_assets.gd  test_internals.gd
 
 ## License
 
-gscore_osc is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE).
+MusicScene is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE).
 

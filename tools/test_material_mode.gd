@@ -19,7 +19,7 @@ func _lit(osc, id) -> bool:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if osc.space != "3d":
@@ -27,34 +27,34 @@ func _process(_d: float) -> bool:
 		return true
 	var d = osc.dispatcher
 	if _f == 2:
-		d.dispatch("/gscore/scene", ["reset"])
-		d.dispatch("/gscore/scene/s", ["new", "sphere"])
-		d.dispatch("/gscore/scene/c", ["new", "circle"])
+		d.dispatch("/ms/scene", ["reset"])
+		d.dispatch("/ms/scene/s", ["new", "sphere"])
+		d.dispatch("/ms/scene/c", ["new", "circle"])
 	elif _f == 4:
 		check(_lit(osc, "s"), "sphere lit by default")
 		check(not _lit(osc, "c"), "circle unshaded by default")
-		d.dispatch("/gscore/scene/s", ["shaded", 0])
-		d.dispatch("/gscore/scene/c", ["shaded", 1])
-		d.dispatch("/gscore/scene/s", ["metallic", 0.5])
-		d.dispatch("/gscore/scene/s", ["roughness", 0.2])
+		d.dispatch("/ms/scene/s", ["shaded", 0])
+		d.dispatch("/ms/scene/c", ["shaded", 1])
+		d.dispatch("/ms/scene/s", ["metallic", 0.5])
+		d.dispatch("/ms/scene/s", ["roughness", 0.2])
 	elif _f == 6:
 		check(not _lit(osc, "s"), "shaded 0 -> sphere unshaded")
 		check(_lit(osc, "c"), "shaded 1 -> circle lit")
 		check(absf(_mat(osc, "s").metallic - 0.5) < 0.001, "metallic set to 0.5")
 		check(absf(_mat(osc, "s").roughness - 0.2) < 0.001, "roughness set to 0.2")
-		d.dispatch("/gscore/scene/r", ["new", "rect"])
-		d.dispatch("/gscore/scene", ["shading", "flat"])
+		d.dispatch("/ms/scene/r", ["new", "rect"])
+		d.dispatch("/ms/scene", ["shading", "flat"])
 	elif _f == 8:
 		check(not _lit(osc, "s") and not _lit(osc, "c"), "shading flat -> all unshaded")
 		check(not _lit(osc, "r"), "shading flat -> rect unshaded")
-		d.dispatch("/gscore/scene", ["shading", "shaded"])
-		d.dispatch("/gscore/scene/r2", ["new", "rect"])   # created while shade_mode == shaded
+		d.dispatch("/ms/scene", ["shading", "shaded"])
+		d.dispatch("/ms/scene/r2", ["new", "rect"])   # created while shade_mode == shaded
 	elif _f == 10:
 		check(_lit(osc, "s"), "shading shaded -> sphere lit")
 		check(_lit(osc, "r"), "shading shaded -> rect lit")
 		check(not _lit(osc, "c"), "shading shaded -> circle still flat")
 		check(_lit(osc, "r2"), "rect created under shaded mode is lit (create-time honors mode)")
-		d.dispatch("/gscore/scene", ["shading", "auto"])
+		d.dispatch("/ms/scene", ["shading", "auto"])
 	elif _f == 12:
 		check(_lit(osc, "s"), "shading auto -> sphere lit")
 		check(not _lit(osc, "r"), "shading auto -> rect flat")

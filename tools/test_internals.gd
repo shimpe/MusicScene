@@ -9,12 +9,12 @@ func _init() -> void:
 
 
 func _test_codec() -> void:
-	var P = load("res://addons/gscore_osc/core/OscPacket.gd")
-	var bytes = P.encode_message("/gscore/scene/x", [42, 2.5, "hi", true, false])
+	var P = load("res://addons/musicscene/core/OscPacket.gd")
+	var bytes = P.encode_message("/ms/scene/x", [42, 2.5, "hi", true, false])
 	var dec = P.decode(bytes)
 	print("[codec] message -> ", dec)
 	assert(dec.size() == 1)
-	assert(dec[0]["address"] == "/gscore/scene/x")
+	assert(dec[0]["address"] == "/ms/scene/x")
 	var a = dec[0]["args"]
 	assert(a[0] == 42 and abs(a[1] - 2.5) < 0.001 and a[2] == "hi" and a[3] == true and a[4] == false)
 
@@ -31,7 +31,7 @@ func _test_codec() -> void:
 
 
 func _test_svg() -> void:
-	var R = load("res://addons/gscore_osc/notation/GScoreNotationRenderer.gd")
+	var R = load("res://addons/musicscene/notation/MSNotationRenderer.gd")
 	var res = R.render("res://icon.svg", "svg", 1, {})
 	print("[svg] ok=%s backend=%s err=%s tex=%s" % [res.ok, res.backend, res.error, res.texture])
 	if res.ok:

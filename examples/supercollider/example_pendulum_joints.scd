@@ -4,7 +4,7 @@
 //
 // A static pivot and two rigid arms are joined by two hinges, so a double pendulum
 // swings under gravity. Five pentatonic pads (C D E G A) sit across the bottom of
-// the swing; when the pendulum TIP (arm2) crosses one, gscore emits
+// the swing; when the pendulum TIP (arm2) crosses one, MusicScene emits
 //
 //     /music/note  <pad-id>  <note>  <tip-speed>
 //
@@ -17,11 +17,11 @@
 // then settles — re-evaluate the build block to wind it up again. For motion that
 // stays chaotic forever, see example_chaos_globe.scd.
 //
-// REQUIRES gscore_osc 0.8.x+ (3D space). gscore listens on 7400 and replies to 7401.
+// REQUIRES MusicScene 0.8.x+ (3D space). MusicScene listens on 7400 and replies to 7401.
 //
 // USAGE:
 //   1. Boot the audio server (evaluating the block below does it).
-//   2. Run the Godot project with gscore_osc set to 3D (exactly ONE instance).
+//   2. Run the Godot project with MusicScene set to 3D (exactly ONE instance).
 //   3. Put the cursor in the big ( ... ) block and press Ctrl+Enter (Cmd+Enter).
 //   4. To re-wind the pendulum, evaluate the block again; to stop, run CLEANUP.
 // =============================================================================
@@ -57,8 +57,8 @@ s.waitForBoot({
 
     // ---- open the reply port + listen ---------------------------------------
     if(thisProcess.openUDPPort(7401),
-        { "gscore-pendulum: listening for replies on UDP 7401".postln; },
-        { "gscore-pendulum: UDP 7401 already open (or busy) — continuing".postln; }
+        { "MusicScene-pendulum: listening for replies on UDP 7401".postln; },
+        { "MusicScene-pendulum: UDP 7401 already open (or busy) — continuing".postln; }
     );
 
     OSCdef(\music_note, { |msg|
@@ -73,28 +73,28 @@ s.waitForBoot({
 
     // ---- build the linkage + pads -------------------------------------------
     ~build = Routine({
-        ~snd.("/gscore/scene", "reset");
+        ~snd.("/ms/scene", "reset");
 
         // static pivot + two rigid arms + two hinges (both about Z, so the whole
         // linkage swings in the screen plane). Colliders are created automatically
         // when physics is enabled, so the tip can trigger the pad zones out of the box.
-        ~snd.("/gscore/scene/post", "new", "circle");
-        ~snd.("/gscore/scene/post/physics", "enable", "static");
-        ~snd.("/gscore/scene/post", "pos", 0.0, 0.7, 0.0);
-        ~snd.("/gscore/scene/post/collider", "disabled", 1);   // anchor only: don't bounce the tip off it
+        ~snd.("/ms/scene/post", "new", "circle");
+        ~snd.("/ms/scene/post/physics", "enable", "static");
+        ~snd.("/ms/scene/post", "pos", 0.0, 0.7, 0.0);
+        ~snd.("/ms/scene/post/collider", "disabled", 1);   // anchor only: don't bounce the tip off it
 
-        ~snd.("/gscore/scene/arm1", "new", "circle");
-        ~snd.("/gscore/scene/arm1/physics", "enable", "rigid");
-        ~snd.("/gscore/scene/arm1", "pos", 0.22, 0.7, 0.0);
+        ~snd.("/ms/scene/arm1", "new", "circle");
+        ~snd.("/ms/scene/arm1/physics", "enable", "rigid");
+        ~snd.("/ms/scene/arm1", "pos", 0.22, 0.7, 0.0);
 
-        ~snd.("/gscore/scene/arm2", "new", "circle");
-        ~snd.("/gscore/scene/arm2/physics", "enable", "rigid");
-        ~snd.("/gscore/scene/arm2", "pos", 0.44, 0.7, 0.0);    // both arms out to one side = lots of energy
+        ~snd.("/ms/scene/arm2", "new", "circle");
+        ~snd.("/ms/scene/arm2/physics", "enable", "rigid");
+        ~snd.("/ms/scene/arm2", "pos", 0.44, 0.7, 0.0);    // both arms out to one side = lots of energy
 
-        ~snd.("/gscore/joint/h1", "new", "hinge", "post", "arm1");
-        ~snd.("/gscore/joint/h1", "axis", 0, 0, 1);
-        ~snd.("/gscore/joint/h2", "new", "hinge", "arm1", "arm2");
-        ~snd.("/gscore/joint/h2", "axis", 0, 0, 1);
+        ~snd.("/ms/joint/h1", "new", "hinge", "post", "arm1");
+        ~snd.("/ms/joint/h1", "axis", 0, 0, 1);
+        ~snd.("/ms/joint/h2", "new", "hinge", "arm1", "arm2");
+        ~snd.("/ms/joint/h2", "axis", 0, 0, 1);
 
         // five pentatonic pads across the swing; left -> right = low -> high. Each pad
         // fires only for the pendulum tip (arm2); the tip's speed rides along as velocity.
@@ -106,19 +106,19 @@ s.waitForBoot({
             ["padE",  0.34, 0.50, "A4"]
         ].do({ |p|
             var pid = p[0], x = p[1], y = p[2], note = p[3];
-            ~snd.("/gscore/scene/" ++ pid, "new", "rect");
-            ~snd.("/gscore/scene/" ++ pid ++ "/physics", "enable", "area");
-            ~snd.("/gscore/scene/" ++ pid ++ "/collider", "rect", 0.16, 0.14);
-            ~snd.("/gscore/scene/" ++ pid, "pos", x, y, 0.0);
+            ~snd.("/ms/scene/" ++ pid, "new", "rect");
+            ~snd.("/ms/scene/" ++ pid ++ "/physics", "enable", "area");
+            ~snd.("/ms/scene/" ++ pid ++ "/collider", "rect", 0.16, 0.14);
+            ~snd.("/ms/scene/" ++ pid, "pos", x, y, 0.0);
             // only the tip triggers; a small cooldown avoids double-hits on a slow pass
-            ~snd.("/gscore/scene/" ++ pid ++ "/on", "areaEnter", "/music/note", "other", "arm2", "cooldown", 0.08);
+            ~snd.("/ms/scene/" ++ pid ++ "/on", "areaEnter", "/music/note", "other", "arm2", "cooldown", 0.08);
             // payload:  <pad id>  <note (literal)>  <tip speed>
-            ~snd.("/gscore/scene/" ++ pid ++ "/payload", "areaEnter", "self", "=" ++ note, "otherspeed");
+            ~snd.("/ms/scene/" ++ pid ++ "/payload", "areaEnter", "self", "=" ++ note, "otherspeed");
         });
 
-        ~snd.("/gscore/physics", "debug", 1);            // show the hinges + pad zones (send "debug 0" to hide)
-        ~snd.("/gscore/physics", "gravity", 0.0, -1.0, 0.0);
-        ~snd.("/gscore/physics", "enable", 1);
+        ~snd.("/ms/physics", "debug", 1);            // show the hinges + pad zones (send "debug 0" to hide)
+        ~snd.("/ms/physics", "gravity", 0.0, -1.0, 0.0);
+        ~snd.("/ms/physics", "enable", 1);
 
         "".postln;
         "Double pendulum swinging — ♪ notes stream below.".postln;
@@ -135,6 +135,6 @@ s.waitForBoot({
 // =============================================================================
 (
 OSCdef(\music_note).free;
-~engine.sendMsg("/gscore/physics", "enable", 0);   // freeze the pendulum
+~engine.sendMsg("/ms/physics", "enable", 0);   // freeze the pendulum
 "Pendulum stopped.".postln;
 )

@@ -17,11 +17,11 @@
 // inexhaustible energy source, so the motion stays chaotic forever. A little linear
 // damping keeps the balls slow enough that they never tunnel out of the box.
 //
-// REQUIRES gscore_osc 0.8.x+ (3D space). gscore listens on 7400 and replies to 7401.
+// REQUIRES MusicScene 0.8.x+ (3D space). MusicScene listens on 7400 and replies to 7401.
 //
 // USAGE:
 //   1. Boot the audio server (evaluating the block below does it).
-//   2. Run the Godot project with gscore_osc set to 3D (exactly ONE instance).
+//   2. Run the Godot project with MusicScene set to 3D (exactly ONE instance).
 //   3. Put the cursor in the big ( ... ) block and press Ctrl+Enter (Cmd+Enter).
 //   4. To stop, evaluate the CLEANUP block at the bottom.
 // =============================================================================
@@ -54,8 +54,8 @@ s.waitForBoot({
 
     // ---- open the reply port + listen ---------------------------------------
     if(thisProcess.openUDPPort(7401),
-        { "gscore-snowglobe: listening for replies on UDP 7401".postln; },
-        { "gscore-snowglobe: UDP 7401 already open (or busy) — continuing".postln; }
+        { "MusicScene-snowglobe: listening for replies on UDP 7401".postln; },
+        { "MusicScene-snowglobe: UDP 7401 already open (or busy) — continuing".postln; }
     );
 
     OSCdef(\music_note, { |msg|
@@ -71,7 +71,7 @@ s.waitForBoot({
 
     // ---- build the sealed box, zones and balls ------------------------------
     ~build = Routine({
-        ~snd.("/gscore/scene", "reset");
+        ~snd.("/ms/scene", "reset");
 
         // sealed box: four THICK static walls (thick so fast balls can't tunnel through)
         [
@@ -81,11 +81,11 @@ s.waitForBoot({
             ["rgt",  0.66, 0.0,  0.3, 1.5]
         ].do({ |wl|
             var name = wl[0], x = wl[1], y = wl[2], w = wl[3], h = wl[4];
-            ~snd.("/gscore/scene/" ++ name, "new", "rect");
-            ~snd.("/gscore/scene/" ++ name ++ "/physics", "enable", "static");
-            ~snd.("/gscore/scene/" ++ name ++ "/physics", "friction", 0.0);
-            ~snd.("/gscore/scene/" ++ name ++ "/collider", "rect", w, h);
-            ~snd.("/gscore/scene/" ++ name, "pos", x, y, 0.0);
+            ~snd.("/ms/scene/" ++ name, "new", "rect");
+            ~snd.("/ms/scene/" ++ name ++ "/physics", "enable", "static");
+            ~snd.("/ms/scene/" ++ name ++ "/physics", "friction", 0.0);
+            ~snd.("/ms/scene/" ++ name ++ "/collider", "rect", w, h);
+            ~snd.("/ms/scene/" ++ name, "pos", x, y, 0.0);
         });
 
         // five pentatonic sensor zones arranged in a ring
@@ -93,31 +93,31 @@ s.waitForBoot({
             var a = (90 + (k * 72)).degrad;
             var zx = 0.42 * a.cos, zy = 0.42 * a.sin;
             var zid = "zone" ++ k;
-            ~snd.("/gscore/scene/" ++ zid, "new", "rect");
-            ~snd.("/gscore/scene/" ++ zid ++ "/physics", "enable", "area");
-            ~snd.("/gscore/scene/" ++ zid ++ "/collider", "rect", 0.26, 0.26);
-            ~snd.("/gscore/scene/" ++ zid, "pos", zx, zy, 0.0);
+            ~snd.("/ms/scene/" ++ zid, "new", "rect");
+            ~snd.("/ms/scene/" ++ zid ++ "/physics", "enable", "area");
+            ~snd.("/ms/scene/" ++ zid ++ "/collider", "rect", 0.26, 0.26);
+            ~snd.("/ms/scene/" ++ zid, "pos", zx, zy, 0.0);
             // any ball entering emits a note; small cooldown so a slow pass doesn't retrigger
-            ~snd.("/gscore/scene/" ++ zid ++ "/on", "areaEnter", "/music/note", "cooldown", 0.08);
-            ~snd.("/gscore/scene/" ++ zid ++ "/payload", "areaEnter", "self", "=" ++ note, "otherspeed");
+            ~snd.("/ms/scene/" ++ zid ++ "/on", "areaEnter", "/music/note", "cooldown", 0.08);
+            ~snd.("/ms/scene/" ++ zid ++ "/payload", "areaEnter", "self", "=" ++ note, "otherspeed");
         });
 
         // a handful of balls; light LINEAR DAMPING caps their speed so they can never
         // tunnel out of the box, while gravity still tosses them around.
         6.do({ |i|
             var b = "ball" ++ i;
-            ~snd.("/gscore/scene/" ++ b, "new", "circle");
-            ~snd.("/gscore/scene/" ++ b ++ "/physics", "enable", "rigid");
-            ~snd.("/gscore/scene/" ++ b ++ "/physics", "planar", 1);          // pin to z=0 (no out-of-plane drift)
-            ~snd.("/gscore/scene/" ++ b ++ "/physics", "friction", 0.0);
-            ~snd.("/gscore/scene/" ++ b ++ "/physics", "bounce", 0.35);
-            ~snd.("/gscore/scene/" ++ b ++ "/physics", "damping", 1.4, 0.0);  // linear, angular
-            ~snd.("/gscore/scene/" ++ b, "pos", -0.35 + (0.14 * i), 0.0, 0.0);
+            ~snd.("/ms/scene/" ++ b, "new", "circle");
+            ~snd.("/ms/scene/" ++ b ++ "/physics", "enable", "rigid");
+            ~snd.("/ms/scene/" ++ b ++ "/physics", "planar", 1);          // pin to z=0 (no out-of-plane drift)
+            ~snd.("/ms/scene/" ++ b ++ "/physics", "friction", 0.0);
+            ~snd.("/ms/scene/" ++ b ++ "/physics", "bounce", 0.35);
+            ~snd.("/ms/scene/" ++ b ++ "/physics", "damping", 1.4, 0.0);  // linear, angular
+            ~snd.("/ms/scene/" ++ b, "pos", -0.35 + (0.14 * i), 0.0, 0.0);
         });
 
-        ~snd.("/gscore/physics", "debug", 1);            // show the box + zones (send "debug 0" to hide)
-        ~snd.("/gscore/physics", "gravity", 0.0, -1.0, 0.0);
-        ~snd.("/gscore/physics", "enable", 1);
+        ~snd.("/ms/physics", "debug", 1);            // show the box + zones (send "debug 0" to hide)
+        ~snd.("/ms/physics", "gravity", 0.0, -1.0, 0.0);
+        ~snd.("/ms/physics", "enable", 1);
 
         "".postln;
         "Snow-globe built — rotating gravity keeps the balls tumbling forever.".postln;
@@ -130,7 +130,7 @@ s.waitForBoot({
         ~shake = Routine({
             loop {
                 ~theta = ~theta + 0.8;                   // advance the gravity direction
-                ~engine.sendMsg("/gscore/physics", "gravity", ~theta.cos, ~theta.sin, 0.0);
+                ~engine.sendMsg("/ms/physics", "gravity", ~theta.cos, ~theta.sin, 0.0);
                 0.8.wait;
             };
         }).play;
@@ -146,7 +146,7 @@ s.waitForBoot({
 (
 if(~shake.notNil) { ~shake.stop };
 OSCdef(\music_note).free;
-~engine.sendMsg("/gscore/physics", "gravity", 0.0, -1.0, 0.0);   // gravity back to down
-~engine.sendMsg("/gscore/physics", "enable", 0);                 // freeze the balls
+~engine.sendMsg("/ms/physics", "gravity", 0.0, -1.0, 0.0);   // gravity back to down
+~engine.sendMsg("/ms/physics", "enable", 0);                 // freeze the balls
 "Snow-globe stopped.".postln;
 )

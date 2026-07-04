@@ -3,7 +3,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/test_sources.gd
 
 func _init() -> void:
-	var R = load("res://addons/gscore_osc/notation/GScoreNotationRenderer.gd")
+	var R = load("res://addons/musicscene/notation/MSNotationRenderer.gd")
 
 	print("--- 1. inline SVG text ---")
 	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">' \
@@ -23,7 +23,7 @@ func _init() -> void:
 	print("ok=", r3.ok, " ", (r3.texture.get_size() if r3.ok else r3.error))
 
 	print("--- 4. external engraver (inline MusicXML via stub) ---")
-	ProjectSettings.set_setting("gscore_osc/notation/engraver/musicxml",
+	ProjectSettings.set_setting("ms/notation/engraver/musicxml",
 		'py "D:/Projects/MusicScene/tools/stub_engraver.py" {input} {output} {format}')
 	var mxml := '<?xml version="1.0"?><score-partwise><part-list/></score-partwise>'
 	var r4 = R.render(mxml, "musicxml", 1)

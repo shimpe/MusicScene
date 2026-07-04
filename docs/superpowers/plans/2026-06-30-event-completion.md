@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Complete §19 of the gscore_osc spec: a functional `layer` event filter, the `mode` option (`queued`/`bundle`/`quantized`) via a per-frame emission scheduler, and `collisionStay` continuous-contact events.
+**Goal:** Complete §19 of the MusicScene spec: a functional `layer` event filter, the `mode` option (`queued`/`bundle`/`quantized`) via a per-frame emission scheduler, and `collisionStay` continuous-contact events.
 
-**Architecture:** Three additions on the existing event system. The `layer` filter populates the event-data `layer` field (other body's layers) and switches the binding check to membership. A new `GScoreEmissionScheduler` buffers non-immediate emissions and flushes them each frame (bundle via the existing `OscServer.send_bundle`, quantized snapped to the transport beat); all three emission call sites route through it. `collisionStay` mirrors the existing `areaStay` block (per-body throttled), using the scheduler.
+**Architecture:** Three additions on the existing event system. The `layer` filter populates the event-data `layer` field (other body's layers) and switches the binding check to membership. A new `MSEmissionScheduler` buffers non-immediate emissions and flushes them each frame (bundle via the existing `OscServer.send_bundle`, quantized snapped to the transport beat); all three emission call sites route through it. `collisionStay` mirrors the existing `areaStay` block (per-body throttled), using the scheduler.
 
-**Tech Stack:** Godot 4.7, GDScript. Tests are headless SceneTree scripts run via `godot --headless --path . --script res://tools/<t>.gd`, printing `PASS:`/`FAIL:`. Some checks unit-test preloaded classes; others drive the live `GScoreOSC` autoload.
+**Tech Stack:** Godot 4.7, GDScript. Tests are headless SceneTree scripts run via `godot --headless --path . --script res://tools/<t>.gd`, printing `PASS:`/`FAIL:`. Some checks unit-test preloaded classes; others drive the live `MusicSceneOSC` autoload.
 
 **Engine binary:** `D:/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe`
 
@@ -16,21 +16,21 @@
 
 - **Run a test:** `"<godot>" --headless --path . --script res://tools/test_events.gd`. Before each run free the UDP port: `powershell -Command "Get-Process | Where-Object { $_.ProcessName -like '*Godot*' } | Stop-Process -Force -ErrorAction SilentlyContinue"`. AV may lock git objects — retry `git add`/`commit`.
 - **GDScript 4.7:** `:=` can't infer from untyped values (`ctx`, `.get()`); use explicit `var x: T =` or untyped `var x =`. `str(v)` not `String(v)`. `",".join(packed_string_array)` is valid. `Dictionary.keys()` returns a fresh array (safe to erase during iteration).
-- **`GScoreEventBinding`** (`addons/gscore_osc/events/GScoreEventBinding.gd`): fields incl. `target`, `mode` (default `"immediate"`), `layer_filter`, `other_filter`, `min_intensity`, `cooldown`, `max_rate`, `_last_emit_other`. Methods `should_emit(intensity, now, other_id, layer)`, `should_emit_other(intensity, now, other_id, layer)`, `mark_other`, `prune_others`, `_passes_filters(intensity, other_id, layer)`, `_gap()`, `build_args(data)`, `set_option(key, value)`.
-- **`GScoreCollisionEvents`** (`addons/gscore_osc/physics/GScoreCollisionEvents.gd`, static funcs): `emit(ctx, obj, event, other)` (discrete) emits the canonical `/gscore/event/physics` then the binding target; `check_continuous(ctx, obj)` runs each physics frame (while `ctx.physics_world.is_simulating()`) and currently handles velocity/y events + `areaStay`; `_build_data(...) -> Dictionary` (keys lowercase; `"layer"` currently constant `""`).
-- **Backends** (`core/GScoreSpatial2D.gd`/`GScoreSpatial3D.gd`) already have `is_area`, `overlapping_others`, plus `body_get_velocity`, `point_to_norm`, etc. `physics_world.layer_names` maps layer number → name (set via `/gscore/physics/layer <n> <name>`). `physics_world.layer_bit(value)` resolves a name/number to a bitmask.
+- **`MSEventBinding`** (`addons/musicscene/events/MSEventBinding.gd`): fields incl. `target`, `mode` (default `"immediate"`), `layer_filter`, `other_filter`, `min_intensity`, `cooldown`, `max_rate`, `_last_emit_other`. Methods `should_emit(intensity, now, other_id, layer)`, `should_emit_other(intensity, now, other_id, layer)`, `mark_other`, `prune_others`, `_passes_filters(intensity, other_id, layer)`, `_gap()`, `build_args(data)`, `set_option(key, value)`.
+- **`MSCollisionEvents`** (`addons/musicscene/physics/MSCollisionEvents.gd`, static funcs): `emit(ctx, obj, event, other)` (discrete) emits the canonical `/ms/event/physics` then the binding target; `check_continuous(ctx, obj)` runs each physics frame (while `ctx.physics_world.is_simulating()`) and currently handles velocity/y events + `areaStay`; `_build_data(...) -> Dictionary` (keys lowercase; `"layer"` currently constant `""`).
+- **Backends** (`core/MSSpatial2D.gd`/`MSSpatial3D.gd`) already have `is_area`, `overlapping_others`, plus `body_get_velocity`, `point_to_norm`, etc. `physics_world.layer_names` maps layer number → name (set via `/ms/physics/layer <n> <name>`). `physics_world.layer_bit(value)` resolves a name/number to a bitmask.
 - **`OscServer.send_bundle(elements, timetag=1)`** already exists; `elements` are `{address, args}` dicts. `ctx.send_event(addr, args)` and `ctx.server` are available.
-- **Emission sites to reroute (Task 2):** in `GScoreCollisionEvents.gd` — `emit` (binding target line ~26), the velocity/y loop (line ~50), and the `areaStay` block. The canonical `/gscore/event/physics` send in `emit` stays immediate.
+- **Emission sites to reroute (Task 2):** in `MSCollisionEvents.gd` — `emit` (binding target line ~26), the velocity/y loop (line ~50), and the `areaStay` block. The canonical `/ms/event/physics` send in `emit` stays immediate.
 
 ## File structure
 
 | File | Change |
 |---|---|
-| `addons/gscore_osc/events/GScoreEventBinding.gd` | layer membership in `_passes_filters`; `quantize_grid` field + `quantizegrid` option |
-| `addons/gscore_osc/events/GScoreEmissionScheduler.gd` | **New** — buffer/flush by mode |
-| `addons/gscore_osc/physics/GScoreCollisionEvents.gd` | `layer` in `_build_data`; reroute emissions to `ctx.emitter`; `collisionStay` block |
-| `addons/gscore_osc/core/GScoreSpatial2D.gd` + `GScoreSpatial3D.gd` | `layer_names_for`, `colliding_others` |
-| `addons/gscore_osc/nodes/GScoreRoot.gd` | `ctx.emitter` + per-frame `flush` |
+| `addons/musicscene/events/MSEventBinding.gd` | layer membership in `_passes_filters`; `quantize_grid` field + `quantizegrid` option |
+| `addons/musicscene/events/MSEmissionScheduler.gd` | **New** — buffer/flush by mode |
+| `addons/musicscene/physics/MSCollisionEvents.gd` | `layer` in `_build_data`; reroute emissions to `ctx.emitter`; `collisionStay` block |
+| `addons/musicscene/core/MSSpatial2D.gd` + `MSSpatial3D.gd` | `layer_names_for`, `colliding_others` |
+| `addons/musicscene/nodes/MSRoot.gd` | `ctx.emitter` + per-frame `flush` |
 | `tools/test_events.gd` | **New** — built up across tasks |
 | `TUTORIAL.md`, `CHANGELOG.md`, `plugin.cfg`, `OscDispatcher.gd`, `.github/workflows/ci.yml` | docs, version, CI |
 
@@ -38,7 +38,7 @@
 
 ## Task 1: Functional `layer` filter
 
-**Files:** Modify `GScoreEventBinding.gd`, `GScoreCollisionEvents.gd`, `GScoreSpatial2D.gd`, `GScoreSpatial3D.gd`. Test: `tools/test_events.gd`.
+**Files:** Modify `MSEventBinding.gd`, `MSCollisionEvents.gd`, `MSSpatial2D.gd`, `MSSpatial3D.gd`. Test: `tools/test_events.gd`.
 
 - [ ] **Step 1: Write the failing test** — create `tools/test_events.gd`:
 
@@ -47,7 +47,7 @@ extends SceneTree
 ## Headless event-system tests. Run:
 ##   <godot> --headless --path . --script res://tools/test_events.gd
 ## Space-aware (run once per space). Mixes unit (preloaded) + integration (live autoload) checks.
-const EB := preload("res://addons/gscore_osc/events/GScoreEventBinding.gd")
+const EB := preload("res://addons/musicscene/events/MSEventBinding.gd")
 var _f := 0
 var _pass := 0
 var _fail := 0
@@ -62,7 +62,7 @@ func check(cond: bool, msg: String) -> void:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if _f == 2:
@@ -74,10 +74,10 @@ func _process(_d: float) -> bool:
 		b.layer_filter = ""
 		check(b.should_emit(1.0, 0.0, "x", "anything"), "empty layer filter always passes")
 	if _f == 3:
-		osc.dispatcher.dispatch("/gscore/physics/layer", [3, "perc"])
-		osc.dispatcher.dispatch("/gscore/scene/obj", ["new", "circle"])
-		osc.dispatcher.dispatch("/gscore/scene/obj/physics", ["enable", "rigid"])
-		osc.dispatcher.dispatch("/gscore/scene/obj/physics", ["layer", "perc"])
+		osc.dispatcher.dispatch("/ms/physics/layer", [3, "perc"])
+		osc.dispatcher.dispatch("/ms/scene/obj", ["new", "circle"])
+		osc.dispatcher.dispatch("/ms/scene/obj/physics", ["enable", "rigid"])
+		osc.dispatcher.dispatch("/ms/scene/obj/physics", ["layer", "perc"])
 	if _f == 5:
 		var o = osc.registry.get_object("obj")
 		var names = osc.spatial.layer_names_for(o.physics_adapter.body)
@@ -93,7 +93,7 @@ func _process(_d: float) -> bool:
 Run: `"D:/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe" --headless --path . --script res://tools/test_events.gd`
 Expected: `FAIL: layer filter rejects a non-member` (current `_passes_filters` does equality: `"perc" != "bass,drums"` is true → it would actually reject, so this one may pass by luck — but `FAIL: layer filter matches a member` WILL fail, because `"perc" != "perc,bass"` is true → rejected) and/or a runtime error on `osc.spatial.layer_names_for` (method missing).
 
-- [ ] **Step 3: Add `layer_names_for` to both backends** — append to `GScoreSpatial2D.gd`:
+- [ ] **Step 3: Add `layer_names_for` to both backends** — append to `MSSpatial2D.gd`:
 
 ```gdscript
 func layer_names_for(node: Node) -> PackedStringArray:
@@ -106,7 +106,7 @@ func layer_names_for(node: Node) -> PackedStringArray:
 	return out
 ```
 
-And to `GScoreSpatial3D.gd` (same, with `CollisionObject3D`):
+And to `MSSpatial3D.gd` (same, with `CollisionObject3D`):
 
 ```gdscript
 func layer_names_for(node: Node) -> PackedStringArray:
@@ -119,13 +119,13 @@ func layer_names_for(node: Node) -> PackedStringArray:
 	return out
 ```
 
-- [ ] **Step 4: Populate `data["layer"]`** — in `GScoreCollisionEvents._build_data`, change the line `"layer": "",` to:
+- [ ] **Step 4: Populate `data["layer"]`** — in `MSCollisionEvents._build_data`, change the line `"layer": "",` to:
 
 ```gdscript
 		"layer": ",".join(sp.layer_names_for(other)) if other != null else "",
 ```
 
-- [ ] **Step 5: Membership check** — in `GScoreEventBinding._passes_filters`, replace the layer line `if layer_filter != "" and layer != layer_filter:` with:
+- [ ] **Step 5: Membership check** — in `MSEventBinding._passes_filters`, replace the layer line `if layer_filter != "" and layer != layer_filter:` with:
 
 ```gdscript
 	if layer_filter != "" and not (layer_filter in str(layer).split(",")):
@@ -139,7 +139,7 @@ Run the test. Expected: `PASS: layer filter matches a member`, `PASS: layer filt
 - [ ] **Step 7: Commit**
 
 ```bash
-git add addons/gscore_osc/events/GScoreEventBinding.gd addons/gscore_osc/physics/GScoreCollisionEvents.gd addons/gscore_osc/core/GScoreSpatial2D.gd addons/gscore_osc/core/GScoreSpatial3D.gd tools/test_events.gd
+git add addons/musicscene/events/MSEventBinding.gd addons/musicscene/physics/MSCollisionEvents.gd addons/musicscene/core/MSSpatial2D.gd addons/musicscene/core/MSSpatial3D.gd tools/test_events.gd
 git commit -m "feat(events): functional layer filter (other body's layer names)"
 ```
 
@@ -147,13 +147,13 @@ git commit -m "feat(events): functional layer filter (other body's layer names)"
 
 ## Task 2: Emission scheduler + `mode` (queued / bundle / quantized)
 
-**Files:** Create `GScoreEmissionScheduler.gd`; modify `GScoreEventBinding.gd`, `GScoreRoot.gd`, `GScoreCollisionEvents.gd`. Test: `tools/test_events.gd`.
+**Files:** Create `MSEmissionScheduler.gd`; modify `MSEventBinding.gd`, `MSRoot.gd`, `MSCollisionEvents.gd`. Test: `tools/test_events.gd`.
 
 - [ ] **Step 1: Add the failing test** — insert before the DONE block (bump DONE from `_f == 8` to `_f == 12`):
 
 ```gdscript
 	if _f == 7:
-		var SCHED = load("res://addons/gscore_osc/events/GScoreEmissionScheduler.gd")
+		var SCHED = load("res://addons/musicscene/events/MSEmissionScheduler.gd")
 		var sch = SCHED.new(osc)
 		sch.emit("/a", [1], "queued", 1.0)
 		check(sch._queued.size() == 1, "queued buffers")
@@ -185,7 +185,7 @@ Change DONE to:
 
 Expected: error loading the scheduler script / `FAIL: queued buffers` (file doesn't exist).
 
-- [ ] **Step 3: Create `addons/gscore_osc/events/GScoreEmissionScheduler.gd`:**
+- [ ] **Step 3: Create `addons/musicscene/events/MSEmissionScheduler.gd`:**
 
 ```gdscript
 extends RefCounted
@@ -237,7 +237,7 @@ func _next_grid(beat: float, grid: float) -> float:
 	return (floor(beat / grid) + 1.0) * grid
 ```
 
-- [ ] **Step 4: Add `quantize_grid` to `GScoreEventBinding.gd`** — add the field near `var mode`:
+- [ ] **Step 4: Add `quantize_grid` to `MSEventBinding.gd`** — add the field near `var mode`:
 
 ```gdscript
 var quantize_grid: float = 1.0     # beats; grid for mode "quantized"
@@ -249,7 +249,7 @@ And add a case in `set_option`'s match (alongside `"mode"`):
 		"quantizegrid": quantize_grid = maxf(float(value), 0.0)
 ```
 
-- [ ] **Step 5: Wire the scheduler in `GScoreRoot.gd`** — add member near the other subsystems:
+- [ ] **Step 5: Wire the scheduler in `MSRoot.gd`** — add member near the other subsystems:
 
 ```gdscript
 var emitter = null
@@ -257,12 +257,12 @@ var emitter = null
 
 Add the preload with the other consts:
 ```gdscript
-const GScoreEmissionScheduler := preload("res://addons/gscore_osc/events/GScoreEmissionScheduler.gd")
+const MSEmissionScheduler := preload("res://addons/musicscene/events/MSEmissionScheduler.gd")
 ```
 
 Construct it after `transport` is created (it reads `ctx.transport`):
 ```gdscript
-	emitter = GScoreEmissionScheduler.new(self)
+	emitter = MSEmissionScheduler.new(self)
 ```
 
 Flush each frame in `_process(delta)`, after the transport/timemapper updates:
@@ -271,7 +271,7 @@ Flush each frame in `_process(delta)`, after the transport/timemapper updates:
 		emitter.flush(transport.beat)
 ```
 
-- [ ] **Step 6: Reroute the emission sites in `GScoreCollisionEvents.gd`** — replace each binding emission with the scheduler call (leave the canonical `/gscore/event/physics` send in `emit` as a direct `ctx.send_event`):
+- [ ] **Step 6: Reroute the emission sites in `MSCollisionEvents.gd`** — replace each binding emission with the scheduler call (leave the canonical `/ms/event/physics` send in `emit` as a direct `ctx.send_event`):
 
 In `emit`, change:
 ```gdscript
@@ -318,7 +318,7 @@ Expected: `DONE pass=17 fail=0` (areaStay still works through the scheduler in i
 - [ ] **Step 9: Commit**
 
 ```bash
-git add addons/gscore_osc/events/GScoreEmissionScheduler.gd addons/gscore_osc/events/GScoreEventBinding.gd addons/gscore_osc/nodes/GScoreRoot.gd addons/gscore_osc/physics/GScoreCollisionEvents.gd tools/test_events.gd
+git add addons/musicscene/events/MSEmissionScheduler.gd addons/musicscene/events/MSEventBinding.gd addons/musicscene/nodes/MSRoot.gd addons/musicscene/physics/MSCollisionEvents.gd tools/test_events.gd
 git commit -m "feat(events): emission scheduler with queued/bundle/quantized modes"
 ```
 
@@ -326,23 +326,23 @@ git commit -m "feat(events): emission scheduler with queued/bundle/quantized mod
 
 ## Task 3: `collisionStay` continuous-contact events
 
-**Files:** Modify `GScoreCollisionEvents.gd`, `GScoreSpatial2D.gd`, `GScoreSpatial3D.gd`. Test: `tools/test_events.gd`.
+**Files:** Modify `MSCollisionEvents.gd`, `MSSpatial2D.gd`, `MSSpatial3D.gd`. Test: `tools/test_events.gd`.
 
 - [ ] **Step 1: Add the failing test** — insert before the DONE block (bump DONE from `_f == 12` to `_f == 40`). The rigid ball is placed already resting in contact with the static floor (with gravity holding it down) so contact is detected within a few frames — not dependent on a long fall:
 
 ```gdscript
 	if _f == 14:
-		osc.dispatcher.dispatch("/gscore/scene/floor", ["new", "rect"])
-		osc.dispatcher.dispatch("/gscore/scene/floor/physics", ["enable", "static"])
-		osc.dispatcher.dispatch("/gscore/scene/floor/collider", ["rect", 1.0, 0.1])
-		osc.dispatcher.dispatch("/gscore/scene/floor", ["pos", 0.0, -0.3, 0.0])   # collider top at y=-0.25
-		osc.dispatcher.dispatch("/gscore/scene/dropball", ["new", "circle"])
-		osc.dispatcher.dispatch("/gscore/scene/dropball/physics", ["enable", "rigid"])
-		osc.dispatcher.dispatch("/gscore/scene/dropball/collider", ["circle", 0.08])
-		osc.dispatcher.dispatch("/gscore/scene/dropball", ["pos", 0.0, -0.18, 0.0])  # bottom y=-0.26: touching/overlapping the floor top
-		osc.dispatcher.dispatch("/gscore/scene/dropball/on", ["collisionStay", "/synth/sustain", "maxRate", 30])
-		osc.dispatcher.dispatch("/gscore/physics", ["gravity", 0.0, -1.0, 0.0])
-		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/ms/scene/floor", ["new", "rect"])
+		osc.dispatcher.dispatch("/ms/scene/floor/physics", ["enable", "static"])
+		osc.dispatcher.dispatch("/ms/scene/floor/collider", ["rect", 1.0, 0.1])
+		osc.dispatcher.dispatch("/ms/scene/floor", ["pos", 0.0, -0.3, 0.0])   # collider top at y=-0.25
+		osc.dispatcher.dispatch("/ms/scene/dropball", ["new", "circle"])
+		osc.dispatcher.dispatch("/ms/scene/dropball/physics", ["enable", "rigid"])
+		osc.dispatcher.dispatch("/ms/scene/dropball/collider", ["circle", 0.08])
+		osc.dispatcher.dispatch("/ms/scene/dropball", ["pos", 0.0, -0.18, 0.0])  # bottom y=-0.26: touching/overlapping the floor top
+		osc.dispatcher.dispatch("/ms/scene/dropball/on", ["collisionStay", "/synth/sustain", "maxRate", 30])
+		osc.dispatcher.dispatch("/ms/physics", ["gravity", 0.0, -1.0, 0.0])
+		osc.dispatcher.dispatch("/ms/physics", ["enable", 1])
 	if _f == 16:
 		var ball = osc.registry.get_object("dropball")
 		check(osc.spatial.colliding_others(ball.physics_adapter.body) != null, "colliding_others callable")
@@ -364,7 +364,7 @@ Change DONE to:
 
 Expected: error on `osc.spatial.colliding_others` (method missing) / `FAIL: collisionStay emitted for the resting contact`.
 
-- [ ] **Step 3: Add `colliding_others` to both backends** — `GScoreSpatial2D.gd`:
+- [ ] **Step 3: Add `colliding_others` to both backends** — `MSSpatial2D.gd`:
 
 ```gdscript
 func colliding_others(node: Node) -> Array:
@@ -373,7 +373,7 @@ func colliding_others(node: Node) -> Array:
 	return []
 ```
 
-`GScoreSpatial3D.gd`:
+`MSSpatial3D.gd`:
 
 ```gdscript
 func colliding_others(node: Node) -> Array:
@@ -382,7 +382,7 @@ func colliding_others(node: Node) -> Array:
 	return []
 ```
 
-- [ ] **Step 4: Add the `collisionStay` block to `check_continuous`** — in `GScoreCollisionEvents.gd`, after the `areaStay` block (still inside `check_continuous`):
+- [ ] **Step 4: Add the `collisionStay` block to `check_continuous`** — in `MSCollisionEvents.gd`, after the `areaStay` block (still inside `check_continuous`):
 
 ```gdscript
 	var cb = obj.event_bindings.get("collisionStay")
@@ -411,7 +411,7 @@ If `collisionStay emitted...` fails: the ball isn't registering contact. Confirm
 - [ ] **Step 6: Commit**
 
 ```bash
-git add addons/gscore_osc/physics/GScoreCollisionEvents.gd addons/gscore_osc/core/GScoreSpatial2D.gd addons/gscore_osc/core/GScoreSpatial3D.gd tools/test_events.gd
+git add addons/musicscene/physics/MSCollisionEvents.gd addons/musicscene/core/MSSpatial2D.gd addons/musicscene/core/MSSpatial3D.gd tools/test_events.gd
 git commit -m "feat(events): collisionStay continuous-contact events"
 ```
 
@@ -419,11 +419,11 @@ git commit -m "feat(events): collisionStay continuous-contact events"
 
 ## Task 4: 2D verification, tutorial, CHANGELOG 0.5.0, version, CI
 
-**Files:** Modify `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg`, `addons/gscore_osc/core/OscDispatcher.gd`, `.github/workflows/ci.yml`.
+**Files:** Modify `TUTORIAL.md`, `CHANGELOG.md`, `addons/musicscene/plugin.cfg`, `addons/musicscene/core/OscDispatcher.gd`, `.github/workflows/ci.yml`.
 
 - [ ] **Step 1: Verify the 2D backend** — create `override.cfg` at repo root:
 ```
-[gscore_osc]
+[MusicScene]
 space="2d"
 ```
 Kill stray Godot, run `… --script res://tools/test_events.gd`, confirm `ready (space=2d)` and `fail=0`, then `rm override.cfg` (it's gitignored; confirm it's gone and untracked). If a 2D assertion fails it's a real 2D bug (likely `colliding_others`/`layer_names_for`) — diagnose, fix minimally, re-run, and report. (Expectation: passes unchanged, like 3D.)
@@ -436,14 +436,14 @@ Kill stray Godot, run `… --script res://tools/test_events.gd`, confirm `ready 
 Every physics/area event binding accepts gating options and an emission `mode`:
 
 ```
-s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "minIntensity", 0.2, "cooldown", 0.05)
-s("/gscore/scene/ball/on", "collisionStay",  "/synth/sustain", "maxRate", 30)   # per-contact, per body
-s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "layer", "percussion")  # only when the other body is on layer "percussion" (name or number)
-s("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "mode", "quantized", "quantizeGrid", 0.5)
+s("/ms/scene/ball/on", "collisionEnter", "/synth/hit", "minIntensity", 0.2, "cooldown", 0.05)
+s("/ms/scene/ball/on", "collisionStay",  "/synth/sustain", "maxRate", 30)   # per-contact, per body
+s("/ms/scene/ball/on", "collisionEnter", "/synth/hit", "layer", "percussion")  # only when the other body is on layer "percussion" (name or number)
+s("/ms/scene/ball/on", "collisionEnter", "/synth/hit", "mode", "quantized", "quantizeGrid", 0.5)
 ```
 
 - `collisionStay` reports each body currently touching this rigid body, every frame, throttled per body (like `areaStay` for contacts).
-- `layer <name|number>` only fires when the other body is on that collision layer (name registered via `/gscore/physics/layer <n> <name>`, or the bit number).
+- `layer <name|number>` only fires when the other body is on that collision layer (name registered via `/ms/physics/layer <n> <name>`, or the bit number).
 - `mode`: `immediate` (default) sends at once; `queued` flushes at end of frame; `bundle` sends the frame's events as one OSC bundle; `quantized` holds the event until the next transport beat (grid via `quantizeGrid <beats>`, default 1) — requires the transport to be playing.
 ```
 
@@ -463,7 +463,7 @@ Re-read the section and confirm fences/lists render and match surrounding style.
   with area zones and `yAbove`/`yBelow`).
 ```
 
-- [ ] **Step 4: Version bump** — set `version="0.5.0"` in `addons/gscore_osc/plugin.cfg`, and update the three `"0.4.0"` strings in `addons/gscore_osc/core/OscDispatcher.gd` (grep `0.4.0` for all three) to `"0.5.0"`.
+- [ ] **Step 4: Version bump** — set `version="0.5.0"` in `addons/musicscene/plugin.cfg`, and update the three `"0.4.0"` strings in `addons/musicscene/core/OscDispatcher.gd` (grep `0.4.0` for all three) to `"0.5.0"`.
 
 - [ ] **Step 5: CI** — in `.github/workflows/ci.yml`, after the sensor-zones self-test step, add (mirror the existing `./godot` style):
 
@@ -480,7 +480,7 @@ Re-read the section and confirm fences/lists render and match surrounding style.
 # 3D event tests
 "<godot>" --headless --path . --script res://tools/test_events.gd      # expect fail=0
 # 2D event tests
-printf '[gscore_osc]\nspace="2d"\n' > override.cfg
+printf '[MusicScene]\nspace="2d"\n' > override.cfg
 "<godot>" --headless --path . --script res://tools/test_events.gd      # expect ready (space=2d), fail=0
 rm override.cfg
 # regressions
@@ -494,7 +494,7 @@ rm override.cfg
 - [ ] **Step 7: Commit**
 
 ```bash
-git add TUTORIAL.md CHANGELOG.md addons/gscore_osc/plugin.cfg addons/gscore_osc/core/OscDispatcher.gd .github/workflows/ci.yml
+git add TUTORIAL.md CHANGELOG.md addons/musicscene/plugin.cfg addons/musicscene/core/OscDispatcher.gd .github/workflows/ci.yml
 git commit -m "docs(events): tutorial + changelog 0.5.0 + CI event self-test"
 ```
 
@@ -505,4 +505,4 @@ git commit -m "docs(events): tutorial + changelog 0.5.0 + CI event self-test"
 - Switching the emission sites to `ctx.emitter.emit` must preserve immediate-mode behavior exactly — the Task 2 regression run of `test_zones.gd` guards this.
 - `colliding_others`/`layer_names_for` mirror `overlapping_others`/`is_area`; keep them next to those in each backend.
 - `collisionStay` only fires for rigid bodies with contacts while simulating; the test enables physics + gravity and lets the ball settle.
-- Do NOT commit `override.cfg`. Do NOT modify `GScoreEvents`/`OscDispatcher` routing (only the version strings in `OscDispatcher`).
+- Do NOT commit `override.cfg`. Do NOT modify `MSEvents`/`OscDispatcher` routing (only the version strings in `OscDispatcher`).

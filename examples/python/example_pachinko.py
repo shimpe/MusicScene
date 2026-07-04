@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pachinko music box — a gravity-fed generative sequencer for gscore_osc (3D space).
+Pachinko music box — a gravity-fed generative sequencer for MusicScene (3D space).
 
 Small balls rain through an offset grid of pegs and fall into five pentatonic bins
 (C D E G A). Two streams of OSC come out:
@@ -14,14 +14,14 @@ pegs. The peg scattering is genuinely unpredictable, so it never repeats. Point 
 at /music/note for the melody (note = pitch) and /music/pin for percussive plinks
 (ball-speed = velocity for both).
 
-REQUIRES gscore_osc 0.8.x+ — this example leans on two features that make it possible:
+REQUIRES MusicScene 0.8.x+ — this example leans on two features that make it possible:
   * sizable primitives: small balls/pegs via `new circle <r>` (a full-size ball can't
     thread a peg grid built from the fixed-size primitives).
   * `physics planar 1`: pins the balls to the z=0 plane so they can't drift out of the
     (thin) bins over time — without it the board goes silent after ~30 s.
 
 USAGE
-    1. Run the Godot project with gscore_osc set to 3D.
+    1. Run the Godot project with MusicScene set to 3D.
     2. python tools/example_pachinko.py        (or: py tools\\example_pachinko.py)
     3. Ctrl+C to stop.
 """
@@ -89,13 +89,13 @@ def s(addr, *args):
     time.sleep(0.03)
 
 def drop(i):
-    s(f"/gscore/scene/ball{i}/physics", "velocity", random.uniform(-0.5, 0.5), -0.4, 0.0)
-    s(f"/gscore/scene/ball{i}", "pos", random.uniform(-0.14, 0.14), 1.0, 0.0)
+    s(f"/ms/scene/ball{i}/physics", "velocity", random.uniform(-0.5, 0.5), -0.4, 0.0)
+    s(f"/ms/scene/ball{i}", "pos", random.uniform(-0.14, 0.14), 1.0, 0.0)
     _last_drop[i] = time.time()
 
 # --- build the board -------------------------------------------------------
 def build():
-    s("/gscore/scene", "reset")
+    s("/ms/scene", "reset")
 
     # offset peg grid — small ROUND pegs (sized visual + matching sphere collider)
     even = [-0.48, -0.32, -0.16, 0.0, 0.16, 0.32, 0.48]
@@ -105,59 +105,59 @@ def build():
     for r, y in enumerate(ys):
         for x in (even if r % 2 == 0 else odd):
             pid = f"peg{n}"; n += 1
-            s(f"/gscore/scene/{pid}", "new", "circle", 0.022)
-            s(f"/gscore/scene/{pid}/physics", "enable", "static")
-            s(f"/gscore/scene/{pid}/collider", "sphere", 0.022)
-            s(f"/gscore/scene/{pid}/physics", "friction", 0.0)
-            s(f"/gscore/scene/{pid}/physics", "bounce", 0.7)
-            s(f"/gscore/scene/{pid}", "pos", x, y, 0.0)
+            s(f"/ms/scene/{pid}", "new", "circle", 0.022)
+            s(f"/ms/scene/{pid}/physics", "enable", "static")
+            s(f"/ms/scene/{pid}/collider", "sphere", 0.022)
+            s(f"/ms/scene/{pid}/physics", "friction", 0.0)
+            s(f"/ms/scene/{pid}/physics", "bounce", 0.7)
+            s(f"/ms/scene/{pid}", "pos", x, y, 0.0)
 
     # side walls + thick floor (thick so fast balls can't tunnel through).
     # Size the VISUAL to match the collider so they look like walls/floor, not big default quads.
     for wx, nm in ((-0.58, "wallL"), (0.58, "wallR")):
-        s(f"/gscore/scene/{nm}", "new", "rect", 0.08, 1.5)
-        s(f"/gscore/scene/{nm}/physics", "enable", "static")
-        s(f"/gscore/scene/{nm}/physics", "friction", 0.0)
-        s(f"/gscore/scene/{nm}/collider", "rect", 0.08, 1.5)
-        s(f"/gscore/scene/{nm}", "pos", wx, 0.5, 0.0)
-    s("/gscore/scene/floor", "new", "rect", 1.2, 0.6)     # visual matches the collider (a slab)
-    s("/gscore/scene/floor/physics", "enable", "static")
-    s("/gscore/scene/floor/physics", "friction", 0.0)
-    s("/gscore/scene/floor/collider", "rect", 1.2, 0.6)
-    s("/gscore/scene/floor", "pos", 0.0, -0.22, 0.0)
+        s(f"/ms/scene/{nm}", "new", "rect", 0.08, 1.5)
+        s(f"/ms/scene/{nm}/physics", "enable", "static")
+        s(f"/ms/scene/{nm}/physics", "friction", 0.0)
+        s(f"/ms/scene/{nm}/collider", "rect", 0.08, 1.5)
+        s(f"/ms/scene/{nm}", "pos", wx, 0.5, 0.0)
+    s("/ms/scene/floor", "new", "rect", 1.2, 0.6)     # visual matches the collider (a slab)
+    s("/ms/scene/floor/physics", "enable", "static")
+    s("/ms/scene/floor/physics", "friction", 0.0)
+    s("/ms/scene/floor/collider", "rect", 1.2, 0.6)
+    s("/ms/scene/floor", "pos", 0.0, -0.22, 0.0)
 
     # five pentatonic bins (sensor areas) — each plays a note as a ball enters
     for b, (x, note) in enumerate(zip(BINX, NOTES)):
         bid = f"bin{b}"
-        s(f"/gscore/scene/{bid}", "new", "rect", 0.2, 0.24)
-        s(f"/gscore/scene/{bid}/physics", "enable", "area")
-        s(f"/gscore/scene/{bid}/collider", "rect", 0.2, 0.24)
-        s(f"/gscore/scene/{bid}", "pos", x, 0.12, 0.0)
-        s(f"/gscore/scene/{bid}/on", "areaEnter", "/music/note", "cooldown", 0.05)
+        s(f"/ms/scene/{bid}", "new", "rect", 0.2, 0.24)
+        s(f"/ms/scene/{bid}/physics", "enable", "area")
+        s(f"/ms/scene/{bid}/collider", "rect", 0.2, 0.24)
+        s(f"/ms/scene/{bid}", "pos", x, 0.12, 0.0)
+        s(f"/ms/scene/{bid}/on", "areaEnter", "/music/note", "cooldown", 0.05)
         # payload:  <bin>  <note (literal)>  <ball id>  <ball speed>
-        s(f"/gscore/scene/{bid}/payload", "areaEnter", "self", f"={note}", "other", "otherspeed")
+        s(f"/ms/scene/{bid}/payload", "areaEnter", "self", f"={note}", "other", "otherspeed")
 
     # small balls, pinned to the z=0 plane, dropped from the top
     for i in range(NB):
         bid = f"ball{i}"
-        s(f"/gscore/scene/{bid}", "new", "circle", 0.02)
-        s(f"/gscore/scene/{bid}/physics", "enable", "rigid")
-        s(f"/gscore/scene/{bid}/collider", "sphere", 0.02)
-        s(f"/gscore/scene/{bid}/physics", "planar", 1)
-        s(f"/gscore/scene/{bid}/physics", "friction", 0.0)
-        s(f"/gscore/scene/{bid}/physics", "bounce", 0.5)
+        s(f"/ms/scene/{bid}", "new", "circle", 0.02)
+        s(f"/ms/scene/{bid}/physics", "enable", "rigid")
+        s(f"/ms/scene/{bid}/collider", "sphere", 0.02)
+        s(f"/ms/scene/{bid}/physics", "planar", 1)
+        s(f"/ms/scene/{bid}/physics", "friction", 0.0)
+        s(f"/ms/scene/{bid}/physics", "bounce", 0.5)
         # plink whenever this ball hits a pin. `other peg*` matches any peg id; a small cooldown
         # keeps rapid double-hits in check. Payload: <ball> <pin> <ball speed>.
-        s(f"/gscore/scene/{bid}/on", "collisionEnter", "/music/pin", "other", "peg*", "cooldown", 0.03)
-        s(f"/gscore/scene/{bid}/payload", "collisionEnter", "self", "other", "otherspeed")
+        s(f"/ms/scene/{bid}/on", "collisionEnter", "/music/pin", "other", "peg*", "cooldown", 0.03)
+        s(f"/ms/scene/{bid}/payload", "collisionEnter", "self", "other", "otherspeed")
         drop(i)
 
-    s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
-    s("/gscore/physics", "enable", 1)
+    s("/ms/physics", "gravity", 0.0, -1.0, 0.0)
+    s("/ms/physics", "enable", 1)
 
     # frame the board (it sits a little above the default centre)
-    s("/gscore/camera", "pos", 0.0, 0.42, 2.1)
-    s("/gscore/camera", "lookAt", 0.0, 0.42, 0.0)
+    s("/ms/camera", "pos", 0.0, 0.42, 2.1)
+    s("/ms/camera", "lookAt", 0.0, 0.42, 0.0)
 
 # --- listen: recycle a ball the instant it lands, and print the note -------
 def listen():

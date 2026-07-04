@@ -2,9 +2,9 @@ extends SceneTree
 ## Headless sensor/zone tests. Run:
 ##   <godot> --headless --path . --script res://tools/test_zones.gd
 ## Space-aware (run once per space). Mixes unit checks (preloaded classes) with
-## integration checks (live GScoreOSC autoload).
-const EB := preload("res://addons/gscore_osc/events/GScoreEventBinding.gd")
-const CE := preload("res://addons/gscore_osc/physics/GScoreCollisionEvents.gd")
+## integration checks (live MusicSceneOSC autoload).
+const EB := preload("res://addons/musicscene/events/MSEventBinding.gd")
+const CE := preload("res://addons/musicscene/physics/MSCollisionEvents.gd")
 var _f := 0
 var _pass := 0
 var _fail := 0
@@ -18,18 +18,18 @@ func check(cond: bool, msg: String) -> void:
 		print("FAIL: ", msg)
 
 func _make_zone_and_body(osc) -> void:
-	osc.dispatcher.dispatch("/gscore/scene/zoneA", ["new", "circle"])
-	osc.dispatcher.dispatch("/gscore/scene/zoneA/physics", ["enable", "area"])
-	osc.dispatcher.dispatch("/gscore/scene/zoneA/collider", ["circle", 0.3])
-	osc.dispatcher.dispatch("/gscore/scene/zoneA", ["pos", 0.0, 0.0, 0.0])
-	osc.dispatcher.dispatch("/gscore/scene/ball", ["new", "circle"])
-	osc.dispatcher.dispatch("/gscore/scene/ball/physics", ["enable", "rigid"])
-	osc.dispatcher.dispatch("/gscore/scene/ball/collider", ["circle", 0.05])
-	osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.1, 0.0, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/zoneA", ["new", "circle"])
+	osc.dispatcher.dispatch("/ms/scene/zoneA/physics", ["enable", "area"])
+	osc.dispatcher.dispatch("/ms/scene/zoneA/collider", ["circle", 0.3])
+	osc.dispatcher.dispatch("/ms/scene/zoneA", ["pos", 0.0, 0.0, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/ball", ["new", "circle"])
+	osc.dispatcher.dispatch("/ms/scene/ball/physics", ["enable", "rigid"])
+	osc.dispatcher.dispatch("/ms/scene/ball/collider", ["circle", 0.05])
+	osc.dispatcher.dispatch("/ms/scene/ball", ["pos", 0.1, 0.0, 0.0])
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if _f == 2:
@@ -68,8 +68,8 @@ func _process(_d: float) -> bool:
 		check(not bc.should_emit_other(1.0, 100.1, "n1", ""), "n1 throttled by cooldown")
 		check(bc.should_emit_other(1.0, 100.25, "n1", ""), "n1 passes after cooldown")
 	if _f == 13:
-		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
-		osc.dispatcher.dispatch("/gscore/scene/zoneA/on", ["areaStay", "/zone/presence", "maxRate", 20])
+		osc.dispatcher.dispatch("/ms/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/ms/scene/zoneA/on", ["areaStay", "/zone/presence", "maxRate", 20])
 	if _f == 14:
 		var zone = osc.registry.get_object("zoneA")
 		check(osc.spatial.is_area(zone.node), "zone node is an area")
@@ -80,7 +80,7 @@ func _process(_d: float) -> bool:
 		check(b != null, "areaStay binding registered")
 		check(b != null and b._last_emit_other.has("ball"), "areaStay emitted for contained body (per-body timer set)")
 	if _f == 22:
-		osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.9, 0.0, 0.0])  # move ball out of the zone
+		osc.dispatcher.dispatch("/ms/scene/ball", ["pos", 0.9, 0.0, 0.0])  # move ball out of the zone
 	if _f == 28:
 		var zone = osc.registry.get_object("zoneA")
 		var b = zone.event_bindings.get("areaStay")

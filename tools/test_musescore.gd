@@ -3,14 +3,14 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/test_musescore.gd
 
 func _init() -> void:
-	var R = load("res://addons/gscore_osc/notation/GScoreNotationRenderer.gd")
-	var Cache = load("res://addons/gscore_osc/notation/GScoreNotationCache.gd")
+	var R = load("res://addons/musicscene/notation/MSNotationRenderer.gd")
+	var Cache = load("res://addons/musicscene/notation/MSNotationCache.gd")
 	Cache.clear()
 
 	var wrapper := ProjectSettings.globalize_path("res://tools/mscore_to_score.py")
 	var cmd := 'py "%s" {input} {output} --page {page} --dpi 150' % wrapper
-	ProjectSettings.set_setting("gscore_osc/notation/engraver/musicxml", cmd)
-	ProjectSettings.set_setting("gscore_osc/notation/engraver_output", "png")
+	ProjectSettings.set_setting("ms/notation/engraver/musicxml", cmd)
+	ProjectSettings.set_setting("ms/notation/engraver_output", "png")
 
 	print("--- MusicXML from file ---")
 	var r1 = R.render("res://scores/example.musicxml", "musicxml", 1)

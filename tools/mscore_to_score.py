@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""MuseScore -> single PNG/SVG page, honouring gscore's {input} -> {output} contract.
+"""MuseScore -> single PNG/SVG page, honouring MusicScene's {input} -> {output} contract.
 
 MuseScore 4 exports PNG/SVG one file per page with a "-N" suffix (e.g. out-1.png) and pads to the
-page, so gscore can't call it directly. This wrapper runs MuseScore (trimming to the music with
+page, so MusicScene can't call it directly. This wrapper runs MuseScore (trimming to the music with
 -T), finds the page file, and copies it to exactly <output>.
 
 Usage:
@@ -10,11 +10,11 @@ Usage:
                        [--page N] [--dpi N] [--trim PX] [--mscore "<path>"]
 
 Accepts any input MuseScore can import (MusicXML/.mxl/.mscz/MEI). MuseScore is located from
---mscore, else $GSCORE_MUSESCORE, else PATH, else common install dirs.
-Configure in gscore (Project Settings):
-    gscore_osc/notation/engraver/musicxml =
+--mscore, else $MS_MUSESCORE, else PATH, else common install dirs.
+Configure in MusicScene (Project Settings):
+    ms/notation/engraver/musicxml =
         py "<proj>/tools/mscore_to_score.py" {input} {output} --page {page} --dpi 200
-    gscore_osc/notation/engraver_output = "png"
+    ms/notation/engraver_output = "png"
 """
 import argparse
 import glob
@@ -31,7 +31,7 @@ def resolve_mscore(explicit: str):
         if os.path.isfile(explicit):
             return [explicit]
         return shlex.split(explicit, posix=False)
-    env = os.environ.get("GSCORE_MUSESCORE")
+    env = os.environ.get("MS_MUSESCORE")
     if env:
         return [env] if os.path.isfile(env) else shlex.split(env, posix=False)
     for name in ("MuseScore4", "mscore4", "musescore", "mscore"):
@@ -66,11 +66,11 @@ def main() -> int:
 
     ms = resolve_mscore(a.mscore)
     if not ms:
-        print("mscore_to_score: MuseScore not found — pass --mscore <path>, set $GSCORE_MUSESCORE, "
+        print("mscore_to_score: MuseScore not found — pass --mscore <path>, set $MS_MUSESCORE, "
               "or add it to PATH.", file=sys.stderr)
         return 3
 
-    tmp = tempfile.mkdtemp(prefix="gscore_ms_")
+    tmp = tempfile.mkdtemp(prefix="ms_ms_")
     target = os.path.join(tmp, "score." + fmt)
     cmd = list(ms) + [a.input, "-o", target, "-T", str(a.trim)]
     if fmt == "png":

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `areaStay` continuous presence events (per-body throttled) and literal payload constants to the gscore_osc area/event system, completing spec §12.
+**Goal:** Add `areaStay` continuous presence events (per-body throttled) and literal payload constants to the MusicScene area/event system, completing spec §12.
 
-**Architecture:** Reuse the existing per-frame continuous-event path (`GScoreCollisionEvents.check_continuous`) and the existing event-binding option machinery. Five small, focused changes: literal handling in `build_args`; other-centric fields in `_build_data`; a per-body throttle on `GScoreEventBinding`; an `areaStay` emitter in `check_continuous` plus two backend helpers; then docs/CI. `areaStay`/`payload` registration already works through the generic event-binding path — no dispatcher/handler changes.
+**Architecture:** Reuse the existing per-frame continuous-event path (`MSCollisionEvents.check_continuous`) and the existing event-binding option machinery. Five small, focused changes: literal handling in `build_args`; other-centric fields in `_build_data`; a per-body throttle on `MSEventBinding`; an `areaStay` emitter in `check_continuous` plus two backend helpers; then docs/CI. `areaStay`/`payload` registration already works through the generic event-binding path — no dispatcher/handler changes.
 
-**Tech Stack:** Godot 4.7, GDScript. Tests are headless SceneTree scripts run via `godot --headless --path . --script res://tools/<t>.gd`, printing `PASS:`/`FAIL:`. Some checks are pure unit tests on `GScoreEventBinding`/`GScoreCollisionEvents` (preloaded directly); others drive the live `GScoreOSC` autoload.
+**Tech Stack:** Godot 4.7, GDScript. Tests are headless SceneTree scripts run via `godot --headless --path . --script res://tools/<t>.gd`, printing `PASS:`/`FAIL:`. Some checks are pure unit tests on `MSEventBinding`/`MSCollisionEvents` (preloaded directly); others drive the live `MusicSceneOSC` autoload.
 
 **Engine binary:** `D:/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe`
 
@@ -16,26 +16,26 @@
 
 - **Run a test:** `"D:/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe" --headless --path . --script res://tools/test_zones.gd`. Before each run, free the UDP port: `powershell -Command "Get-Process | Where-Object { $_.ProcessName -like '*Godot*' } | Stop-Process -Force -ErrorAction SilentlyContinue"`. AV may lock git objects — retry `git add`/`commit` on failure.
 - **GDScript 4.7 gotchas:** `:=` cannot infer a type from an untyped value (anything off `ctx`/`obj`/a Variant `.get()`); use explicit `var x: T = ...` or untyped `var x = ...`. Use `str(v)` not `String(v)` to coerce a Variant to String.
-- **`GScoreEventBinding`** (`addons/gscore_osc/events/GScoreEventBinding.gd`) is a `RefCounted` holding one event binding: `event`, `target`, `min_intensity`, `cooldown`, `max_rate`, `layer_filter`, `other_filter`, `payload` (field-name list; empty → `DEFAULT_FIELDS`), `_last_emit`, `state`. `should_emit(intensity, now, other_id, layer)`, `mark(now)`, `build_args(data)`, `_match(other_id)`.
-- **`GScoreCollisionEvents`** (`addons/gscore_osc/physics/GScoreCollisionEvents.gd`) is a class of `static` funcs. `emit(ctx, obj, event, other)` handles discrete callbacks; `check_continuous(ctx, obj)` runs each physics frame (from `GScorePhysicsAdapter.physics_step`, which runs while `ctx.physics_world.is_simulating()`); `_build_data(ctx, obj, event, other) -> Dictionary` builds the canonical event-data dict (keys are lowercase: `self`, `other`, `x`, `y`, `z`, `vx`, `vy`, `speed`, `intensity`, `time`, `layer`, …).
-- **Spatial backends** (`addons/gscore_osc/core/GScoreSpatial2D.gd` / `GScoreSpatial3D.gd`) already expose `body_global_position`, `body_get_velocity`, `point_to_norm(p, mode)`, `vector_to_norm(v, mode)` used by `_build_data` — reuse them dimension-agnostically.
-- **Registration already works:** `/gscore/scene/zoneA/on areaStay /zone/presence maxRate 20` lands in `obj.event_bindings["areaStay"]` (not an input event) with `max_rate=20`; `/gscore/scene/zoneA/payload areaStay …` sets that binding's `payload`. Do NOT modify `GScoreEvents` or `OscDispatcher`.
+- **`MSEventBinding`** (`addons/musicscene/events/MSEventBinding.gd`) is a `RefCounted` holding one event binding: `event`, `target`, `min_intensity`, `cooldown`, `max_rate`, `layer_filter`, `other_filter`, `payload` (field-name list; empty → `DEFAULT_FIELDS`), `_last_emit`, `state`. `should_emit(intensity, now, other_id, layer)`, `mark(now)`, `build_args(data)`, `_match(other_id)`.
+- **`MSCollisionEvents`** (`addons/musicscene/physics/MSCollisionEvents.gd`) is a class of `static` funcs. `emit(ctx, obj, event, other)` handles discrete callbacks; `check_continuous(ctx, obj)` runs each physics frame (from `MSPhysicsAdapter.physics_step`, which runs while `ctx.physics_world.is_simulating()`); `_build_data(ctx, obj, event, other) -> Dictionary` builds the canonical event-data dict (keys are lowercase: `self`, `other`, `x`, `y`, `z`, `vx`, `vy`, `speed`, `intensity`, `time`, `layer`, …).
+- **Spatial backends** (`addons/musicscene/core/MSSpatial2D.gd` / `MSSpatial3D.gd`) already expose `body_global_position`, `body_get_velocity`, `point_to_norm(p, mode)`, `vector_to_norm(v, mode)` used by `_build_data` — reuse them dimension-agnostically.
+- **Registration already works:** `/ms/scene/zoneA/on areaStay /zone/presence maxRate 20` lands in `obj.event_bindings["areaStay"]` (not an input event) with `max_rate=20`; `/ms/scene/zoneA/payload areaStay …` sets that binding's `payload`. Do NOT modify `MSEvents` or `OscDispatcher`.
 
 ## File structure
 
 | File | Change |
 |---|---|
-| `addons/gscore_osc/events/GScoreEventBinding.gd` | literal handling in `build_args`; `_last_emit_other` + `should_emit_other`/`mark_other`/`prune_others`; `_passes_filters` refactor |
-| `addons/gscore_osc/physics/GScoreCollisionEvents.gd` | other-centric fields in `_build_data`; `areaStay` block in `check_continuous` |
-| `addons/gscore_osc/core/GScoreSpatial2D.gd` + `GScoreSpatial3D.gd` | `is_area`, `overlapping_others` |
+| `addons/musicscene/events/MSEventBinding.gd` | literal handling in `build_args`; `_last_emit_other` + `should_emit_other`/`mark_other`/`prune_others`; `_passes_filters` refactor |
+| `addons/musicscene/physics/MSCollisionEvents.gd` | other-centric fields in `_build_data`; `areaStay` block in `check_continuous` |
+| `addons/musicscene/core/MSSpatial2D.gd` + `MSSpatial3D.gd` | `is_area`, `overlapping_others` |
 | `tools/test_zones.gd` | new headless test (built up across tasks) |
-| `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg`, `.github/workflows/ci.yml` | docs, version, CI |
+| `TUTORIAL.md`, `CHANGELOG.md`, `addons/musicscene/plugin.cfg`, `.github/workflows/ci.yml` | docs, version, CI |
 
 ---
 
 ## Task 1: Literal payload tags in `build_args`
 
-**Files:** Modify `addons/gscore_osc/events/GScoreEventBinding.gd`. Test: `tools/test_zones.gd`.
+**Files:** Modify `addons/musicscene/events/MSEventBinding.gd`. Test: `tools/test_zones.gd`.
 
 - [ ] **Step 1: Write the failing test** — create `tools/test_zones.gd`:
 
@@ -44,9 +44,9 @@ extends SceneTree
 ## Headless sensor/zone tests. Run:
 ##   <godot> --headless --path . --script res://tools/test_zones.gd
 ## Space-aware (run once per space). Mixes unit checks (preloaded classes) with
-## integration checks (live GScoreOSC autoload).
-const EB := preload("res://addons/gscore_osc/events/GScoreEventBinding.gd")
-const CE := preload("res://addons/gscore_osc/physics/GScoreCollisionEvents.gd")
+## integration checks (live MusicSceneOSC autoload).
+const EB := preload("res://addons/musicscene/events/MSEventBinding.gd")
+const CE := preload("res://addons/musicscene/physics/MSCollisionEvents.gd")
 var _f := 0
 var _pass := 0
 var _fail := 0
@@ -61,7 +61,7 @@ func check(cond: bool, msg: String) -> void:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if _f == 2:
@@ -84,7 +84,7 @@ func _process(_d: float) -> bool:
 Run: `"D:/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe" --headless --path . --script res://tools/test_zones.gd`
 Expected: `FAIL: literal =A in payload -> 'A'` (build_args treats `=A` as an unknown field → `0`).
 
-- [ ] **Step 3: Implement literal handling** — replace `build_args` in `GScoreEventBinding.gd`:
+- [ ] **Step 3: Implement literal handling** — replace `build_args` in `MSEventBinding.gd`:
 
 ```gdscript
 func build_args(data: Dictionary) -> Array:
@@ -107,7 +107,7 @@ Run the same command. Expected: `PASS: literal =A in payload -> 'A'`, `PASS: lit
 - [ ] **Step 5: Commit**
 
 ```bash
-git add addons/gscore_osc/events/GScoreEventBinding.gd tools/test_zones.gd
+git add addons/musicscene/events/MSEventBinding.gd tools/test_zones.gd
 git commit -m "feat(zones): literal constant payload tags ('A / =A)"
 ```
 
@@ -115,20 +115,20 @@ git commit -m "feat(zones): literal constant payload tags ('A / =A)"
 
 ## Task 2: Other-centric fields in `_build_data`
 
-**Files:** Modify `addons/gscore_osc/physics/GScoreCollisionEvents.gd`. Test: `tools/test_zones.gd`.
+**Files:** Modify `addons/musicscene/physics/MSCollisionEvents.gd`. Test: `tools/test_zones.gd`.
 
 - [ ] **Step 1: Add the failing test** — extend `tools/test_zones.gd`. Add a helper and an assertion block. Add this helper method (top-level on the script):
 
 ```gdscript
 func _make_zone_and_body(osc) -> void:
-	osc.dispatcher.dispatch("/gscore/scene/zoneA", ["new", "circle"])
-	osc.dispatcher.dispatch("/gscore/scene/zoneA/physics", ["enable", "area"])
-	osc.dispatcher.dispatch("/gscore/scene/zoneA/collider", ["circle", 0.3])
-	osc.dispatcher.dispatch("/gscore/scene/zoneA", ["pos", 0.0, 0.0, 0.0])
-	osc.dispatcher.dispatch("/gscore/scene/ball", ["new", "circle"])
-	osc.dispatcher.dispatch("/gscore/scene/ball/physics", ["enable", "rigid"])
-	osc.dispatcher.dispatch("/gscore/scene/ball/collider", ["circle", 0.05])
-	osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.1, 0.0, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/zoneA", ["new", "circle"])
+	osc.dispatcher.dispatch("/ms/scene/zoneA/physics", ["enable", "area"])
+	osc.dispatcher.dispatch("/ms/scene/zoneA/collider", ["circle", 0.3])
+	osc.dispatcher.dispatch("/ms/scene/zoneA", ["pos", 0.0, 0.0, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/ball", ["new", "circle"])
+	osc.dispatcher.dispatch("/ms/scene/ball/physics", ["enable", "rigid"])
+	osc.dispatcher.dispatch("/ms/scene/ball/collider", ["circle", 0.05])
+	osc.dispatcher.dispatch("/ms/scene/ball", ["pos", 0.1, 0.0, 0.0])
 ```
 
 Insert these frame blocks (and bump DONE to `_f == 8`):
@@ -157,7 +157,7 @@ Change the existing DONE block from `if _f == 5:` to:
 
 Expected: `FAIL: data has other-centric fields` (the keys don't exist yet).
 
-- [ ] **Step 3: Implement other-centric fields** — in `GScoreCollisionEvents._build_data`, replace the `if other != null:` block with:
+- [ ] **Step 3: Implement other-centric fields** — in `MSCollisionEvents._build_data`, replace the `if other != null:` block with:
 
 ```gdscript
 	var other_id := ""
@@ -190,15 +190,15 @@ Expected: `PASS: data has other-centric fields`, `PASS: data.other resolves to '
 - [ ] **Step 5: Commit**
 
 ```bash
-git add addons/gscore_osc/physics/GScoreCollisionEvents.gd tools/test_zones.gd
+git add addons/musicscene/physics/MSCollisionEvents.gd tools/test_zones.gd
 git commit -m "feat(zones): other-centric data fields (otherx/othery/otherspeed...)"
 ```
 
 ---
 
-## Task 3: Per-body throttle on `GScoreEventBinding`
+## Task 3: Per-body throttle on `MSEventBinding`
 
-**Files:** Modify `addons/gscore_osc/events/GScoreEventBinding.gd`. Test: `tools/test_zones.gd`.
+**Files:** Modify `addons/musicscene/events/MSEventBinding.gd`. Test: `tools/test_zones.gd`.
 
 - [ ] **Step 1: Add the failing test** — insert before the DONE block (bump DONE to `_f == 11`):
 
@@ -227,7 +227,7 @@ Change DONE block to:
 
 Expected: a parse error or `FAIL` on `should_emit_other` (method doesn't exist).
 
-- [ ] **Step 3: Implement the per-body throttle** — in `GScoreEventBinding.gd`:
+- [ ] **Step 3: Implement the per-body throttle** — in `MSEventBinding.gd`:
 
 Add the member (near `var _last_emit: float = -1.0`):
 ```gdscript
@@ -293,7 +293,7 @@ Expected: the four `should_emit_other` checks + `prune drops absent bodies` PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add addons/gscore_osc/events/GScoreEventBinding.gd tools/test_zones.gd
+git add addons/musicscene/events/MSEventBinding.gd tools/test_zones.gd
 git commit -m "feat(zones): per-body maxRate throttle on event bindings"
 ```
 
@@ -301,14 +301,14 @@ git commit -m "feat(zones): per-body maxRate throttle on event bindings"
 
 ## Task 4: `areaStay` emitter + backend `is_area`/`overlapping_others`
 
-**Files:** Modify `addons/gscore_osc/physics/GScoreCollisionEvents.gd`, `addons/gscore_osc/core/GScoreSpatial2D.gd`, `addons/gscore_osc/core/GScoreSpatial3D.gd`. Test: `tools/test_zones.gd`.
+**Files:** Modify `addons/musicscene/physics/MSCollisionEvents.gd`, `addons/musicscene/core/MSSpatial2D.gd`, `addons/musicscene/core/MSSpatial3D.gd`. Test: `tools/test_zones.gd`.
 
 - [ ] **Step 1: Add the failing test** — insert these blocks before DONE (bump DONE to `_f == 30`). This enables physics, registers an `areaStay` binding, and asserts the binding accrues a per-body timer for the contained body, then that it's pruned when the body leaves:
 
 ```gdscript
 	if _f == 13:
-		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
-		osc.dispatcher.dispatch("/gscore/scene/zoneA/on", ["areaStay", "/zone/presence", "maxRate", 20])
+		osc.dispatcher.dispatch("/ms/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/ms/scene/zoneA/on", ["areaStay", "/zone/presence", "maxRate", 20])
 	if _f == 14:
 		var zone = osc.registry.get_object("zoneA")
 		check(osc.spatial.is_area(zone.node), "zone node is an area")
@@ -319,7 +319,7 @@ git commit -m "feat(zones): per-body maxRate throttle on event bindings"
 		check(b != null, "areaStay binding registered")
 		check(b != null and b._last_emit_other.has("ball"), "areaStay emitted for contained body (per-body timer set)")
 	if _f == 22:
-		osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.9, 0.0, 0.0])  # move ball out of the zone
+		osc.dispatcher.dispatch("/ms/scene/ball", ["pos", 0.9, 0.0, 0.0])  # move ball out of the zone
 	if _f == 28:
 		var zone = osc.registry.get_object("zoneA")
 		var b = zone.event_bindings.get("areaStay")
@@ -337,7 +337,7 @@ Change DONE block to:
 
 Expected: `FAIL` (or parse error) on `osc.spatial.is_area` — the method doesn't exist yet.
 
-- [ ] **Step 3: Add backend helpers** — append to the Joints/Physics area of `GScoreSpatial2D.gd`:
+- [ ] **Step 3: Add backend helpers** — append to the Joints/Physics area of `MSSpatial2D.gd`:
 
 ```gdscript
 func is_area(node: Node) -> bool:
@@ -353,7 +353,7 @@ func overlapping_others(node: Node) -> Array:
 	return []
 ```
 
-And the 3D analog in `GScoreSpatial3D.gd`:
+And the 3D analog in `MSSpatial3D.gd`:
 
 ```gdscript
 func is_area(node: Node) -> bool:
@@ -369,7 +369,7 @@ func overlapping_others(node: Node) -> Array:
 	return []
 ```
 
-- [ ] **Step 4: Add the `areaStay` block to `check_continuous`** — in `GScoreCollisionEvents.gd`, after the existing `for event in ["velocityAbove", ...]` loop (still inside `check_continuous`), add:
+- [ ] **Step 4: Add the `areaStay` block to `check_continuous`** — in `MSCollisionEvents.gd`, after the existing `for event in ["velocityAbove", ...]` loop (still inside `check_continuous`), add:
 
 ```gdscript
 	var sb = obj.event_bindings.get("areaStay")
@@ -385,7 +385,7 @@ func overlapping_others(node: Node) -> Array:
 		sb.prune_others(active)
 ```
 
-> `var odata := _build_data(...)` infers `Dictionary` (the function is typed `-> Dictionary`); `var sb = obj.event_bindings.get(...)` is untyped because `.get()` returns a Variant. Continuous events emit only to their bound target (no canonical `/gscore/event/physics` mirror), so the per-body `maxRate` actually bounds traffic.
+> `var odata := _build_data(...)` infers `Dictionary` (the function is typed `-> Dictionary`); `var sb = obj.event_bindings.get(...)` is untyped because `.get()` returns a Variant. Continuous events emit only to their bound target (no canonical `/ms/event/physics` mirror), so the per-body `maxRate` actually bounds traffic.
 
 - [ ] **Step 5: Run to verify it passes**
 
@@ -396,7 +396,7 @@ If `zone overlaps the ball` fails, the ball/zone colliders aren't overlapping �
 - [ ] **Step 6: Commit**
 
 ```bash
-git add addons/gscore_osc/physics/GScoreCollisionEvents.gd addons/gscore_osc/core/GScoreSpatial2D.gd addons/gscore_osc/core/GScoreSpatial3D.gd tools/test_zones.gd
+git add addons/musicscene/physics/MSCollisionEvents.gd addons/musicscene/core/MSSpatial2D.gd addons/musicscene/core/MSSpatial3D.gd tools/test_zones.gd
 git commit -m "feat(zones): areaStay continuous presence emitter + backend area helpers"
 ```
 
@@ -404,11 +404,11 @@ git commit -m "feat(zones): areaStay continuous presence emitter + backend area 
 
 ## Task 5: 2D verification, tutorial, CHANGELOG, version, CI, final checks
 
-**Files:** Modify `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg`, `addons/gscore_osc/core/OscDispatcher.gd`, `.github/workflows/ci.yml`.
+**Files:** Modify `TUTORIAL.md`, `CHANGELOG.md`, `addons/musicscene/plugin.cfg`, `addons/musicscene/core/OscDispatcher.gd`, `.github/workflows/ci.yml`.
 
 - [ ] **Step 1: Verify the 2D backend** — Godot reads a root `override.cfg` to override settings. Create `override.cfg` at the repo root containing:
 ```
-[gscore_osc]
+[MusicScene]
 space="2d"
 ```
 Then: kill stray Godot, run `… --script res://tools/test_zones.gd`, confirm `ready (space=2d)` and `fail=0`. Then **delete `override.cfg`** (`rm override.cfg`; it is gitignored from the joints work — confirm it is not tracked and not left in the tree). If a 2D assertion fails, it is a real 2D bug (likely `is_area`/`overlapping_others` or a coordinate issue) — diagnose, fix the 2D production code minimally, re-run, and note it.
@@ -422,19 +422,19 @@ An **area** is a sensor: it reports when bodies enter, leave, or stay inside it 
 sections, presence, and spatial triggers.
 
 ```
-s("/gscore/scene/zoneA", "new", "rect")
-s("/gscore/scene/zoneA/physics", "enable", "area")
-s("/gscore/scene/zoneA/collider", "rect", 0.4, 0.3)
+s("/ms/scene/zoneA", "new", "rect")
+s("/ms/scene/zoneA/physics", "enable", "area")
+s("/ms/scene/zoneA/collider", "rect", 0.4, 0.3)
 
-s("/gscore/scene/zoneA/on", "areaEnter", "/form/section")
-s("/gscore/scene/zoneA/on", "areaExit",  "/form/leave")
+s("/ms/scene/zoneA/on", "areaEnter", "/form/section")
+s("/ms/scene/zoneA/on", "areaExit",  "/form/leave")
 ```
 
 Enter/exit fire as bodies cross the boundary. Add a **constant tag** to the payload with a `=` (or `'`)
 prefix — handy for labelling which section fired:
 
 ```
-s("/gscore/scene/zoneA/payload", "areaEnter", "self", "other", "=A")
+s("/ms/scene/zoneA/payload", "areaEnter", "self", "other", "=A")
 # -> /form/section zoneA note17 A
 ```
 
@@ -444,9 +444,9 @@ s("/gscore/scene/zoneA/payload", "areaEnter", "self", "other", "=A")
 **per body** by `maxRate` (Hz):
 
 ```
-s("/gscore/scene/zoneA/on", "areaStay", "/zone/presence", "maxRate", 20)
-s("/gscore/scene/zoneA/payload", "areaStay", "self", "other", "otherx", "othery", "otherspeed")
-s("/gscore/physics", "enable", 1)
+s("/ms/scene/zoneA/on", "areaStay", "/zone/presence", "maxRate", 20)
+s("/ms/scene/zoneA/payload", "areaStay", "self", "other", "otherx", "othery", "otherspeed")
+s("/ms/physics", "enable", 1)
 # -> /zone/presence zoneA note17 0.12 -0.03 0.4   (~20 Hz per contained body)
 ```
 
@@ -455,7 +455,7 @@ Use the `other*` payload fields (`otherx`, `othery`, `otherz`, `othervx`, `other
 describe the zone itself. Filters apply per body: `other <id|prefix*>` and `layer <name>` restrict
 which bodies stream.
 
-> `areaStay` runs while the simulation is on (`/gscore/physics enable 1`); enter/exit fire
+> `areaStay` runs while the simulation is on (`/ms/physics enable 1`); enter/exit fire
 > independently. Constants live in `payload` (the `on` command's trailing tokens are option pairs).
 ```
 
@@ -475,7 +475,7 @@ which bodies stream.
   already supported.
 ```
 
-- [ ] **Step 4: Version bump** — set `version="0.4.0"` in `addons/gscore_osc/plugin.cfg`, and update the three `"0.3.0"` version strings in `addons/gscore_osc/core/OscDispatcher.gd` (grep `0.3.0` to find all three) to `"0.4.0"`.
+- [ ] **Step 4: Version bump** — set `version="0.4.0"` in `addons/musicscene/plugin.cfg`, and update the three `"0.3.0"` version strings in `addons/musicscene/core/OscDispatcher.gd` (grep `0.3.0` to find all three) to `"0.4.0"`.
 
 - [ ] **Step 5: CI** — in `.github/workflows/ci.yml`, after the joints self-test step, add a `test_zones.gd` step mirroring the existing style (same `./godot` invocation):
 
@@ -489,14 +489,14 @@ which bodies stream.
 - [ ] **Step 6: Final verification (both spaces + boot)**
 
 3D: kill stray Godot, run `… --script res://tools/test_zones.gd` → `fail=0`.
-2D: `printf '[gscore_osc]\nspace="2d"\n' > override.cfg`, kill stray Godot, run → `ready (space=2d)`, `fail=0`, then `rm override.cfg`.
+2D: `printf '[MusicScene]\nspace="2d"\n' > override.cfg`, kill stray Godot, run → `ready (space=2d)`, `fail=0`, then `rm override.cfg`.
 Boot: kill stray Godot, run `… --headless --path . --quit-after 250` → `ready (space=3d)`, no `SCRIPT ERROR`/`Parse Error`.
 Confirm `git status` clean (no `override.cfg`).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add TUTORIAL.md CHANGELOG.md addons/gscore_osc/plugin.cfg addons/gscore_osc/core/OscDispatcher.gd .github/workflows/ci.yml
+git add TUTORIAL.md CHANGELOG.md addons/musicscene/plugin.cfg addons/musicscene/core/OscDispatcher.gd .github/workflows/ci.yml
 git commit -m "docs(zones): tutorial + changelog 0.4.0 + CI zone self-test"
 ```
 
@@ -507,4 +507,4 @@ git commit -m "docs(zones): tutorial + changelog 0.4.0 + CI zone self-test"
 - The only Godot-API risk is `Area2D/Area3D.get_overlapping_bodies()`/`get_overlapping_areas()` (stable in 4.7) and that an area needs `monitoring` on (already set by `make_body("area")`) plus a collider (the test adds one).
 - `_build_data` is `static` — call it as `CE._build_data(osc, zone, "areaStay", bnode)` in tests.
 - Do NOT commit `override.cfg`.
-- `areaStay`/`payload` registration needs no `GScoreEvents`/`OscDispatcher` change — if you find yourself editing those, stop and re-read §2 of the spec.
+- `areaStay`/`payload` registration needs no `MSEvents`/`OscDispatcher` change — if you find yourself editing those, stop and re-read §2 of the spec.

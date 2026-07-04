@@ -1,8 +1,8 @@
-# gscore_osc — Physics Constraints & Joints (spec §11)
+# MusicScene — Physics Constraints & Joints (spec §11)
 
 **Date:** 2026-06-30
 **Status:** Approved design, ready for implementation planning
-**Scope:** Add OSC-controlled physics joints to gscore_osc, in **both 2D and 3D**, exposing each
+**Scope:** Add OSC-controlled physics joints to MusicScene, in **both 2D and 3D**, exposing each
 engine's **native** joint types (not a 2D vocabulary approximated onto 3D).
 
 ---
@@ -11,12 +11,12 @@ engine's **native** joint types (not a 2D vocabulary approximated onto 3D).
 
 Let OSC clients build "physical notation" — notes hanging from strings, bouncing rhythms,
 gravity-driven forms — by constraining physics bodies with joints. Joints get their own OSC
-namespace and id space, parallel to `/gscore/scene/<id>`:
+namespace and id space, parallel to `/ms/scene/<id>`:
 
 ```
-/gscore/joint/<id> new <type> <a> <b>
-/gscore/joint/<id> <property> <args...>
-/gscore/joint/<id> del
+/ms/joint/<id> new <type> <a> <b>
+/ms/joint/<id> <property> <args...>
+/ms/joint/<id> del
 ```
 
 `<a>` and `<b>` are existing **scene-object ids** that must already have physics enabled.
@@ -34,24 +34,24 @@ namespace and id space, parallel to `/gscore/scene/<id>`:
 - **Mirror the physics architecture.** Joints reuse the exact structural pattern already established
   for physics bodies (world router + per-object adapter + dimension-specific backend methods), so the
   code reads like the surrounding code.
-- **Dimension-agnostic core.** `GScoreJointWorld` and `GScoreJoint` contain no `Node2D`/`Node3D`
+- **Dimension-agnostic core.** `MSJointWorld` and `MSJoint` contain no `Node2D`/`Node3D`
   specifics; everything dimension-specific goes through `ctx.spatial`.
 - **Normalized values.** `stiffness`/`damping` are `0..1`, mapped per backend to a musically useful
   range. Lengths (`restLength`, slider `limit`) are normalized app/length units converted through the
-  coordinate mapper, consistent with every other gscore length.
+  coordinate mapper, consistent with every other MusicScene length.
 
 ---
 
 ## 3. Architecture
 
-Three new pieces mirroring the physics trio (`GScorePhysicsWorld` / `GScorePhysicsAdapter` /
+Three new pieces mirroring the physics trio (`MSPhysicsWorld` / `MSPhysicsAdapter` /
 spatial backend methods):
 
 | New file | Mirrors | Responsibility |
 |---|---|---|
-| `physics/GScoreJointWorld.gd` | `GScorePhysicsWorld` | Owns `id → GScoreJoint` map (its own id space). Routes `/gscore/joint/...` commands. Steps each physics frame to monitor `breakForce` and prune joints whose endpoints died. |
-| `physics/GScoreJoint.gd` | `GScorePhysicsAdapter` | Wraps one Godot joint node + the two endpoint `GScoreObject`s + cached params + the generic6dof active-DOF cursor. Per-frame strain check. |
-| new methods on `core/GScoreSpatial2D.gd` / `GScoreSpatial3D.gd` | `make_body`, `make_collider`, … | All native joint creation and parameter application. Each backend declares `joint_types()` and applies `joint_set_param`. |
+| `physics/MSJointWorld.gd` | `MSPhysicsWorld` | Owns `id → MSJoint` map (its own id space). Routes `/ms/joint/...` commands. Steps each physics frame to monitor `breakForce` and prune joints whose endpoints died. |
+| `physics/MSJoint.gd` | `MSPhysicsAdapter` | Wraps one Godot joint node + the two endpoint `MSObject`s + cached params + the generic6dof active-DOF cursor. Per-frame strain check. |
+| new methods on `core/MSSpatial2D.gd` / `MSSpatial3D.gd` | `make_body`, `make_collider`, … | All native joint creation and parameter application. Each backend declares `joint_types()` and applies `joint_set_param`. |
 
 **Context wiring.** `ctx.joints` is created alongside `ctx.physics_world` at startup. The physics
 step driver (whatever currently calls `physics_world.physics_step(delta)`) also calls
@@ -61,8 +61,8 @@ step driver (whatever currently calls `physics_world.physics_step(delta)`) also 
 
 ```gdscript
 "joint", "joints":
-    # head=="joint"  => /gscore/joint/<id> <verb> ...
-    # head=="joints" => /gscore/joints <query>   (sibling namespace for `list`)
+    # head=="joint"  => /ms/joint/<id> <verb> ...
+    # head=="joints" => /ms/joints <query>   (sibling namespace for `list`)
     if head == "joints":
         ctx.joints.handle_global(parts.slice(2), args)
     else:
@@ -101,7 +101,7 @@ consequence of an explicit `scene/<id> free`, which the client already knows abo
 
 ## 5. Type vocabulary
 
-### 5.1 2D (`GScoreSpatial2D`)
+### 5.1 2D (`MSSpatial2D`)
 | logical type | Godot node | notes |
 |---|---|---|
 | `pin` | `PinJoint2D` | ball/pivot; supports `motor` (target velocity), angular `limit` |
@@ -109,7 +109,7 @@ consequence of an explicit `scene/<id> free`, which the client already knows abo
 | `groove` | `GrooveJoint2D` | body B slides in body A's groove; `limit` sets groove length |
 | `distance` | `DampedSpringJoint2D` | preset: high stiffness + near-critical damping ⇒ near-rigid rod at `restLength` |
 
-### 5.2 3D (`GScoreSpatial3D`)
+### 5.2 3D (`MSSpatial3D`)
 | logical type | Godot node | notes |
 |---|---|---|
 | `pin` | `PinJoint3D` | ball joint (3 rotational DOF free); params via bias/damping/impulse_clamp |
@@ -171,12 +171,12 @@ joint, `dof` is a logged no-op.
 
 Example:
 ```
-/gscore/joint/j new generic6dof noteA noteB
-/gscore/joint/j dof linY
-/gscore/joint/j limit -0.2 0.2
-/gscore/joint/j stiffness 0.7
-/gscore/joint/j dof angY
-/gscore/joint/j motor 1.0 0.5
+/ms/joint/j new generic6dof noteA noteB
+/ms/joint/j dof linY
+/ms/joint/j limit -0.2 0.2
+/ms/joint/j stiffness 0.7
+/ms/joint/j dof angY
+/ms/joint/j motor 1.0 0.5
 ```
 
 ### 6.7 `breakForce <0..1>`
@@ -186,7 +186,7 @@ joints); when it exceeds a threshold derived from `breakForce` (lower value ⇒ 
 joint is freed and the world emits:
 
 ```
-/gscore/event/jointBreak <id> <a> <b>
+/ms/event/jointBreak <id> <a> <b>
 ```
 
 Most meaningful for spring/distance/slider joints; on a near-rigid `pin` it effectively never
@@ -196,8 +196,8 @@ triggers (documented). `breakForce` of `0` disables breaking.
 Frees the joint node and removes it from the map. Idempotent; unknown id → `unknown_object` error.
 
 ### 6.9 Queries (debug niceties, beyond spec)
-- `/gscore/joint/<id> info` → `ctx.reply("joint/info", [id, type, a, b, ...params])`.
-- `/gscore/joints list` → `ctx.reply("joints/list", [id1, type1, id2, type2, ...])`.
+- `/ms/joint/<id> info` → `ctx.reply("joint/info", [id, type, a, b, ...params])`.
+- `/ms/joints list` → `ctx.reply("joints/list", [id1, type1, id2, type2, ...])`.
 
 ---
 
@@ -205,7 +205,7 @@ Frees the joint node and removes it from the map. Idempotent; unknown id → `un
 
 | address | when |
 |---|---|
-| `/gscore/event/jointBreak <id> <a> <b>` | `breakForce` threshold exceeded; joint auto-freed |
+| `/ms/event/jointBreak <id> <a> <b>` | `breakForce` threshold exceeded; joint auto-freed |
 
 Errors use the existing `ctx.error(code, address, message)` channel with codes
 `unknown_object` / `bad_arguments` / `unsupported_type`.
@@ -215,7 +215,7 @@ Errors use the existing `ctx.error(code, address, message)` channel with codes
 ## 8. Coordinate & axis conventions
 
 - Lengths normalized, mapper-converted (2D `length_x_to_pixels`, 3D `length_to_world`), matching all
-  other gscore lengths.
+  other MusicScene lengths.
 - Angular `limit`/`motor` speeds in degrees / rad-per-second respectively, matching existing rotation
   (`rotate` uses degrees) and angular-velocity conventions.
 - 3D `axis` is a world-space direction; the backend builds the joint basis from it.
@@ -227,7 +227,7 @@ Errors use the existing `ctx.error(code, address, message)` channel with codes
 - **Headless self-test** `tools/test_joints.gd` (SceneTree script, both spaces via two runs or a
   space override): create two rigid bodies, `joint new`, step physics N frames, assert the joint node
   exists and constrains (bodies stay within expected separation); then drive overstretch and assert a
-  `/gscore/event/jointBreak` is emitted. Mirrors `tools/test_recreate.gd` style.
+  `/ms/event/jointBreak` is emitted. Mirrors `tools/test_recreate.gd` style.
 - **CI** extends the existing boot/self-test job to run `test_joints.gd` and grep for PASS.
 - **Tutorial** new section "Physical notation: joints" with a 2D hanging-note spring example and a 3D
   hinge/slider example; documents the `breakForce` strain-proxy and 2D-`motor`-torque caveats.
@@ -247,8 +247,8 @@ Errors use the existing `ctx.error(code, address, message)` channel with codes
 
 ## 11. File-change summary
 
-**New:** `physics/GScoreJointWorld.gd`, `physics/GScoreJoint.gd`, `tools/test_joints.gd`.
-**Modified:** `core/OscDispatcher.gd` (route `joint`/`joints`), `core/GScoreSpatial2D.gd` +
-`core/GScoreSpatial3D.gd` (native joint methods + `joint_types()`), context bootstrap (`ctx.joints`,
-physics-step call), `TUTORIAL.md`, `CHANGELOG.md`, `addons/gscore_osc/plugin.cfg` (version bump),
+**New:** `physics/MSJointWorld.gd`, `physics/MSJoint.gd`, `tools/test_joints.gd`.
+**Modified:** `core/OscDispatcher.gd` (route `joint`/`joints`), `core/MSSpatial2D.gd` +
+`core/MSSpatial3D.gd` (native joint methods + `joint_types()`), context bootstrap (`ctx.joints`,
+physics-step call), `TUTORIAL.md`, `CHANGELOG.md`, `addons/musicscene/plugin.cfg` (version bump),
 `.github/workflows/ci.yml` (run `test_joints.gd`).

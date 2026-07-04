@@ -12,17 +12,17 @@ func check(cond: bool, msg: String) -> void:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	var d = osc.dispatcher
 	if _f == 2:
-		d.dispatch("/gscore/scene", ["reset"])
-		d.dispatch("/gscore/scene/cdef", ["new", "circle"])            # default
-		d.dispatch("/gscore/scene/csmall", ["new", "circle", 0.03])    # sized
-		d.dispatch("/gscore/scene/rdef", ["new", "rect"])              # default
-		d.dispatch("/gscore/scene/rsized", ["new", "rect", 0.4, 0.3])  # sized
-		d.dispatch("/gscore/scene/csmall/physics", ["enable", "rigid"])  # auto-collider from sized mesh
+		d.dispatch("/ms/scene", ["reset"])
+		d.dispatch("/ms/scene/cdef", ["new", "circle"])            # default
+		d.dispatch("/ms/scene/csmall", ["new", "circle", 0.03])    # sized
+		d.dispatch("/ms/scene/rdef", ["new", "rect"])              # default
+		d.dispatch("/ms/scene/rsized", ["new", "rect", 0.4, 0.3])  # sized
+		d.dispatch("/ms/scene/csmall/physics", ["enable", "rigid"])  # auto-collider from sized mesh
 	elif _f == 4:
 		if osc.space == "3d":
 			var cdef = osc.registry.get_object("cdef").node

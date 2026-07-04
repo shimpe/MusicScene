@@ -1,12 +1,12 @@
 // =============================================================================
-// Generative pinball arcade — a SuperCollider showcase for gscore_osc's collision
+// Generative pinball arcade — a SuperCollider showcase for MusicScene's collision
 // reactors (bouncers & portals), built in 3D with planar physics (bodies pinned to
 // z=0, exactly like tools/example_pachinko.scd / example_pachinko.py).
 //
 // Autonomous & generative — there are NO player flippers. A handful of balls launch
 // from the top, ricochet off bumpers, get warped across the table by portals, ring
 // pentatonic targets, rattle a scatter of pins, and are recycled the instant they
-// reach the drain — forever. gscore emits several OSC streams back to us, and — just
+// reach the drain — forever. MusicScene emits several OSC streams back to us, and — just
 // like the pachinko port — sclang both DRIVES the board over OSC *and* synthesises
 // every sound locally. No external synth required.
 //
@@ -19,7 +19,7 @@
 // A slow, independent arpeggio (\padArp) runs underneath the whole time as a musical
 // bed, its amplitude loosely tied to how many balls are in play.
 //
-// REQUIRES gscore_osc 0.12.x+ (3D space) — leans on:
+// REQUIRES MusicScene 0.12.x+ (3D space) — leans on:
 //   * collision reactors: `new bouncer` / `new portal` (README "Collision reactors",
 //     ADVANCED.md §10). Both are first-class Area types whose Area is auto-enabled
 //     at creation, and they still emit `areaEnter`, so `on areaEnter …` drives sound.
@@ -32,12 +32,12 @@
 // decorative twin ("<id>Vis": a lit sphere or disc) positioned on top of it, which is
 // what you actually see glowing on the table.
 //
-// PORTS:  gscore listens on 7400 and sends its replies to 7401. We send commands to
+// PORTS:  MusicScene listens on 7400 and sends its replies to 7401. We send commands to
 //         7400 and open UDP 7401 to receive — mind that no other instance holds 7401.
 //
 // USAGE:
 //   1. Boot the audio server if it isn't up:   evaluating the block below does it.
-//   2. Run the Godot project with gscore_osc set to 3D (exactly ONE instance).
+//   2. Run the Godot project with MusicScene set to 3D (exactly ONE instance).
 //   3. Put the cursor inside the big ( ... ) block and press Ctrl+Enter (Cmd+Enter).
 //   4. Balls launch, bumpers ding, portals whoosh, targets ring, the drain thunks and
 //      recycles — the table should never sit still or fall silent.
@@ -112,7 +112,7 @@ s.waitForBoot({
     s.sync;   // make sure every def exists on the server before any Synth() call
 
     // ---- configuration --------------------------------------------------------
-    ~engine  = NetAddr("127.0.0.1", 7400);        // where gscore listens
+    ~engine  = NetAddr("127.0.0.1", 7400);        // where MusicScene listens
     ~nb      = 4;                                  // balls in play at once
     ~ballR   = 0.026;                              // ball radius (normalized)
     ~launchY = 0.92;                               // where balls spawn/relaunch from
@@ -155,94 +155,94 @@ s.waitForBoot({
 
     // Static bouncy wall/floor/ceiling — containment for the whole table.
     ~mkWall = { |id, w, h, d, x, y, bounce, cr, cg, cb|
-        ~snd.("/gscore/scene/" ++ id, "new", "box", w, h, d);
-        ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "enable", "static");
-        ~snd.("/gscore/scene/" ++ id ++ "/collider", "box", w, h, d);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "friction", 0.05);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "bounce", bounce);
-        ~snd.("/gscore/scene/" ++ id, "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id, "new", "box", w, h, d);
+        ~snd.("/ms/scene/" ++ id, "color", cr, cg, cb);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "enable", "static");
+        ~snd.("/ms/scene/" ++ id ++ "/collider", "box", w, h, d);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "friction", 0.05);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "bounce", bounce);
+        ~snd.("/ms/scene/" ++ id, "pos", x, y, 0.0);
     };
 
     // Small static pin the balls rattle against (round, silvery, bouncy).
     ~mkPin = { |id, x, y, r, cr, cg, cb|
-        ~snd.("/gscore/scene/" ++ id, "new", "sphere", r);
-        ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "enable", "static");
-        ~snd.("/gscore/scene/" ++ id ++ "/collider", "sphere", r);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "bounce", 0.78);
-        ~snd.("/gscore/scene/" ++ id, "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id, "new", "sphere", r);
+        ~snd.("/ms/scene/" ++ id, "color", cr, cg, cb);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "enable", "static");
+        ~snd.("/ms/scene/" ++ id ++ "/collider", "sphere", r);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "bounce", 0.78);
+        ~snd.("/ms/scene/" ++ id, "pos", x, y, 0.0);
     };
 
     // Bumper: a `bouncer` reactor (invisible Area) + a lit decorative sphere twin.
     ~mkBumper = { |id, x, y, strength, r, cr, cg, cb|
-        ~snd.("/gscore/scene/" ++ id, "new", "bouncer");
-        ~snd.("/gscore/scene/" ++ id ++ "/collider", "circle", r);
-        ~snd.("/gscore/scene/" ++ id, "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id, "new", "bouncer");
+        ~snd.("/ms/scene/" ++ id ++ "/collider", "circle", r);
+        ~snd.("/ms/scene/" ++ id, "pos", x, y, 0.0);
         // gain < 1.0 makes each bounce slightly inelastic so bumper kicks don't compound into
         // runaway speed (which would eventually tunnel a ball through the walls). Pair with mild
         // ball damping (see ~mkBall) for a stable energy equilibrium.
-        ~snd.("/gscore/scene/" ++ id ++ "/bouncer", "strength", strength, "gain", 0.92, "minSpeed", 0.3);
-        ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);   // no visible effect (bare Area) — see Vis twin
-        ~snd.("/gscore/scene/" ++ id ++ "/on", "areaEnter", "/pin/bump", "cooldown", 0.05);
-        ~snd.("/gscore/scene/" ++ id ++ "/payload", "areaEnter", "self", "otherspeed");
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "new", "sphere", r * 0.85);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "color", cr, cg, cb);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "metallic", 0.5);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "roughness", 0.35);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id ++ "/bouncer", "strength", strength, "gain", 0.92, "minSpeed", 0.3);
+        ~snd.("/ms/scene/" ++ id, "color", cr, cg, cb);   // no visible effect (bare Area) — see Vis twin
+        ~snd.("/ms/scene/" ++ id ++ "/on", "areaEnter", "/pin/bump", "cooldown", 0.05);
+        ~snd.("/ms/scene/" ++ id ++ "/payload", "areaEnter", "self", "otherspeed");
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "new", "sphere", r * 0.85);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "color", cr, cg, cb);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "metallic", 0.5);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "roughness", 0.35);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "pos", x, y, 0.0);
         ~bumperPan[id.asSymbol] = (x / 0.6).clip(-1, 1);
     };
 
     // Portal: a `portal` reactor (invisible Area) + a lit decorative disc twin.
     // Linking is done by the caller (directional — see the build routine below).
     ~mkPortal = { |id, x, y, r, cr, cg, cb|
-        ~snd.("/gscore/scene/" ++ id, "new", "portal");
-        ~snd.("/gscore/scene/" ++ id ++ "/collider", "circle", r);
-        ~snd.("/gscore/scene/" ++ id, "pos", x, y, 0.0);
-        ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);   // no visible effect (bare Area) — see Vis twin
-        ~snd.("/gscore/scene/" ++ id ++ "/on", "areaEnter", "/pin/warp", "cooldown", 0.12);
-        ~snd.("/gscore/scene/" ++ id ++ "/payload", "areaEnter", "self", "otherspeed");
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "new", "cylinder", r * 0.9, 0.015);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "color", cr, cg, cb);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "metallic", 0.3);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "roughness", 0.2);
-        ~snd.("/gscore/scene/" ++ id ++ "Vis", "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id, "new", "portal");
+        ~snd.("/ms/scene/" ++ id ++ "/collider", "circle", r);
+        ~snd.("/ms/scene/" ++ id, "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id, "color", cr, cg, cb);   // no visible effect (bare Area) — see Vis twin
+        ~snd.("/ms/scene/" ++ id ++ "/on", "areaEnter", "/pin/warp", "cooldown", 0.12);
+        ~snd.("/ms/scene/" ++ id ++ "/payload", "areaEnter", "self", "otherspeed");
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "new", "cylinder", r * 0.9, 0.015);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "color", cr, cg, cb);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "metallic", 0.3);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "roughness", 0.2);
+        ~snd.("/ms/scene/" ++ id ++ "Vis", "pos", x, y, 0.0);
         ~portalPan[id.asSymbol] = (x / 0.6).clip(-1, 1);
     };
 
     // Scoring target: a pentatonic sensor area (visible glowing orb).
     ~mkZone = { |id, x, y, note, r, cr, cg, cb|
-        ~snd.("/gscore/scene/" ++ id, "new", "sphere", r);
-        ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "enable", "area");
-        ~snd.("/gscore/scene/" ++ id ++ "/collider", "sphere", r);
-        ~snd.("/gscore/scene/" ++ id, "pos", x, y, 0.0);
-        ~snd.("/gscore/scene/" ++ id ++ "/on", "areaEnter", "/music/note", "cooldown", 0.08);
+        ~snd.("/ms/scene/" ++ id, "new", "sphere", r);
+        ~snd.("/ms/scene/" ++ id, "color", cr, cg, cb);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "enable", "area");
+        ~snd.("/ms/scene/" ++ id ++ "/collider", "sphere", r);
+        ~snd.("/ms/scene/" ++ id, "pos", x, y, 0.0);
+        ~snd.("/ms/scene/" ++ id ++ "/on", "areaEnter", "/music/note", "cooldown", 0.08);
         // payload:  <zone (self)>  <note (literal)>  <ball (other)>  <ball speed>
-        ~snd.("/gscore/scene/" ++ id ++ "/payload", "areaEnter", "self", "=" ++ note, "other", "otherspeed");
+        ~snd.("/ms/scene/" ++ id ++ "/payload", "areaEnter", "self", "=" ++ note, "other", "otherspeed");
         ~zonePan[id.asSymbol] = (x / 0.6).clip(-1, 1);
     };
 
     // A ball: small sphere, pinned to the z=0 plane, rings on any pin hit.
     ~mkBall = { |i, cr, cg, cb|
         var id = "ball" ++ i;
-        ~snd.("/gscore/scene/" ++ id, "new", "sphere", ~ballR);
-        ~snd.("/gscore/scene/" ++ id, "color", cr, cg, cb);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "enable", "rigid");
-        ~snd.("/gscore/scene/" ++ id ++ "/collider", "sphere", ~ballR);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "planar", 1);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "friction", 0.05);
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "bounce", 0.58);
+        ~snd.("/ms/scene/" ++ id, "new", "sphere", ~ballR);
+        ~snd.("/ms/scene/" ++ id, "color", cr, cg, cb);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "enable", "rigid");
+        ~snd.("/ms/scene/" ++ id ++ "/collider", "sphere", ~ballR);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "planar", 1);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "friction", 0.05);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "bounce", 0.58);
         // mild linear damping bleeds energy continuously so bumper kicks reach a terminal speed
         // instead of compounding until the ball tunnels out of the table.
-        ~snd.("/gscore/scene/" ++ id ++ "/physics", "damping", 0.2, 0.1);
+        ~snd.("/ms/scene/" ++ id ++ "/physics", "damping", 0.2, 0.1);
         // click whenever THIS ball hits a pin (collisionEnter only fires on rigid
         // bodies — static pins can't emit it themselves, so the binding lives here).
-        ~snd.("/gscore/scene/" ++ id ++ "/on", "collisionEnter", "/pin/click", "other", "pin*", "cooldown", 0.03);
+        ~snd.("/ms/scene/" ++ id ++ "/on", "collisionEnter", "/pin/click", "other", "pin*", "cooldown", 0.03);
         // "speed" (not "otherspeed"!) — the pin is static, so its own speed is
         // always 0; the ball's OWN speed is what should drive the click.
-        ~snd.("/gscore/scene/" ++ id ++ "/payload", "collisionEnter", "self", "other", "speed");
+        ~snd.("/ms/scene/" ++ id ++ "/payload", "collisionEnter", "self", "other", "speed");
     };
 
     // Recycle a ball to the top. Called from OSC callbacks / the watchdog, so it
@@ -251,18 +251,18 @@ s.waitForBoot({
     ~drop = { |i|
         ~lastDrop[i] = Main.elapsedTime;
         Routine({
-            ~engine.sendMsg("/gscore/scene/ball" ++ i ++ "/physics",
+            ~engine.sendMsg("/ms/scene/ball" ++ i ++ "/physics",
                 "velocity", rrand(-0.3, 0.3), -0.15, 0.0);
             0.03.wait;
-            ~engine.sendMsg("/gscore/scene/ball" ++ i,
+            ~engine.sendMsg("/ms/scene/ball" ++ i,
                 "pos", rrand(-0.22, 0.22), ~launchY, 0.0);
         }).play;
     };
 
     // ---- open the reply port and register listeners ---------------------------
     if(thisProcess.openUDPPort(7401),
-        { "gscore-pinball: listening for replies on UDP 7401".postln; },
-        { "gscore-pinball: UDP 7401 already open (or busy) — continuing".postln; }
+        { "MusicScene-pinball: listening for replies on UDP 7401".postln; },
+        { "MusicScene-pinball: UDP 7401 already open (or busy) — continuing".postln; }
     );
 
     // A ball hit a bumper: bright FM ding, pitch/brightness track its speed.
@@ -345,7 +345,7 @@ s.waitForBoot({
 
     // ---- build the table (paced OSC traffic) ------------------------------------
     ~build = Routine({
-        ~snd.("/gscore/scene", "reset");
+        ~snd.("/ms/scene", "reset");
 
         // containment: bouncy static walls all the way around the table
         ~mkWall.("wallL", 0.06, 2.3, 0.15, -0.66, 0.0, 0.85, 0.10, 0.10, 0.14);
@@ -375,13 +375,13 @@ s.waitForBoot({
         // portals: 2 directional pairs (each linked both ways -> a true two-way warp)
         ~mkPortal.("portA", -0.50,  0.08, 0.09, 0.25, 0.85, 0.90);   // bigger radius = easier for fast balls to hit
         ~mkPortal.("portB",  0.50,  0.08, 0.09, 0.25, 0.85, 0.90);
-        ~snd.("/gscore/scene/portA/portal", "link", "portB");
-        ~snd.("/gscore/scene/portB/portal", "link", "portA");
+        ~snd.("/ms/scene/portA/portal", "link", "portB");
+        ~snd.("/ms/scene/portB/portal", "link", "portA");
 
         ~mkPortal.("portC", -0.30, -0.56, 0.09, 0.75, 0.40, 0.95);
         ~mkPortal.("portD",  0.30, -0.56, 0.09, 0.75, 0.40, 0.95);
-        ~snd.("/gscore/scene/portC/portal", "link", "portD");
-        ~snd.("/gscore/scene/portD/portal", "link", "portC");
+        ~snd.("/ms/scene/portC/portal", "link", "portD");
+        ~snd.("/ms/scene/portD/portal", "link", "portC");
 
         // scoring targets: 10 pentatonic zones in two banks (upper = octave 4, lower = octave 3)
         ~zoneX.do({ |x, i|
@@ -394,14 +394,14 @@ s.waitForBoot({
         });
 
         // drain: a wide sensor near the bottom recycles any ball that reaches it
-        ~snd.("/gscore/scene/drain", "new", "box", 1.16, 0.22, 0.15);
-        ~snd.("/gscore/scene/drain", "color", 0.55, 0.12, 0.12);
-        ~snd.("/gscore/scene/drain", "opacity", 0.55);
-        ~snd.("/gscore/scene/drain/physics", "enable", "area");
-        ~snd.("/gscore/scene/drain/collider", "box", 1.16, 0.22, 0.15);
-        ~snd.("/gscore/scene/drain", "pos", 0.0, -0.85, 0.0);
-        ~snd.("/gscore/scene/drain/on", "areaEnter", "/pin/drain", "cooldown", 0.05);
-        ~snd.("/gscore/scene/drain/payload", "areaEnter", "self", "other", "otherspeed");
+        ~snd.("/ms/scene/drain", "new", "box", 1.16, 0.22, 0.15);
+        ~snd.("/ms/scene/drain", "color", 0.55, 0.12, 0.12);
+        ~snd.("/ms/scene/drain", "opacity", 0.55);
+        ~snd.("/ms/scene/drain/physics", "enable", "area");
+        ~snd.("/ms/scene/drain/collider", "box", 1.16, 0.22, 0.15);
+        ~snd.("/ms/scene/drain", "pos", 0.0, -0.85, 0.0);
+        ~snd.("/ms/scene/drain/on", "areaEnter", "/pin/drain", "cooldown", 0.05);
+        ~snd.("/ms/scene/drain/payload", "areaEnter", "self", "other", "otherspeed");
 
         // multiball: nb balls, colored, pinned to the z=0 plane
         ~nb.do({ |i|
@@ -409,8 +409,8 @@ s.waitForBoot({
             ~mkBall.(i, col[0], col[1], col[2]);
         });
 
-        ~snd.("/gscore/physics", "gravity", 0.0, -0.6, 0.0);
-        ~snd.("/gscore/physics", "enable", 1);
+        ~snd.("/ms/physics", "gravity", 0.0, -0.6, 0.0);
+        ~snd.("/ms/physics", "enable", 1);
 
         // launch, staggered, so the table doesn't start with every ball clumped
         ~nb.do({ |i|
@@ -419,8 +419,8 @@ s.waitForBoot({
         });
 
         // frame the whole board
-        ~snd.("/gscore/camera", "pos", 0.0, 0.0, 2.6);
-        ~snd.("/gscore/camera", "lookAt", 0.0, 0.0, 0.0);
+        ~snd.("/ms/camera", "pos", 0.0, 0.0, 2.6);
+        ~snd.("/ms/camera", "lookAt", 0.0, 0.0, 0.0);
 
         "".postln;
         "Pinball built -- 4 balls, 6 bumpers, 2 portal pairs, 10 pentatonic targets,".postln;
@@ -443,7 +443,7 @@ OSCdef(\pin_warp).free;
 OSCdef(\music_note).free;
 OSCdef(\pin_click).free;
 OSCdef(\pin_drain).free;
-~engine.sendMsg("/gscore/physics", "enable", 0);   // freeze the board
+~engine.sendMsg("/ms/physics", "enable", 0);   // freeze the board
 "Pinball stopped.".postln;
 )
 

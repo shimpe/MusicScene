@@ -16,7 +16,7 @@ func cam(osc):
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if not osc.spatial.is_3d():
@@ -48,12 +48,12 @@ func _process(_d: float) -> bool:
 		check(c.projection == Camera3D.PROJECTION_PERSPECTIVE, "reset restores perspective")
 		check(c.global_position.distance_to(Vector3(0, 0, osc.spatial.default_camera_dist())) < 0.01, "reset restores default position")
 	if _f == 12:
-		osc.dispatcher.dispatch("/gscore/scene/ball", ["new", "circle"])
-		osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.5, 0.0, 0.0])
+		osc.dispatcher.dispatch("/ms/scene/ball", ["new", "circle"])
+		osc.dispatcher.dispatch("/ms/scene/ball", ["pos", 0.5, 0.0, 0.0])
 		osc.camera.handle([], ["pos", 0.0, 0.0, 0.8])
 		osc.camera.handle([], ["target", "ball"])
 	if _f == 15:
-		osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", -0.5, 0.3, 0.0])   # move the tracked object
+		osc.dispatcher.dispatch("/ms/scene/ball", ["pos", -0.5, 0.3, 0.0])   # move the tracked object
 	if _f == 18:
 		var c = cam(osc)
 		var ball = osc.registry.get_object("ball")
@@ -63,7 +63,7 @@ func _process(_d: float) -> bool:
 	if _f == 20:
 		osc.camera.handle([], ["follow", "ball", 0.4])   # capture offset, normalize to dist 0.4
 	if _f == 22:
-		osc.dispatcher.dispatch("/gscore/scene/ball", ["pos", 0.2, -0.2, 0.1])   # move again
+		osc.dispatcher.dispatch("/ms/scene/ball", ["pos", 0.2, -0.2, 0.1])   # move again
 	if _f == 26:
 		var c = cam(osc)
 		var ball = osc.registry.get_object("ball")

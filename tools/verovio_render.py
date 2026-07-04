@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Verovio engraver/positions wrapper for gscore_osc.
+"""Verovio engraver/positions wrapper for MusicScene.
 
 Renders MEI / MusicXML / ABC / PAE / Humdrum to a cropped SVG, and (with --timemap) also writes a
-timemap JSON (element id -> onset time). gscore rasterizes the SVG, reads stable note ids from it,
+timemap JSON (element id -> onset time). MusicScene rasterizes the SVG, reads stable note ids from it,
 and joins them to the timemap for note-level addressing + following.
 
 Usage:

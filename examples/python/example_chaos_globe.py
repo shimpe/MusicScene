@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Chaotic "snow-globe" — a physics-driven generative sequencer for gscore_osc (3D space).
+Chaotic "snow-globe" — a physics-driven generative sequencer for MusicScene (3D space).
 
 Several balls are sealed inside a box. This script slowly ROTATES the direction of
 gravity, so the balls tumble and cascade endlessly, never settling into a pattern.
 Five sensor zones arranged in a ring are pentatonic "pads" (C D E G A): whenever a
-ball passes through one, gscore emits
+ball passes through one, MusicScene emits
 
     /music/note  <zone>  <note>  <ball-speed>
 
@@ -19,7 +19,7 @@ gravity vector is an inexhaustible energy source, so the motion stays chaotic fo
 A little linear damping keeps the balls slow enough that they never escape the box.
 
 USAGE
-    1. Run the Godot project with gscore_osc set to 3D (gscore_osc/space = "3d").
+    1. Run the Godot project with MusicScene set to 3D (ms/space = "3d").
     2. python examples/python/example_chaos_globe.py   (or: py examples\\python\\example_chaos_globe.py)
     3. Watch the "<- /music/note ..." lines stream by; Ctrl+C to stop.
 """
@@ -36,46 +36,46 @@ NOTES = ["C4", "D4", "E4", "G4", "A4"]
 
 
 def build():
-    s("/gscore/scene", "reset")
+    s("/ms/scene", "reset")
 
     # sealed box: four THICK static walls (thick so fast balls can't tunnel through them)
     walls = [("top", 0.0, 0.66, 1.5, 0.3), ("bot", 0.0, -0.66, 1.5, 0.3),
              ("lft", -0.66, 0.0, 0.3, 1.5), ("rgt", 0.66, 0.0, 0.3, 1.5)]
     for name, x, y, w, h in walls:
-        s(f"/gscore/scene/{name}", "new", "rect")
-        s(f"/gscore/scene/{name}/physics", "enable", "static")
-        s(f"/gscore/scene/{name}/physics", "friction", 0.0)
-        s(f"/gscore/scene/{name}/collider", "rect", w, h)
-        s(f"/gscore/scene/{name}", "pos", x, y, 0.0)
+        s(f"/ms/scene/{name}", "new", "rect")
+        s(f"/ms/scene/{name}/physics", "enable", "static")
+        s(f"/ms/scene/{name}/physics", "friction", 0.0)
+        s(f"/ms/scene/{name}/collider", "rect", w, h)
+        s(f"/ms/scene/{name}", "pos", x, y, 0.0)
 
     # five pentatonic sensor zones arranged in a ring
     for k, note in enumerate(NOTES):
         a = math.radians(90 + k * 72)
         zx, zy = 0.42 * math.cos(a), 0.42 * math.sin(a)
         zid = f"zone{k}"
-        s(f"/gscore/scene/{zid}", "new", "rect")
-        s(f"/gscore/scene/{zid}/physics", "enable", "area")
-        s(f"/gscore/scene/{zid}/collider", "rect", 0.26, 0.26)
-        s(f"/gscore/scene/{zid}", "pos", zx, zy, 0.0)
+        s(f"/ms/scene/{zid}", "new", "rect")
+        s(f"/ms/scene/{zid}/physics", "enable", "area")
+        s(f"/ms/scene/{zid}/collider", "rect", 0.26, 0.26)
+        s(f"/ms/scene/{zid}", "pos", zx, zy, 0.0)
         # any ball entering emits a note; small cooldown so a slow pass doesn't retrigger
-        s(f"/gscore/scene/{zid}/on", "areaEnter", "/music/note", "cooldown", 0.08)
-        s(f"/gscore/scene/{zid}/payload", "areaEnter", "self", f"={note}", "otherspeed")
+        s(f"/ms/scene/{zid}/on", "areaEnter", "/music/note", "cooldown", 0.08)
+        s(f"/ms/scene/{zid}/payload", "areaEnter", "self", f"={note}", "otherspeed")
 
     # a handful of balls. Light LINEAR DAMPING caps their speed so they can never tunnel
     # out of the box, while gravity still tosses them around.
     for i in range(6):
         b = f"ball{i}"
-        s(f"/gscore/scene/{b}", "new", "circle")
-        s(f"/gscore/scene/{b}/physics", "enable", "rigid")
-        s(f"/gscore/scene/{b}/physics", "planar", 1)           # pin to the z=0 plane (no out-of-plane drift)
-        s(f"/gscore/scene/{b}/physics", "friction", 0.0)
-        s(f"/gscore/scene/{b}/physics", "bounce", 0.35)
-        s(f"/gscore/scene/{b}/physics", "damping", 1.4, 0.0)   # linear, angular
-        s(f"/gscore/scene/{b}", "pos", -0.35 + 0.14 * i, 0.0, 0.0)
+        s(f"/ms/scene/{b}", "new", "circle")
+        s(f"/ms/scene/{b}/physics", "enable", "rigid")
+        s(f"/ms/scene/{b}/physics", "planar", 1)           # pin to the z=0 plane (no out-of-plane drift)
+        s(f"/ms/scene/{b}/physics", "friction", 0.0)
+        s(f"/ms/scene/{b}/physics", "bounce", 0.35)
+        s(f"/ms/scene/{b}/physics", "damping", 1.4, 0.0)   # linear, angular
+        s(f"/ms/scene/{b}", "pos", -0.35 + 0.14 * i, 0.0, 0.0)
 
-    s("/gscore/physics", "debug", 1)          # show the box + zones (send "debug 0" to hide)
-    s("/gscore/physics", "gravity", 0.0, -1.0, 0.0)
-    s("/gscore/physics", "enable", 1)
+    s("/ms/physics", "debug", 1)          # show the box + zones (send "debug 0" to hide)
+    s("/ms/physics", "gravity", 0.0, -1.0, 0.0)
+    s("/ms/physics", "enable", 1)
 
 
 if __name__ == "__main__":
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     try:
         while True:
             theta += 0.8                       # advance the gravity direction (the "shake")
-            s("/gscore/physics", "gravity", math.cos(theta), math.sin(theta), 0.0)
+            s("/ms/physics", "gravity", math.cos(theta), math.sin(theta), 0.0)
             time.sleep(0.8)
     except KeyboardInterrupt:
         print("\nbye")

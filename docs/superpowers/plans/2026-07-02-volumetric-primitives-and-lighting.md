@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add volumetric mesh primitives (`sphere`, `box`/`cube`, `cylinder`, `capsule`, `cone`) and a default lighting rig with lit materials to gscore_osc's 3D mode, so 3D scenes can look genuinely 3D — while remaining fully backward-compatible.
+**Goal:** Add volumetric mesh primitives (`sphere`, `box`/`cube`, `cylinder`, `capsule`, `cone`) and a default lighting rig with lit materials to MusicScene's 3D mode, so 3D scenes can look genuinely 3D — while remaining fully backward-compatible.
 
-**Architecture:** Extend the existing 3D backend `GScoreSpatial3D` with the new primitives, a `_lit()` material helper, per-object material verbs, an `ensure_lighting()` rig (mirroring `ensure_camera()`), and a `/gscore/light` handler. 2D gets no-op/alias twins. Material choice is keyed on the creation type name plus a global `scene shading` mode.
+**Architecture:** Extend the existing 3D backend `MSSpatial3D` with the new primitives, a `_lit()` material helper, per-object material verbs, an `ensure_lighting()` rig (mirroring `ensure_camera()`), and a `/ms/light` handler. 2D gets no-op/alias twins. Material choice is keyed on the creation type name plus a global `scene shading` mode.
 
 **Tech Stack:** Godot 4.7, GDScript. Headless `SceneTree` self-tests run via `--script`, wired into GitHub Actions CI.
 
@@ -22,7 +22,7 @@
 Adds the lit-material helper and the `sphere` primitive (a lit `SphereMesh`), refactors `circle` to share the sphere-mesh builder while staying unshaded, and introduces the material chooser + global-mode field that later tasks build on.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (add fields/helpers; edit the `circle` case; add `sphere` case)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (add fields/helpers; edit the `circle` case; add `sphere` case)
 - Test: `tools/test_volumetric.gd` (create)
 
 - [ ] **Step 1: Write the failing test**
@@ -52,15 +52,15 @@ func _unshaded(node) -> bool:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	var d = osc.dispatcher
 	if _f == 2:
-		d.dispatch("/gscore/scene", ["reset"])
-		d.dispatch("/gscore/scene/sph", ["new", "sphere"])
-		d.dispatch("/gscore/scene/sph2", ["new", "sphere", 0.06])
-		d.dispatch("/gscore/scene/cir", ["new", "circle"])
+		d.dispatch("/ms/scene", ["reset"])
+		d.dispatch("/ms/scene/sph", ["new", "sphere"])
+		d.dispatch("/ms/scene/sph2", ["new", "sphere", 0.06])
+		d.dispatch("/ms/scene/cir", ["new", "circle"])
 	elif _f == 4:
 		if osc.space == "3d":
 			var sph = osc.registry.get_object("sph").node
@@ -86,7 +86,7 @@ Expected: `FAIL:` lines (e.g. `sphere -> SphereMesh` fails because `new sphere` 
 
 - [ ] **Step 3: Add the fields and helpers**
 
-In `addons/gscore_osc/core/GScoreSpatial3D.gd`, add these fields right after `var ctx = null` (near line 15):
+In `addons/musicscene/core/MSSpatial3D.gd`, add these fields right after `var ctx = null` (near line 15):
 
 ```gdscript
 var ctx = null
@@ -157,7 +157,7 @@ Expected: all `PASS:` lines, final `DONE pass=6 fail=0`.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial3D.gd tools/test_volumetric.gd
+git add addons/musicscene/core/MSSpatial3D.gd tools/test_volumetric.gd
 git commit -m "feat(3d): lit sphere primitive + material helpers (circle stays flat)"
 ```
 
@@ -168,8 +168,8 @@ git commit -m "feat(3d): lit sphere primitive + material helpers (circle stays f
 Adds the remaining volumetric meshes (lit by default) and the matching `cylinder`/`capsule` collider shapes.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (new `create_primitive` cases; new `make_collider` cases)
-- Modify: `addons/gscore_osc/physics/GScorePhysicsWorld.gd` (route `cylinder`/`capsule` collider commands — `handle_collider` has its own allow-list)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (new `create_primitive` cases; new `make_collider` cases)
+- Modify: `addons/musicscene/physics/MSPhysicsWorld.gd` (route `cylinder`/`capsule` collider commands — `handle_collider` has its own allow-list)
 - Test: `tools/test_volumetric.gd` (extend)
 
 - [ ] **Step 1: Extend the failing test**
@@ -177,16 +177,16 @@ Adds the remaining volumetric meshes (lit by default) and the matching `cylinder
 In `tools/test_volumetric.gd`, in the `if _f == 2:` block, add after the existing `new` dispatches:
 
 ```gdscript
-		d.dispatch("/gscore/scene/bx", ["new", "box"])
-		d.dispatch("/gscore/scene/cy", ["new", "cylinder"])
-		d.dispatch("/gscore/scene/cap", ["new", "capsule"])
-		d.dispatch("/gscore/scene/cn", ["new", "cone"])
-		d.dispatch("/gscore/scene/cyc", ["new", "cylinder"])
-		d.dispatch("/gscore/scene/cyc/physics", ["enable", "static"])   # body must exist before a collider attaches
-		d.dispatch("/gscore/scene/cyc/collider", ["cylinder", 0.06, 0.16])
-		d.dispatch("/gscore/scene/capc", ["new", "capsule"])
-		d.dispatch("/gscore/scene/capc/physics", ["enable", "static"])
-		d.dispatch("/gscore/scene/capc/collider", ["capsule", 0.06, 0.2])
+		d.dispatch("/ms/scene/bx", ["new", "box"])
+		d.dispatch("/ms/scene/cy", ["new", "cylinder"])
+		d.dispatch("/ms/scene/cap", ["new", "capsule"])
+		d.dispatch("/ms/scene/cn", ["new", "cone"])
+		d.dispatch("/ms/scene/cyc", ["new", "cylinder"])
+		d.dispatch("/ms/scene/cyc/physics", ["enable", "static"])   # body must exist before a collider attaches
+		d.dispatch("/ms/scene/cyc/collider", ["cylinder", 0.06, 0.16])
+		d.dispatch("/ms/scene/capc", ["new", "capsule"])
+		d.dispatch("/ms/scene/capc/physics", ["enable", "static"])
+		d.dispatch("/ms/scene/capc/collider", ["capsule", 0.06, 0.2])
 ```
 
 In the `if osc.space == "3d":` branch, add:
@@ -294,7 +294,7 @@ In `make_collider`, add these arms after the `"circle", "sphere":` arm (around l
 
 - [ ] **Step 4b: Route the new collider kinds**
 
-`make_collider` is only reached through the collider router, which keeps its own allow-list. In `addons/gscore_osc/physics/GScorePhysicsWorld.gd` `handle_collider`, add after the `"sphere":` arm (around line 127):
+`make_collider` is only reached through the collider router, which keeps its own allow-list. In `addons/musicscene/physics/MSPhysicsWorld.gd` `handle_collider`, add after the `"sphere":` arm (around line 127):
 
 ```gdscript
 			"cylinder": a.set_collider("cylinder", args.slice(1))
@@ -309,7 +309,7 @@ Expected: all `PASS:`, final `DONE pass=13 fail=0`.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial3D.gd addons/gscore_osc/physics/GScorePhysicsWorld.gd tools/test_volumetric.gd
+git add addons/musicscene/core/MSSpatial3D.gd addons/musicscene/physics/MSPhysicsWorld.gd tools/test_volumetric.gd
 git commit -m "feat(3d): box/cylinder/capsule/cone primitives + cylinder/capsule colliders"
 ```
 
@@ -320,12 +320,12 @@ git commit -m "feat(3d): box/cylinder/capsule/cone primitives + cylinder/capsule
 So the dimension-agnostic API never errors in 2D: `box`/`cube` → rect, `cylinder`/`capsule`/`cone` → rect, `sphere` → filled circle.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreSpatial2D.gd` (`create_primitive`)
+- Modify: `addons/musicscene/core/MSSpatial2D.gd` (`create_primitive`)
 - Test: `tools/test_volumetric.gd` (already asserts creation in its 2D branch — run under a 2D override)
 
 - [ ] **Step 1: Add the fallback cases**
 
-In `addons/gscore_osc/core/GScoreSpatial2D.gd` `create_primitive`, change the `"rect":` arm label to also catch box/cube, and the `"circle":` arm label to also catch sphere, and add a cylinder/capsule/cone arm. Concretely, change:
+In `addons/musicscene/core/MSSpatial2D.gd` `create_primitive`, change the `"rect":` arm label to also catch box/cube, and the `"circle":` arm label to also catch sphere, and add a cylinder/capsule/cone arm. Concretely, change:
 
 ```gdscript
 		"rect":
@@ -348,7 +348,7 @@ to
 - [ ] **Step 2: Verify it builds without errors (parse check)**
 
 Run: `godot --headless --import --path . 2>&1 | tee import.log`
-Expected: no `SCRIPT ERROR` / `Parse Error` for `GScoreSpatial2D.gd`.
+Expected: no `SCRIPT ERROR` / `Parse Error` for `MSSpatial2D.gd`.
 
 - [ ] **Step 3: Verify the 2D branch of the test (optional local run)**
 
@@ -356,7 +356,7 @@ Create a temporary root override so the autoload runs in 2D (this file is gitign
 
 ```bash
 cat > override.cfg <<'EOF'
-[gscore_osc]
+[MusicScene]
 space="2d"
 EOF
 godot --headless --path . --script res://tools/test_volumetric.gd
@@ -367,7 +367,7 @@ Expected: the 2D branch runs — `PASS: 2D: sphere created`, `PASS: 2D: box crea
 - [ ] **Step 4: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial2D.gd
+git add addons/musicscene/core/MSSpatial2D.gd
 git commit -m "feat(2d): alias new volumetric primitives to nearest flat shape"
 ```
 
@@ -378,9 +378,9 @@ git commit -m "feat(2d): alias new volumetric primitives to nearest flat shape"
 Adds the three per-object verbs (3D acts on the `StandardMaterial3D`; 2D no-ops).
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreObject.gd` (`apply_command`)
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (`set_shaded`/`set_metallic`/`set_roughness`)
-- Modify: `addons/gscore_osc/core/GScoreSpatial2D.gd` (no-op twins)
+- Modify: `addons/musicscene/core/MSObject.gd` (`apply_command`)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (`set_shaded`/`set_metallic`/`set_roughness`)
+- Modify: `addons/musicscene/core/MSSpatial2D.gd` (no-op twins)
 - Test: `tools/test_material_mode.gd` (create)
 
 - [ ] **Step 1: Write the failing test**
@@ -409,7 +409,7 @@ func _lit(osc, id) -> bool:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if osc.space != "3d":
@@ -417,16 +417,16 @@ func _process(_d: float) -> bool:
 		return true
 	var d = osc.dispatcher
 	if _f == 2:
-		d.dispatch("/gscore/scene", ["reset"])
-		d.dispatch("/gscore/scene/s", ["new", "sphere"])
-		d.dispatch("/gscore/scene/c", ["new", "circle"])
+		d.dispatch("/ms/scene", ["reset"])
+		d.dispatch("/ms/scene/s", ["new", "sphere"])
+		d.dispatch("/ms/scene/c", ["new", "circle"])
 	elif _f == 4:
 		check(_lit(osc, "s"), "sphere lit by default")
 		check(not _lit(osc, "c"), "circle unshaded by default")
-		d.dispatch("/gscore/scene/s", ["shaded", 0])
-		d.dispatch("/gscore/scene/c", ["shaded", 1])
-		d.dispatch("/gscore/scene/s", ["metallic", 0.5])
-		d.dispatch("/gscore/scene/s", ["roughness", 0.2])
+		d.dispatch("/ms/scene/s", ["shaded", 0])
+		d.dispatch("/ms/scene/c", ["shaded", 1])
+		d.dispatch("/ms/scene/s", ["metallic", 0.5])
+		d.dispatch("/ms/scene/s", ["roughness", 0.2])
 	elif _f == 6:
 		check(not _lit(osc, "s"), "shaded 0 -> sphere unshaded")
 		check(_lit(osc, "c"), "shaded 1 -> circle lit")
@@ -444,7 +444,7 @@ Expected: `FAIL:` on the `shaded 0`/`metallic`/`roughness` checks (unknown comma
 
 - [ ] **Step 3: Add the verbs to `apply_command`**
 
-In `addons/gscore_osc/core/GScoreObject.gd`, in the `apply_command` `match cmd:` block, add after the `"color":` line (line 72):
+In `addons/musicscene/core/MSObject.gd`, in the `apply_command` `match cmd:` block, add after the `"color":` line (line 72):
 
 ```gdscript
 		"shaded": ctx.spatial.set_shaded(node, _arg_bool(args, 0, true))
@@ -454,7 +454,7 @@ In `addons/gscore_osc/core/GScoreObject.gd`, in the `apply_command` `match cmd:`
 
 - [ ] **Step 4: Add the 3D implementations**
 
-In `addons/gscore_osc/core/GScoreSpatial3D.gd`, add after `set_color` (around line 194):
+In `addons/musicscene/core/MSSpatial3D.gd`, add after `set_color` (around line 194):
 
 ```gdscript
 func set_shaded(node: Node, b: bool) -> void:
@@ -475,7 +475,7 @@ func set_roughness(node: Node, v: float) -> void:
 
 - [ ] **Step 5: Add the 2D no-ops**
 
-In `addons/gscore_osc/core/GScoreSpatial2D.gd`, add after `set_color` (around line 148):
+In `addons/musicscene/core/MSSpatial2D.gd`, add after `set_color` (around line 148):
 
 ```gdscript
 func set_shaded(_node: Node, _b: bool) -> void:
@@ -498,7 +498,7 @@ Expected: all `PASS:`, final `DONE pass=6 fail=0`.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreObject.gd addons/gscore_osc/core/GScoreSpatial3D.gd addons/gscore_osc/core/GScoreSpatial2D.gd tools/test_material_mode.gd
+git add addons/musicscene/core/MSObject.gd addons/musicscene/core/MSSpatial3D.gd addons/musicscene/core/MSSpatial2D.gd tools/test_material_mode.gd
 git commit -m "feat(3d): per-object shaded/metallic/roughness verbs (2D no-op)"
 ```
 
@@ -509,9 +509,9 @@ git commit -m "feat(3d): per-object shaded/metallic/roughness verbs (2D no-op)"
 Adds a lazy key+fill `DirectionalLight3D` rig, invoked next to `ensure_camera()`, that bails if the running scene already provides a light.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (fields + `ensure_lighting` + helpers)
-- Modify: `addons/gscore_osc/core/GScoreSpatial2D.gd` (no-op twins)
-- Modify: `addons/gscore_osc/nodes/GScoreRoot.gd:110` (call site)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (fields + `ensure_lighting` + helpers)
+- Modify: `addons/musicscene/core/MSSpatial2D.gd` (no-op twins)
+- Modify: `addons/musicscene/nodes/MSRoot.gd:110` (call site)
 - Test: `tools/test_lighting.gd` (create)
 
 - [ ] **Step 1: Write the failing test**
@@ -520,7 +520,7 @@ Create `tools/test_lighting.gd`:
 
 ```gdscript
 extends SceneTree
-## Headless test for the default lighting rig and /gscore/light commands (3D only).
+## Headless test for the default lighting rig and /ms/light commands (3D only).
 ##   <godot> --headless --path . --script res://tools/test_lighting.gd
 var _f := 0
 var _pass := 0
@@ -538,7 +538,7 @@ func _dir_lights(osc) -> Array:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if osc.space != "3d":
@@ -571,7 +571,7 @@ Expected: `FAIL: key + fill DirectionalLight3D created` (no lights yet); `fail>0
 
 - [ ] **Step 3: Add the fields + `ensure_lighting` (3D)**
 
-In `addons/gscore_osc/core/GScoreSpatial3D.gd`, add fields after the `shade_mode` field from Task 1:
+In `addons/musicscene/core/MSSpatial3D.gd`, add fields after the `shade_mode` field from Task 1:
 
 ```gdscript
 var _key_light: DirectionalLight3D = null
@@ -588,19 +588,19 @@ func ensure_lighting() -> void:
 	if tree != null and tree.current_scene != null and _has_dir_light(tree.current_scene):
 		return   # the running scene already provides its own lighting; don't double it
 	_key_light = DirectionalLight3D.new()
-	_key_light.name = "GScoreKeyLight"
+	_key_light.name = "MSKeyLight"
 	_key_light.rotation_degrees = Vector3(-50, -35, 0)
 	_key_light.light_energy = 1.0
 	_key_light.shadow_enabled = false
 	ctx.add_child(_key_light)
 	_fill_light = DirectionalLight3D.new()
-	_fill_light.name = "GScoreFillLight"
+	_fill_light.name = "MSFillLight"
 	_fill_light.rotation_degrees = Vector3(-20, 145, 0)
 	_fill_light.light_energy = 0.35
 	_fill_light.shadow_enabled = false
 	ctx.add_child(_fill_light)
 	if ctx.verbose:
-		print("[GScoreOSC] auto-created 3D lighting (key + fill)")
+		print("[MusicSceneOSC] auto-created 3D lighting (key + fill)")
 
 
 func _has_dir_light(n: Node) -> bool:
@@ -614,7 +614,7 @@ func _has_dir_light(n: Node) -> bool:
 
 - [ ] **Step 4: Add the 2D no-op**
 
-In `addons/gscore_osc/core/GScoreSpatial2D.gd`, add after its `ensure_camera()` (around line 30):
+In `addons/musicscene/core/MSSpatial2D.gd`, add after its `ensure_camera()` (around line 30):
 
 ```gdscript
 func ensure_lighting() -> void:
@@ -623,7 +623,7 @@ func ensure_lighting() -> void:
 
 - [ ] **Step 5: Wire the call site**
 
-In `addons/gscore_osc/nodes/GScoreRoot.gd`, change line 110 from:
+In `addons/musicscene/nodes/MSRoot.gd`, change line 110 from:
 
 ```gdscript
 	spatial.ensure_camera()
@@ -642,20 +642,20 @@ Expected: all `PASS:`, final `DONE pass=4 fail=0`.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial3D.gd addons/gscore_osc/core/GScoreSpatial2D.gd addons/gscore_osc/nodes/GScoreRoot.gd tools/test_lighting.gd
+git add addons/musicscene/core/MSSpatial3D.gd addons/musicscene/core/MSSpatial2D.gd addons/musicscene/nodes/MSRoot.gd tools/test_lighting.gd
 git commit -m "feat(3d): default key+fill directional lighting rig (ensure_lighting)"
 ```
 
 ---
 
-### Task 6: `/gscore/light` command handler
+### Task 6: `/ms/light` command handler
 
 Adds `dir`/`color`/`energy`/`ambient`/`shadows`/`reset` and routes the namespace.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (`handle_light`, `reset_lighting`, helpers)
-- Modify: `addons/gscore_osc/core/GScoreSpatial2D.gd` (no-op)
-- Modify: `addons/gscore_osc/core/OscDispatcher.gd` (route `"light"`)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (`handle_light`, `reset_lighting`, helpers)
+- Modify: `addons/musicscene/core/MSSpatial2D.gd` (no-op)
+- Modify: `addons/musicscene/core/OscDispatcher.gd` (route `"light"`)
 - Test: `tools/test_lighting.gd` (extend)
 
 - [ ] **Step 1: Extend the failing test**
@@ -669,20 +669,20 @@ In `tools/test_lighting.gd`, replace the `if _f == 3:` block with:
 		osc.spatial.ensure_lighting()   # idempotent
 		check(_dir_lights(osc).size() == lights.size(), "ensure_lighting is idempotent")
 		var d = osc.dispatcher
-		d.dispatch("/gscore/light", ["energy", 2.0])
-		d.dispatch("/gscore/light", ["ambient", 0.7])
-		d.dispatch("/gscore/light", ["color", 1.0, 0.5, 0.25])
-		d.dispatch("/gscore/light", ["shadows", 1])
+		d.dispatch("/ms/light", ["energy", 2.0])
+		d.dispatch("/ms/light", ["ambient", 0.7])
+		d.dispatch("/ms/light", ["color", 1.0, 0.5, 0.25])
+		d.dispatch("/ms/light", ["shadows", 1])
 	elif _f == 5:
-		var key = osc.get_node_or_null("GScoreKeyLight")
-		var fill = osc.get_node_or_null("GScoreFillLight")
+		var key = osc.get_node_or_null("MSKeyLight")
+		var fill = osc.get_node_or_null("MSFillLight")
 		check(key != null and absf(key.light_energy - 2.0) < 0.001, "energy -> key light 2.0")
 		check(fill != null and absf(fill.light_energy - 0.7) < 0.001, "ambient -> fill light 0.7")
 		check(key != null and key.light_color.is_equal_approx(Color(1.0, 0.5, 0.25)), "color -> key light")
 		check(key != null and key.shadow_enabled, "shadows 1 -> key shadows on")
-		osc.dispatcher.dispatch("/gscore/light", ["reset"])
+		osc.dispatcher.dispatch("/ms/light", ["reset"])
 	elif _f == 7:
-		var key = osc.get_node_or_null("GScoreKeyLight")
+		var key = osc.get_node_or_null("MSKeyLight")
 		check(key != null and absf(key.light_energy - 1.0) < 0.001 and not key.shadow_enabled, "reset restores key light defaults")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
@@ -694,17 +694,17 @@ In `tools/test_lighting.gd`, replace the `if _f == 3:` block with:
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `godot --headless --path . --script res://tools/test_lighting.gd`
-Expected: `FAIL:` on the energy/ambient/color/shadows checks (unknown namespace `/gscore/light`); `fail>0`.
+Expected: `FAIL:` on the energy/ambient/color/shadows checks (unknown namespace `/ms/light`); `fail>0`.
 
 - [ ] **Step 3: Add `handle_light` + `reset_lighting` + helpers (3D)**
 
-In `addons/gscore_osc/core/GScoreSpatial3D.gd`, add after `reset_lighting` slot — place these right after the `_has_dir_light` helper from Task 5:
+In `addons/musicscene/core/MSSpatial3D.gd`, add after `reset_lighting` slot — place these right after the `_has_dir_light` helper from Task 5:
 
 ```gdscript
 func handle_light(rest, args: Array) -> void:
 	ensure_lighting()
 	if _key_light == null or not is_instance_valid(_key_light):
-		ctx.error("internal_error", "/gscore/light", "no active light"); return
+		ctx.error("internal_error", "/ms/light", "no active light"); return
 	var verb: String
 	var p: Array
 	if rest.size() > 0:
@@ -729,7 +729,7 @@ func handle_light(rest, args: Array) -> void:
 		"reset":
 			reset_lighting()
 		_:
-			ctx.error("bad_arguments", "/gscore/light", "Unknown light cmd: " + verb)
+			ctx.error("bad_arguments", "/ms/light", "Unknown light cmd: " + verb)
 
 
 func reset_lighting() -> void:
@@ -761,7 +761,7 @@ func _arg_truthy(a: Array, i: int) -> bool:
 
 - [ ] **Step 4: Add the 2D no-op**
 
-In `addons/gscore_osc/core/GScoreSpatial2D.gd`, add after its `ensure_lighting()`:
+In `addons/musicscene/core/MSSpatial2D.gd`, add after its `ensure_lighting()`:
 
 ```gdscript
 func handle_light(_rest, _args: Array) -> void:
@@ -770,7 +770,7 @@ func handle_light(_rest, _args: Array) -> void:
 
 - [ ] **Step 5: Route the namespace**
 
-In `addons/gscore_osc/core/OscDispatcher.gd`, in `dispatch`'s `match head:`, add after the `"camera":` case (line 40):
+In `addons/musicscene/core/OscDispatcher.gd`, in `dispatch`'s `match head:`, add after the `"camera":` case (line 40):
 
 ```gdscript
 		"light":
@@ -785,8 +785,8 @@ Expected: all `PASS:`, final `DONE pass=9 fail=0` (2 from the `_f==2` predicate 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial3D.gd addons/gscore_osc/core/GScoreSpatial2D.gd addons/gscore_osc/core/OscDispatcher.gd tools/test_lighting.gd
-git commit -m "feat(3d): /gscore/light commands (dir/color/energy/ambient/shadows/reset)"
+git add addons/musicscene/core/MSSpatial3D.gd addons/musicscene/core/MSSpatial2D.gd addons/musicscene/core/OscDispatcher.gd tools/test_lighting.gd
+git commit -m "feat(3d): /ms/light commands (dir/color/energy/ambient/shadows/reset)"
 ```
 
 ---
@@ -796,9 +796,9 @@ git commit -m "feat(3d): /gscore/light commands (dir/color/energy/ambient/shadow
 Adds the scene-global material-mode command (applies to existing objects and biases new ones), and resets it on `scene reset`.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (`set_global_shade_mode`)
-- Modify: `addons/gscore_osc/core/GScoreSpatial2D.gd` (no-op)
-- Modify: `addons/gscore_osc/core/OscDispatcher.gd` (`scene shading` verb + reset)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (`set_global_shade_mode`)
+- Modify: `addons/musicscene/core/MSSpatial2D.gd` (no-op)
+- Modify: `addons/musicscene/core/OscDispatcher.gd` (`scene shading` verb + reset)
 - Test: `tools/test_material_mode.gd` (extend)
 
 - [ ] **Step 1: Extend the failing test**
@@ -815,16 +815,16 @@ Replace:
 with:
 ```gdscript
 		check(absf(_mat(osc, "s").roughness - 0.2) < 0.001, "roughness set to 0.2")
-		d.dispatch("/gscore/scene/r", ["new", "rect"])
-		d.dispatch("/gscore/scene", ["shading", "flat"])
+		d.dispatch("/ms/scene/r", ["new", "rect"])
+		d.dispatch("/ms/scene", ["shading", "flat"])
 	elif _f == 8:
 		check(not _lit(osc, "s") and not _lit(osc, "c"), "shading flat -> all unshaded")
-		d.dispatch("/gscore/scene", ["shading", "shaded"])
+		d.dispatch("/ms/scene", ["shading", "shaded"])
 	elif _f == 10:
 		check(_lit(osc, "s"), "shading shaded -> sphere lit")
 		check(_lit(osc, "r"), "shading shaded -> rect lit")
 		check(not _lit(osc, "c"), "shading shaded -> circle still flat")
-		d.dispatch("/gscore/scene", ["shading", "auto"])
+		d.dispatch("/ms/scene", ["shading", "auto"])
 	elif _f == 12:
 		check(_lit(osc, "s"), "shading auto -> sphere lit")
 		check(not _lit(osc, "r"), "shading auto -> rect flat")
@@ -841,12 +841,12 @@ Expected: `FAIL:` on the `shading flat/shaded/auto` checks (unknown scene verb `
 
 - [ ] **Step 3: Add `set_global_shade_mode` (3D)**
 
-In `addons/gscore_osc/core/GScoreSpatial3D.gd`, add after the `set_roughness` method from Task 4:
+In `addons/musicscene/core/MSSpatial3D.gd`, add after the `set_roughness` method from Task 4:
 
 ```gdscript
 func set_global_shade_mode(mode: String) -> void:
 	if not (mode in ["auto", "shaded", "flat"]):
-		ctx.error("bad_arguments", "/gscore/scene", "Unknown shading mode: " + mode)
+		ctx.error("bad_arguments", "/ms/scene", "Unknown shading mode: " + mode)
 		return
 	shade_mode = mode
 	for id in ctx.registry.list_ids():
@@ -863,7 +863,7 @@ func set_global_shade_mode(mode: String) -> void:
 
 - [ ] **Step 4: Add the 2D no-op**
 
-In `addons/gscore_osc/core/GScoreSpatial2D.gd`, add after `set_roughness`:
+In `addons/musicscene/core/MSSpatial2D.gd`, add after `set_roughness`:
 
 ```gdscript
 func set_global_shade_mode(_mode: String) -> void:
@@ -872,7 +872,7 @@ func set_global_shade_mode(_mode: String) -> void:
 
 - [ ] **Step 5: Wire the dispatcher**
 
-In `addons/gscore_osc/core/OscDispatcher.gd`, in `_handle_scene`'s empty-`rest` `match _s(args, 0):` block, add a `"shading"` case after `"list"`/`"tree"` (around line 205, before the `_:` default):
+In `addons/musicscene/core/OscDispatcher.gd`, in `_handle_scene`'s empty-`rest` `match _s(args, 0):` block, add a `"shading"` case after `"list"`/`"tree"` (around line 205, before the `_:` default):
 
 ```gdscript
 			"shading": ctx.spatial.set_global_shade_mode(_s(args, 1))
@@ -880,11 +880,11 @@ In `addons/gscore_osc/core/OscDispatcher.gd`, in `_handle_scene`'s empty-`rest` 
 
 Update that block's `_:` error message to include the new verb — change:
 ```gdscript
-				_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|reset|list|tree")
+				_: ctx.error("bad_arguments", "/ms/scene", "Expected clear|reset|list|tree")
 ```
 to
 ```gdscript
-				_: ctx.error("bad_arguments", "/gscore/scene", "Expected clear|reset|list|tree|shading")
+				_: ctx.error("bad_arguments", "/ms/scene", "Expected clear|reset|list|tree|shading")
 ```
 
 In the same file, in the `"reset":` case of that block (around line 194-204), add this line at the end of the reset body (after `ctx.mapper.physics_mode = ...`):
@@ -901,7 +901,7 @@ Expected: all `PASS:`, final `DONE pass=13 fail=0`.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add addons/gscore_osc/core/GScoreSpatial3D.gd addons/gscore_osc/core/GScoreSpatial2D.gd addons/gscore_osc/core/OscDispatcher.gd tools/test_material_mode.gd
+git add addons/musicscene/core/MSSpatial3D.gd addons/musicscene/core/MSSpatial2D.gd addons/musicscene/core/OscDispatcher.gd tools/test_material_mode.gd
 git commit -m "feat(3d): global scene shading auto|shaded|flat toggle"
 ```
 
@@ -912,21 +912,21 @@ git commit -m "feat(3d): global scene shading auto|shaded|flat toggle"
 Bumps the version to 0.10.0, documents everything, and marks workstreams (a)+(b) done in the future-phase spec + memory. Softens the stale "3D is really 2D" comment.
 
 **Files:**
-- Modify: `addons/gscore_osc/core/OscDispatcher.gd` (version string, 3 occurrences)
-- Modify: `addons/gscore_osc/core/GScoreSpatial3D.gd` (`body_set_planar` docstring)
+- Modify: `addons/musicscene/core/OscDispatcher.gd` (version string, 3 occurrences)
+- Modify: `addons/musicscene/core/MSSpatial3D.gd` (`body_set_planar` docstring)
 - Modify: `README.md`, `TUTORIAL.md`, `CHANGELOG.md`
 - Modify: `docs/superpowers/specs/2026-07-02-true-3d-future-phase.md`
 - Modify: memory `C:/Users/Stefaan Himpe/.claude/projects/D--Projects-MusicScene/memory/true-3d-future-phase.md`
 
 - [ ] **Step 1: Bump the version string (3 places)**
 
-In `addons/gscore_osc/core/OscDispatcher.gd`, replace `"0.9.0"` with `"0.10.0"` in all 3 occurrences — line 34 (`version` reply in `dispatch`), line 85 (`version` reply in `_handle_root`), and line 92 (the `"gscore_osc", "0.9.0"` pair in `_handle_info`). Grep to confirm: `grep -n '0\.9\.0' addons/gscore_osc/core/OscDispatcher.gd` should return exactly those 3 lines.
+In `addons/musicscene/core/OscDispatcher.gd`, replace `"0.9.0"` with `"0.10.0"` in all 3 occurrences — line 34 (`version` reply in `dispatch`), line 85 (`version` reply in `_handle_root`), and line 92 (the `"MusicScene", "0.9.0"` pair in `_handle_info`). Grep to confirm: `grep -n '0\.9\.0' addons/musicscene/core/OscDispatcher.gd` should return exactly those 3 lines.
 
 - [ ] **Step 2: Soften the stale planar comment**
 
-In `addons/gscore_osc/core/GScoreSpatial3D.gd`, in the `body_set_planar` docstring (around line 366-369), change:
+In `addons/musicscene/core/MSSpatial3D.gd`, in the `body_set_planar` docstring (around line 366-369), change:
 ```gdscript
-## Pin a body to the z=0 plane (gscore's 3D is really 2D-in-a-plane). Without this, collisions and
+## Pin a body to the z=0 plane (MusicScene's 3D is really 2D-in-a-plane). Without this, collisions and
 ```
 to
 ```gdscript
@@ -945,10 +945,10 @@ Add at the top of the changelog entries (follow the existing format/date style):
   `new cylinder [r] [h]`, `new capsule [r] [h]`, `new cone [r] [h]`. Sized in the app coord mode,
   each with a matching auto-collider; `collider cylinder`/`collider capsule` shapes added.
 - **Lighting (3D):** a default key + fill `DirectionalLight3D` rig is added automatically (skipped if
-  the running scene already has a light). `/gscore/light dir|color|energy|ambient|shadows|reset`.
+  the running scene already has a light). `/ms/light dir|color|energy|ambient|shadows|reset`.
 - **Lit materials (3D):** volumetric primitives are lit by default; `circle` and flat/billboard
   elements stay unshaded. Per-object `shaded [1|0]`, `metallic <0..1>`, `roughness <0..1>`. Global
-  `/gscore/scene shading auto|shaded|flat`.
+  `/ms/scene shading auto|shaded|flat`.
 
 ### Notes
 - Fully backward-compatible: `circle`, `rect`, `text`, notation, etc. render exactly as before; the
@@ -958,7 +958,7 @@ Add at the top of the changelog entries (follow the existing format/date style):
 
 - [ ] **Step 4: Update `README.md`**
 
-In the command reference (near where `new`/primitives and `/gscore/camera` are documented), add a
+In the command reference (near where `new`/primitives and `/ms/camera` are documented), add a
 volumetric-primitives + lighting section. Insert this block after the camera command reference:
 
 ```markdown
@@ -977,20 +977,20 @@ Volumetric mesh primitives (lit by default):
 
 Per-object material:
 
-    /gscore/scene/<id> shaded [1|0]     lit vs unshaded
-    /gscore/scene/<id> metallic <0..1>
-    /gscore/scene/<id> roughness <0..1>
-    /gscore/scene shading auto|shaded|flat   global default (auto=per-type, flat=all unshaded,
+    /ms/scene/<id> shaded [1|0]     lit vs unshaded
+    /ms/scene/<id> metallic <0..1>
+    /ms/scene/<id> roughness <0..1>
+    /ms/scene shading auto|shaded|flat   global default (auto=per-type, flat=all unshaded,
                                              shaded=solids + rect panels lit; circle stays flat)
 
 Lighting (a default key + fill light is added automatically):
 
-    /gscore/light dir <x> <y> <z>       aim the key light along a world direction
-    /gscore/light color <r> <g> <b>
-    /gscore/light energy <e>
-    /gscore/light ambient <e>           fill-light strength
-    /gscore/light shadows <0|1>         opt-in, off by default
-    /gscore/light reset
+    /ms/light dir <x> <y> <z>       aim the key light along a world direction
+    /ms/light color <r> <g> <b>
+    /ms/light energy <e>
+    /ms/light ambient <e>           fill-light strength
+    /ms/light shadows <0|1>         opt-in, off by default
+    /ms/light reset
 
 In 2D these material/light commands are no-ops and the volumetric names alias to flat shapes.
 ```
@@ -1008,20 +1008,20 @@ In 3D mode you can build real solids, not just flat tokens:
     new mybox box 0.4 0.4 0.4      # a lit box
     new mycyl cylinder 0.2 0.6     # a lit cylinder (radius, height)
 
-These are **lit** by default. gscore adds a default key + fill light to 3D scenes automatically, so
+These are **lit** by default. MusicScene adds a default key + fill light to 3D scenes automatically, so
 solids read as volumes out of the box (it steps aside if your scene already has a light). `circle`
 stays flat/unshaded — it's the classic INScore token; use `sphere` when you want a 3D ball.
 
 Tweak the look per object:
 
-    /gscore/scene/mybox roughness 0.2      # shinier
-    /gscore/scene/mybox metallic 0.8
-    /gscore/scene/mysphere shaded 0        # force flat
+    /ms/scene/mybox roughness 0.2      # shinier
+    /ms/scene/mybox metallic 0.8
+    /ms/scene/mysphere shaded 0        # force flat
 
-Or globally: `/gscore/scene shading flat` for the classic all-flat look, `shaded` to also light flat
-`rect` panels (walls/floors), `auto` for the default. Adjust the light with `/gscore/light energy 2`,
-`/gscore/light dir 0 -1 -0.5`, `/gscore/light color 1 0.9 0.8`, or turn on shadows with
-`/gscore/light shadows 1`.
+Or globally: `/ms/scene shading flat` for the classic all-flat look, `shaded` to also light flat
+`rect` panels (walls/floors), `auto` for the default. Adjust the light with `/ms/light energy 2`,
+`/ms/light dir 0 -1 -0.5`, `/ms/light color 1 0.9 0.8`, or turn on shadows with
+`/ms/light shadows 1`.
 ```
 
 - [ ] **Step 6: Update the future-phase spec**
@@ -1052,7 +1052,7 @@ Run: `godot --headless --import --path . 2>&1 | tee import.log`
 Expected: no `SCRIPT ERROR` / `Parse Error`.
 
 ```bash
-git add addons/gscore_osc/core/OscDispatcher.gd addons/gscore_osc/core/GScoreSpatial3D.gd README.md TUTORIAL.md CHANGELOG.md docs/superpowers/specs/2026-07-02-true-3d-future-phase.md
+git add addons/musicscene/core/OscDispatcher.gd addons/musicscene/core/MSSpatial3D.gd README.md TUTORIAL.md CHANGELOG.md docs/superpowers/specs/2026-07-02-true-3d-future-phase.md
 git commit -m "docs: volumetric primitives + lighting (0.10.0); mark 3D phase (a)+(b) done"
 ```
 
@@ -1100,11 +1100,11 @@ git commit -m "ci: run volumetric / material-mode / lighting self-tests"
 **Spec coverage:**
 - (a) volumetric primitives → Tasks 1–2 (sphere/box/cylinder/capsule/cone + colliders); 2D fallback → Task 3. ✓
 - (b) lit materials + defaults → Task 1 (`_lit`, per-type default), per-object verbs → Task 4, global toggle → Task 7. ✓
-- (b) lighting rig → Task 5; `/gscore/light` → Task 6. ✓
+- (b) lighting rig → Task 5; `/ms/light` → Task 6. ✓
 - Version 0.10.0, docs, spec/memory, planar comment → Task 8. ✓
 - Tests + CI → each feature task + Task 9. ✓
 - Non-goals (glTF, multi-light, shadows-by-default) → not implemented. ✓
 
-**Type/name consistency:** `shade_mode` field, `_is_volumetric_solid`/`_shaded_forceable`/`_material_for`/`_sphere_mesh`/`_lit` helpers, `set_shaded`/`set_metallic`/`set_roughness`/`set_global_shade_mode`/`ensure_lighting`/`handle_light`/`reset_lighting` methods, and node names `GScoreKeyLight`/`GScoreFillLight` are used identically across the tasks that define and consume them. Verbs `shaded`/`metallic`/`roughness` (object) and `shading` (scene) and the `/gscore/light` sub-verbs match between dispatcher, backend, and tests.
+**Type/name consistency:** `shade_mode` field, `_is_volumetric_solid`/`_shaded_forceable`/`_material_for`/`_sphere_mesh`/`_lit` helpers, `set_shaded`/`set_metallic`/`set_roughness`/`set_global_shade_mode`/`ensure_lighting`/`handle_light`/`reset_lighting` methods, and node names `MSKeyLight`/`MSFillLight` are used identically across the tasks that define and consume them. Verbs `shaded`/`metallic`/`roughness` (object) and `shading` (scene) and the `/ms/light` sub-verbs match between dispatcher, backend, and tests.
 
 **Backward compatibility:** `circle`/`rect`/`text`/notation untouched; lights skipped when the scene already has one and only affect lit materials; new verbs/namespaces are additive.

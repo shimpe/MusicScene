@@ -22,47 +22,47 @@ func _vx(osc, id: String) -> float:
 	return osc.spatial.body_get_velocity(o.physics_adapter.body).x
 
 func _mk_portal(osc, id: String, x: float, y: float) -> void:
-	osc.dispatcher.dispatch("/gscore/scene/" + id, ["new", "portal"])
-	osc.dispatcher.dispatch("/gscore/scene/" + id + "/collider", ["circle", 0.1])
-	osc.dispatcher.dispatch("/gscore/scene/" + id, ["pos", x, y, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/" + id, ["new", "portal"])
+	osc.dispatcher.dispatch("/ms/scene/" + id + "/collider", ["circle", 0.1])
+	osc.dispatcher.dispatch("/ms/scene/" + id, ["pos", x, y, 0.0])
 
 func _mk_ball(osc, id: String, x: float, y: float) -> void:
-	osc.dispatcher.dispatch("/gscore/scene/" + id, ["new", "sphere", 0.03])
-	osc.dispatcher.dispatch("/gscore/scene/" + id + "/physics", ["enable", "rigid"])
-	osc.dispatcher.dispatch("/gscore/scene/" + id + "/physics", ["gravityscale", 0.0])
-	osc.dispatcher.dispatch("/gscore/scene/" + id + "/collider", ["sphere", 0.03])
-	osc.dispatcher.dispatch("/gscore/scene/" + id, ["pos", x, y, 0.0])
-	osc.dispatcher.dispatch("/gscore/scene/" + id + "/physics", ["velocity", 0.6, 0.0, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/" + id, ["new", "sphere", 0.03])
+	osc.dispatcher.dispatch("/ms/scene/" + id + "/physics", ["enable", "rigid"])
+	osc.dispatcher.dispatch("/ms/scene/" + id + "/physics", ["gravityscale", 0.0])
+	osc.dispatcher.dispatch("/ms/scene/" + id + "/collider", ["sphere", 0.03])
+	osc.dispatcher.dispatch("/ms/scene/" + id, ["pos", x, y, 0.0])
+	osc.dispatcher.dispatch("/ms/scene/" + id + "/physics", ["velocity", 0.6, 0.0, 0.0])
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if _f == 3:
-		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/ms/physics", ["enable", 1])
 		# --- creation + config (prt) ---
-		osc.dispatcher.dispatch("/gscore/scene/prt", ["new", "portal"])
+		osc.dispatcher.dispatch("/ms/scene/prt", ["new", "portal"])
 		var obj = osc.registry.get_object("prt")
 		check(obj != null, "portal object created")
 		check(obj != null and obj.type_hint == "portal", "type_hint is portal")
 		var body = obj.physics_adapter.body if (obj != null and obj.physics_adapter != null) else null
 		check(body != null and osc.spatial.is_area(body), "portal body is an Area")
-		osc.dispatcher.dispatch("/gscore/scene/prt/portal", ["link", "a", "b"])
+		osc.dispatcher.dispatch("/ms/scene/prt/portal", ["link", "a", "b"])
 		check(osc.reactors._portals.get("prt", []) == ["a", "b"], "portal link stored")
-		osc.dispatcher.dispatch("/gscore/scene/prt/portal", ["unlink"])
+		osc.dispatcher.dispatch("/ms/scene/prt/portal", ["unlink"])
 		check(not osc.reactors._portals.has("prt"), "portal unlink clears targets")
 		# --- teleport + cooldown (mutual pa <-> pb) ---
 		_mk_portal(osc, "pa", 0.3, 0.5)
 		_mk_portal(osc, "pb", 0.7, 0.5)
-		osc.dispatcher.dispatch("/gscore/scene/pa/portal", ["link", "pb"])
-		osc.dispatcher.dispatch("/gscore/scene/pb/portal", ["link", "pa"])
+		osc.dispatcher.dispatch("/ms/scene/pa/portal", ["link", "pb"])
+		osc.dispatcher.dispatch("/ms/scene/pb/portal", ["link", "pa"])
 		_mk_ball(osc, "ball", 0.15, 0.5)
 		# --- multi-target (qa -> qb OR qc, both at x~0.7) ---
 		_mk_portal(osc, "qa", 0.3, 0.85)
 		_mk_portal(osc, "qb", 0.7, 0.88)
 		_mk_portal(osc, "qc", 0.7, 0.82)
-		osc.dispatcher.dispatch("/gscore/scene/qa/portal", ["link", "qb", "qc"])
+		osc.dispatcher.dispatch("/ms/scene/qa/portal", ["link", "qb", "qc"])
 		_mk_ball(osc, "ball2", 0.15, 0.85)
 	if _f == 40:
 		check(_px(osc, "ball") > 0.6, "ball teleported from A (~0.3) across to B (~0.7)")

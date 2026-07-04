@@ -17,7 +17,7 @@ func _init() -> void:
 	print("load_svg_from_string err=", err, " size=", (img.get_size() if err == OK else Vector2i.ZERO))
 
 	print("--- current SvgBackend ---")
-	var B = load("res://addons/gscore_osc/notation/GScoreNotationBackendSvg.gd")
+	var B = load("res://addons/musicscene/notation/MSNotationBackendSvg.gd")
 	var res = B.render(p, 1, {})
 	print("ok=", res.ok, " err=", res.error, " texsize=", (res.texture.get_size() if res.ok else "n/a"))
 	quit()

@@ -16,20 +16,20 @@ func check(cond: bool, msg: String) -> void:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var osc = root.get_node_or_null("GScoreOSC")
+	var osc = root.get_node_or_null("MusicSceneOSC")
 	if osc == null:
 		print("FAIL: autoload missing"); return true
 	if _f == 3:
 		# Gravity keeps the body AWAKE so the physics server actively integrates it — this is what
 		# reverts a plain global_position assignment back to the body's cached (origin) state.
-		osc.dispatcher.dispatch("/gscore/physics", ["gravity", 0.0, -1.0, 0.0])
-		osc.dispatcher.dispatch("/gscore/physics", ["enable", 1])
+		osc.dispatcher.dispatch("/ms/physics", ["gravity", 0.0, -1.0, 0.0])
+		osc.dispatcher.dispatch("/ms/physics", ["enable", 1])
 	if _f == 6:
-		osc.dispatcher.dispatch("/gscore/scene/note", ["new", "circle"])
+		osc.dispatcher.dispatch("/ms/scene/note", ["new", "circle"])
 	if _f == 10:
-		osc.dispatcher.dispatch("/gscore/scene/note/physics", ["enable", "rigid"])
+		osc.dispatcher.dispatch("/ms/scene/note/physics", ["enable", "rigid"])
 	if _f == 16:
-		osc.dispatcher.dispatch("/gscore/scene/note", ["pos", 0.3, 0.5, 0.0])
+		osc.dispatcher.dispatch("/ms/scene/note", ["pos", 0.3, 0.5, 0.0])
 	if _f == 25:
 		# x is independent of vertical gravity: if pos stuck it stays 0.3; on the bug it reverts to -1.
 		var note = osc.registry.get_object("note")

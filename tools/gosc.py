@@ -1,4 +1,4 @@
-# gosc.py — minimal OSC client for gscore_osc
+# gosc.py — minimal OSC client for MusicScene
 import socket, struct, threading, time
 
 HOST, SEND_PORT, RECV_PORT = "127.0.0.1", 7400, 7401
@@ -55,5 +55,5 @@ def s(addr, *args):
     print("->", addr, list(args)); time.sleep(0.05)
 
 if __name__ == "__main__":
-    import code; code.interact(local=globals())   # interactive: type s("/gscore/ping")
+    import code; code.interact(local=globals())   # interactive: type s("/ms/ping")
 	

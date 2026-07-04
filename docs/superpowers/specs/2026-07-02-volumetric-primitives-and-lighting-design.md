@@ -8,7 +8,7 @@ Implements workstreams **(a) volumetric primitives** and **(b) lighting + lit ma
 
 ## Motivation
 
-gscore_osc's 3D mode already has real x/y/z coordinates, a freely-positionable camera, 3D physics
+MusicScene's 3D mode already has real x/y/z coordinates, a freely-positionable camera, 3D physics
 with depth colliders, and real-axis joints. What keeps scenes looking flat is the *visual vocabulary*:
 only `circle` (a `SphereMesh`) has volume, every material is `_unshaded()`, and there are **no lights**,
 so even a sphere renders as a flat silhouette. This phase adds volumetric mesh primitives and a default
@@ -21,7 +21,7 @@ non-breaking**: nothing that exists today changes appearance.
 - A lit `StandardMaterial3D` mode; volumetric primitives lit by default, flat/billboard ones unshaded.
 - A default two-light rig (key + fill) added lazily to 3D scenes, mirroring `ensure_camera()`.
 - A small control surface: per-object `shaded`/`metallic`/`roughness`, a global `scene shading`
-  toggle, and a `/gscore/light` namespace to tweak the default lights.
+  toggle, and a `/ms/light` namespace to tweak the default lights.
 - Full backward compatibility and a headless test suite wired into CI.
 
 ## Non-goals (still deferred)
@@ -33,7 +33,7 @@ backgrounds; per-material textures. All remain future-phase.
 
 ## 1. Volumetric primitives
 
-Added to `GScoreSpatial3D.create_primitive(type, args)`. Dimensions are in the active app coord mode
+Added to `MSSpatial3D.create_primitive(type, args)`. Dimensions are in the active app coord mode
 (`length_to_world`), matching the existing sizable `circle`/`rect`. Each gets a lit material by default
 (§2) and works with the existing auto-collider (mesh AABB → box) plus new explicit collider kinds.
 
@@ -55,7 +55,7 @@ already exist. `cone` has no exact Godot collision shape; its auto-collider is t
 `collider cylinder`. The `"auto"` path (mesh AABB → `BoxShape3D`) is unchanged and works for every new
 mesh.
 
-**2D fallback (`GScoreSpatial2D`).** So the dimension-agnostic API never errors in 2D, the new types
+**2D fallback (`MSSpatial2D`).** So the dimension-agnostic API never errors in 2D, the new types
 alias to the nearest existing 2D primitive: `box`/`cube` → rect, `cylinder`/`capsule`/`cone` → rect,
 `sphere` → circle. (Faithful 2D silhouettes are a possible later refinement, not part of this phase.)
 
@@ -77,7 +77,7 @@ Because unshaded materials ignore lights entirely, adding the default rig (§3) 
 any unshaded object looks. Combined with `circle` staying unshaded, **no existing scene changes
 appearance.**
 
-**Per-object verbs** (added to `GScoreObject.apply_command`, delegating to the spatial backend):
+**Per-object verbs** (added to `MSObject.apply_command`, delegating to the spatial backend):
 
 - `shaded [1|0]` — flip `material_override.shading_mode` between per-pixel (lit) and unshaded.
   `shaded` with no arg = `shaded 1`. Creates a default material if the node has none.
@@ -88,7 +88,7 @@ appearance.**
 toggling `shaded 1` later shows them). In 2D these three verbs are **no-ops** (CanvasItems have no PBR),
 returning without error.
 
-**Global toggle** — `/gscore/scene shading auto|shaded|flat` (new verb in `_handle_scene`'s empty-rest
+**Global toggle** — `/ms/scene shading auto|shaded|flat` (new verb in `_handle_scene`'s empty-rest
 branch, beside `reset`/`clear`):
 
 - `auto` *(default)* — every object uses its per-type default from the table above (volumetric solids
@@ -110,19 +110,19 @@ objects, and the command re-applies the mode to all existing registered objects.
 
 ## 3. Lighting
 
-`GScoreSpatial3D.ensure_lighting()` — lazy, invoked from the same 3D scene-setup path as
+`MSSpatial3D.ensure_lighting()` — lazy, invoked from the same 3D scene-setup path as
 `ensure_camera()`, and **bails if a `DirectionalLight3D` already exists** in the viewport (so a
-user-provided rig is never doubled). It adds two lights as children of the gscore root:
+user-provided rig is never doubled). It adds two lights as children of the MusicScene root:
 
-- **`GScoreKeyLight`** — `DirectionalLight3D`, angled from upper-front (≈ `rotation_degrees
+- **`MSKeyLight`** — `DirectionalLight3D`, angled from upper-front (≈ `rotation_degrees
   (-50, -35, 0)`), `light_energy 1.0`, shadows **off**.
-- **`GScoreFillLight`** — `DirectionalLight3D`, dim, from the opposite side (≈ `(-20, 145, 0)`),
+- **`MSFillLight`** — `DirectionalLight3D`, dim, from the opposite side (≈ `(-20, 145, 0)`),
   `light_energy 0.35`, shadows off.
 
 Two directional lights (rather than a `WorldEnvironment`) keep the existing background/clear color
 untouched and give volumes a lit side and a softly-lit side with no pure-black faces.
 
-**Commands** — `/gscore/light <sub> …` routes (new `"light":` case in `OscDispatcher`) to
+**Commands** — `/ms/light <sub> …` routes (new `"light":` case in `OscDispatcher`) to
 `ctx.spatial.handle_light(rest, args)`; 3D implements, 2D no-ops:
 
 | Command | Effect |
@@ -142,19 +142,19 @@ untouched and give volumes a lit side and a softly-lit side with no pure-black f
 
 | File | Change |
 |---|---|
-| `core/GScoreSpatial3D.gd` | New primitive cases + `_sphere_mesh`; `_lit`; `set_shaded`/`set_metallic`/`set_roughness`; `ensure_lighting` + `handle_light`; `make_collider` `cylinder`/`capsule`; classify-by-type helper for the global toggle. |
-| `core/GScoreSpatial2D.gd` | New-primitive aliases; `set_shaded`/`set_metallic`/`set_roughness` and `handle_light` no-ops. |
-| `core/GScoreObject.gd` | `apply_command` verbs `shaded`/`metallic`/`roughness`. |
+| `core/MSSpatial3D.gd` | New primitive cases + `_sphere_mesh`; `_lit`; `set_shaded`/`set_metallic`/`set_roughness`; `ensure_lighting` + `handle_light`; `make_collider` `cylinder`/`capsule`; classify-by-type helper for the global toggle. |
+| `core/MSSpatial2D.gd` | New-primitive aliases; `set_shaded`/`set_metallic`/`set_roughness` and `handle_light` no-ops. |
+| `core/MSObject.gd` | `apply_command` verbs `shaded`/`metallic`/`roughness`. |
 | `core/OscDispatcher.gd` | `"light":` route; `scene shading` verb; version `0.9.0` → `0.10.0` (3 occurrences). |
 | 3D scene-setup call site | Call `ensure_lighting()` where `ensure_camera()` is already called. |
 | `tools/test_volumetric.gd`, `tools/test_lighting.gd`, `tools/test_material_mode.gd` | New headless tests. |
 | `.github/workflows/ci.yml` | Wire the new tests in. |
 | `README.md`, `TUTORIAL.md`, `CHANGELOG.md` | Command reference, a "volumetric shapes & lighting" section, `[0.10.0]` entry. |
 | `docs/.../2026-07-02-true-3d-future-phase.md`, memory `true-3d-future-phase.md` | Mark (a)+(b) done; (c) still deferred. |
-| `core/GScoreSpatial3D.gd` `body_set_planar` docstring | Soften the now-stale "3D is really 2D in a plane" wording. |
+| `core/MSSpatial3D.gd` `body_set_planar` docstring | Soften the now-stale "3D is really 2D in a plane" wording. |
 
-If lighting + materials push `GScoreSpatial3D` (already ~860 lines) past comfortable readability,
-extract a `GScoreMaterial3D` static helper for `_lit`/`_unshaded`/mode-application — decided during
+If lighting + materials push `MSSpatial3D` (already ~860 lines) past comfortable readability,
+extract a `MSMaterial3D` static helper for `_lit`/`_unshaded`/mode-application — decided during
 implementation, not pre-split.
 
 ## Backward compatibility
@@ -177,7 +177,7 @@ implementation, not pre-split.
 - **test_material_mode** — `sphere` lit by default; `shaded 0` → unshaded; `metallic`/`roughness` set
   values; `scene shading flat` → all unshaded; `shaded` → volumetric lit; `auto` → per-type.
 - **2D fallback** — in 2D, the new `new <type>` create without error; `shaded`/`metallic`/`roughness`
-  and `/gscore/light …` are no-ops without error.
+  and `/ms/light …` are no-ops without error.
 
 ## Rollout
 

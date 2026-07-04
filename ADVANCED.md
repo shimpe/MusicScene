@@ -1,4 +1,4 @@
-# gscore_osc — Advanced Topics
+# MusicScene — Advanced Topics
 
 A deep-mechanics companion to **[TUTORIAL.md](TUTORIAL.md)**. The tutorial teaches the everyday
 commands; this document goes underneath them — the exact wire syntax, the defaults, and the edge cases
@@ -6,7 +6,7 @@ that will surprise you if you don't know them. Each section ends with a **Gotcha
 non-obvious behavior.
 
 This doc assumes you've read the tutorial and reuses its tiny Python helper `s(address, *args)` (defined
-in TUTORIAL §2 — it sends one OSC message and prints anything gscore sends back). Replies and events are
+in TUTORIAL §2 — it sends one OSC message and prints anything MusicScene sends back). Replies and events are
 shown as `# -> …` comments. For the flat command reference see **[README.md](README.md)**.
 
 **Contents**
@@ -19,9 +19,9 @@ shown as `# -> …` comments. For the flat command reference see **[README.md](R
 
 ## Part A — Notation overlays
 
-gscore has **two unrelated things** that both draw "on top of" a rendered score, and they're easy to
+MusicScene has **two unrelated things** that both draw "on top of" a rendered score, and they're easy to
 confuse: **annotations** (§1) are freeform labels *you* place; **addressable regions** (§2) are clickable
-hotspots gscore *extracts* from the engraved music. Different commands, different purposes.
+hotspots MusicScene *extracts* from the engraved music. Different commands, different purposes.
 
 ## 1. Annotations
 
@@ -35,25 +35,25 @@ Every subcommand is `annotation <aid> <cmd> …`, where `<aid>` is an id you cho
 
 ```python
 # text label at the default rect
-s("/gscore/scene/score1/annotation", "a1", "text", "Allegro")
+s("/ms/scene/score1/annotation", "a1", "text", "Allegro")
 
 # move/resize it (x, y, w, h in page-normalized 0..1)
-s("/gscore/scene/score1/annotation", "a1", "rect", 0.12, 0.04, 0.30, 0.06)
+s("/ms/scene/score1/annotation", "a1", "rect", 0.12, 0.04, 0.30, 0.06)
 
 # recolor (r, g, b, optional a)
-s("/gscore/scene/score1/annotation", "a1", "color", 0.85, 0.1, 0.1)
+s("/ms/scene/score1/annotation", "a1", "color", 0.85, 0.1, 0.1)
 
 # a glyph by name (see the Gotchas about fonts)
-s("/gscore/scene/score1/annotation", "seg", "glyph", "segno")
+s("/ms/scene/score1/annotation", "seg", "glyph", "segno")
 
 # show / hide / delete
-s("/gscore/scene/score1/annotation", "a1", "hide")
-s("/gscore/scene/score1/annotation", "a1", "show")
-s("/gscore/scene/score1/annotation", "a1", "del")
+s("/ms/scene/score1/annotation", "a1", "hide")
+s("/ms/scene/score1/annotation", "a1", "show")
+s("/ms/scene/score1/annotation", "a1", "del")
 
 # list the annotation ids on this object
-s("/gscore/scene/score1/annotations")
-# -> /gscore/reply annotations score1 a1 seg
+s("/ms/scene/score1/annotations")
+# -> /ms/reply annotations score1 a1 seg
 ```
 
 A brand-new annotation defaults to rect `(0.1, 0.1, 0.2, 0.1)`, near-black color, font size 28. It
@@ -73,20 +73,20 @@ the score reflows.
 
 ## 2. Addressable scores (mpos)
 
-The *other* kind of overlay. Turn a notation object **addressable** and gscore auto-extracts clickable,
+The *other* kind of overlay. Turn a notation object **addressable** and MusicScene auto-extracts clickable,
 time-tagged regions from the engraved music — measures (`m1`, `m2`, …) or note elements (`n0`, `n1`, …) —
 so a client can light up "measure 5" or react to a click on a specific note.
 
 Opt in, load the score source, then query what was found:
 
 ```python
-s("/gscore/scene/score1", "addressable", 1)     # opt in (see Gotchas re: ordering)
+s("/ms/scene/score1", "addressable", 1)     # opt in (see Gotchas re: ordering)
 # ... now load the score source (MusicXML / LilyPond / etc., per TUTORIAL §9) ...
 
-s("/gscore/scene/score1", "measures")
-# -> /gscore/reply measures score1 1 <x> <y> <w> <h> <time> 2 <x> <y> <w> <h> <time> ...
-s("/gscore/scene/score1", "elements")
-# -> /gscore/reply elements score1 0 <when> <line> <char> <u> <v> 1 <when> <line> <char> <u> <v> ...
+s("/ms/scene/score1", "measures")
+# -> /ms/reply measures score1 1 <x> <y> <w> <h> <time> 2 <x> <y> <w> <h> <time> ...
+s("/ms/scene/score1", "elements")
+# -> /ms/reply elements score1 0 <when> <line> <char> <u> <v> 1 <when> <line> <char> <u> <v> ...
 ```
 
 Which backend does the extraction depends on the source format: MuseScore/MusicXML via its `.mpos`/`.spos`
@@ -100,8 +100,8 @@ region id. A measure entry is `<index> <x> <y> <w> <h> <time>`; an element entry
 `<index> <when> <line> <char> <u> <v>` (`line`/`char` are source-coordinate hints for LilyPond).
 
 Note the two verbs (`addressable`, `measures`, `elements`) are **verb-first** — the verb is the first OSC
-*argument* (`s("/gscore/scene/score1", "measures")`), whereas §1's `annotation`/`annotations` are
-**address-embedded** subsystems (`/gscore/scene/score1/annotation`). That inconsistency is a wart worth
+*argument* (`s("/ms/scene/score1", "measures")`), whereas §1's `annotation`/`annotations` are
+**address-embedded** subsystems (`/ms/scene/score1/annotation`). That inconsistency is a wart worth
 remembering.
 
 > **Gotchas**
@@ -123,17 +123,17 @@ Before you can drive a pre-existing project node over OSC you need its id and pa
 the running scene tree and hands them back, so a client doesn't hardcode node paths.
 
 ```python
-s("/gscore/discover")                              # every node in the scene
-s("/gscore/discover/type", "RigidBody2D")          # by Godot class
-s("/gscore/discover/group", "pegs")                # by Godot group membership
-s("/gscore/discover/meta", "role", "pad")          # by metadata key [and optional value]
+s("/ms/discover")                              # every node in the scene
+s("/ms/discover/type", "RigidBody2D")          # by Godot class
+s("/ms/discover/group", "pegs")                # by Godot group membership
+s("/ms/discover/meta", "role", "pad")          # by metadata key [and optional value]
 ```
 
 The mode (`type`/`group`/`meta`) lives in the **address path**; the value (`RigidBody2D`, `pegs`, …) is an
-argument. A bare `/gscore/discover` returns everything. You get **one reply message per matching node**:
+argument. A bare `/ms/discover` returns everything. You get **one reply message per matching node**:
 
 ```python
-# -> /gscore/reply discover play_button /root/Main/UI/PlayButton Button PlayButton
+# -> /ms/reply discover play_button /root/Main/UI/PlayButton Button PlayButton
 #                            suggested_id  path                    class  name
 ```
 
@@ -141,9 +141,9 @@ argument. A bare `/gscore/discover` returns everything. You get **one reply mess
 else its node name in `snake_case`. The typical flow is discover → pick → bind:
 
 ```python
-s("/gscore/discover/type", "AudioStreamPlayer")
-# -> /gscore/reply discover music /root/Main/Music AudioStreamPlayer Music
-s("/gscore/bind", "music", "/root/Main/Music")     # now controllable as "music"
+s("/ms/discover/type", "AudioStreamPlayer")
+# -> /ms/reply discover music /root/Main/Music AudioStreamPlayer Music
+s("/ms/bind", "music", "/root/Main/Music")     # now controllable as "music"
 ```
 
 > **Gotchas**
@@ -158,22 +158,22 @@ s("/gscore/bind", "music", "/root/Main/Music")     # now controllable as "music"
 
 ```python
 # one at a time (recap)
-s("/gscore/bind", "play", "/root/Main/UI/PlayButton")
-s("/gscore/bindRel", "hat", "Percussion/HiHat")     # relative to /gscore/app/root
+s("/ms/bind", "play", "/root/Main/UI/PlayButton")
+s("/ms/bindRel", "hat", "Percussion/HiHat")     # relative to /ms/app/root
 
 # a whole Godot group -> ids "<group>.0", "<group>.1", ...
-s("/gscore/bindGroup", "pad", "pads")
-# -> /gscore/reply bindGroup pad.0 pad.1 pad.2
+s("/ms/bindGroup", "pad", "pads")
+# -> /ms/reply bindGroup pad.0 pad.1 pad.2
 
 # every node whose metadata matches
-s("/gscore/bindAll", "meta", "role", "trigger")     # meta "role" == "trigger" (value optional)
+s("/ms/bindAll", "meta", "role", "trigger")     # meta "role" == "trigger" (value optional)
 ```
 
 `bindGroup` binds each node in the named Godot group as `<osc_group>.<i>` (0-based, in the group's
 iteration order) and replies with the new ids. `bindAll meta` walks the scene for nodes carrying the given
 metadata and binds each through the ordinary, permission-checked `bind()`.
 
-Separately, at startup gscore **auto-binds** exposed nodes: two frames after it's ready it scans once and
+Separately, at startup MusicScene **auto-binds** exposed nodes: two frames after it's ready it scans once and
 binds every `OscExposable` node (whose `osc_auto_bind` and `osc_allow_bind` are true — both default true)
 plus every node tagged `set_meta("osc_expose", true)`. This scan runs **once** — nodes added later are not
 auto-bound; bind them explicitly.
@@ -188,13 +188,13 @@ auto-bound; bind them explicitly.
 
 ## 5. Safety & the permission model
 
-An open OSC port can reach into your scene, so gscore gates anything that touches **pre-existing** project
-nodes. (Objects gscore itself made with `new`/`instantiate` are always fully controllable — the gate is
+An open OSC port can reach into your scene, so MusicScene gates anything that touches **pre-existing** project
+nodes. (Objects MusicScene itself made with `new`/`instantiate` are always fully controllable — the gate is
 about protecting *your* nodes.)
 
 There are three layers:
 
-1. **Five global kill-switches**, seeded from Project Settings (`gscore_osc/permissions/…`) and toggleable
+1. **Five global kill-switches**, seeded from Project Settings (`ms/permissions/…`) and toggleable
    at runtime. Defaults: `bind_existing`, `instantiate`, `call_methods`, `set_props` = **on**;
    `free_nodes` = **off**. A switch set off blocks that operation for everyone — even in developer mode.
 2. **`developer_mode`** (default off). When on, it short-circuits the per-capability checks so anything
@@ -202,12 +202,12 @@ There are three layers:
 3. **A scene/prefix whitelist** for `instantiate` (built-in default prefix `res://osc_spawnable/`).
 
 ```python
-s("/gscore/app/permissions", "callMethods", 0)      # bindExisting|instantiate|callMethods|setProps|freeNodes
-s("/gscore/app/developer", 1)                        # blanket allow (also /gscore/app/developer_mode)
-s("/gscore/assets/allowScene", "res://mobs/slime.tscn")
-s("/gscore/assets/allowPrefix", "res://spawn/")
-s("/gscore/assets/listAllowed")
-# -> /gscore/reply assets res://mobs/slime.tscn res://spawn/* ...
+s("/ms/app/permissions", "callMethods", 0)      # bindExisting|instantiate|callMethods|setProps|freeNodes
+s("/ms/app/developer", 1)                        # blanket allow (also /ms/app/developer_mode)
+s("/ms/assets/allowScene", "res://mobs/slime.tscn")
+s("/ms/assets/allowPrefix", "res://spawn/")
+s("/ms/assets/listAllowed")
+# -> /ms/reply assets res://mobs/slime.tscn res://spawn/* ...
 ```
 
 **Opting a node in.** Add an `OscExposable` child to the node you want reachable (it controls its parent by
@@ -227,7 +227,7 @@ default; set `target_path` to point elsewhere). Its exports declare intent: `osc
 | `prop <name> <val>` (set) | kill-switch on **and** (developer_mode **or** name in `osc_properties`) |
 | `call <method> …` | kill-switch on **and** (developer_mode **or** method in `osc_methods`) |
 | `free` | developer_mode **or** `free_nodes` **or** the node's `osc_allow_free` |
-| `del` (gscore's own object) | **always** (it's gscore's to delete) |
+| `del` (MusicScene's own object) | **always** (it's MusicScene's to delete) |
 | `getProp <name>` (read) | **always** (no gate) |
 | `signal <name> <target>` | **always** (no gate — see §7) |
 | `on` / `off` / `payload` | **always** (configures outbound OSC only, no node access) |
@@ -249,16 +249,16 @@ default; set `target_path` to point elsewhere). Its exports declare intent: `osc
 
 ## 6. payload
 
-When you register a physics/area event with `on`, gscore sends a default set of fields. `payload` lets you
+When you register a physics/area event with `on`, MusicScene sends a default set of fields. `payload` lets you
 **redefine that argument list** for one event — pick exactly which computed values (and constants) go out,
 in what order — without re-registering.
 
 ```python
 # register: emit /synth/hit on collision, gated a little
-s("/gscore/scene/note1/on", "collisionEnter", "/synth/hit", "minIntensity", 0.2, "cooldown", 0.05)
+s("/ms/scene/note1/on", "collisionEnter", "/synth/hit", "minIntensity", 0.2, "cooldown", 0.05)
 
 # customize the outbound args for just this binding
-s("/gscore/scene/note1/payload", "collisionEnter", "self", "other", "otherspeed", "=bounce")
+s("/ms/scene/note1/payload", "collisionEnter", "self", "other", "otherspeed", "=bounce")
 
 # ... note1 hits the floor, other body moving at 0.83 ...
 # -> /synth/hit note1 floor 0.83 bounce
@@ -290,7 +290,7 @@ Independently, every **discrete** collision/area event (`collisionEnter/Exit`, `
 physics (the continuous family in §9 does **not** emit this):
 
 ```
-# -> /gscore/event/physics <event> <self> <other> <intensity> <x> <y> <vx> <vy>
+# -> /ms/event/physics <event> <self> <other> <intensity> <x> <y> <vx> <vy>
 ```
 
 > **Gotchas**
@@ -309,11 +309,11 @@ Two ways to turn things happening in Godot into outbound OSC:
 
 ```python
 # default payload: <id> <signal_name> <signal args...>
-s("/gscore/scene/playbtn/signal", "pressed", "/ui/play")
+s("/ms/scene/playbtn/signal", "pressed", "/ui/play")
 # pressing the button -> /ui/play playbtn pressed
 
 # custom payload tokens: self | signal | value | args | arg0..argN
-s("/gscore/scene/vol/signal", "value_changed", "/ui/volume", "payload", "self", "value")
+s("/ms/scene/vol/signal", "value_changed", "/ui/volume", "payload", "self", "value")
 # slider emits value_changed(0.42) -> /ui/volume vol 0.42
 ```
 
@@ -325,7 +325,7 @@ the previous binding.
 > **Gotchas**
 > - **No permission check.** Any signal that exists on the bound node can be forwarded, developer mode or
 >   not; `osc_signals` on `OscExposable` is informational only and is **not** enforced here.
-> - **Arity is probed, extras are dropped.** gscore connects a handler matching the signal's declared
+> - **Arity is probed, extras are dropped.** MusicScene connects a handler matching the signal's declared
 >   argument count; a signal declaring **5+ args** is connected via the 4-arg handler and the surplus args
 >   are dropped.
 > - **`Vector2` collapses to its `.x`.** A `Vector2`/`Vector2i` signal argument is sent as just its x
@@ -340,7 +340,7 @@ the previous binding.
 apply to the physics/area/continuous family.
 
 ```python
-s("/gscore/scene/ball1/on", "collisionEnter", "/synth/hit",
+s("/ms/scene/ball1/on", "collisionEnter", "/synth/hit",
   "minIntensity", 0.15,     # ignore hits softer than this (intensity == collision speed)
   "cooldown", 0.05,         # min seconds between emits
   "maxRate", 20,            # max emits per second (Hz); combined with cooldown, the larger gap wins
@@ -384,14 +384,14 @@ worth spelling out:
 
 ```python
 # fire once each time the ball speeds past 1.5 (normalized units)
-s("/gscore/scene/ball1/on", "velocityAbove", "/fx/whoosh", "minIntensity", 1.5)
+s("/ms/scene/ball1/on", "velocityAbove", "/fx/whoosh", "minIntensity", 1.5)
 
 # a sustained drone while anything sits inside this sensor zone, re-emitting per body, throttled
-s("/gscore/scene/zone1/on", "areaStay", "/drone/sustain", "cooldown", 0.1)
+s("/ms/scene/zone1/on", "areaStay", "/drone/sustain", "cooldown", 0.1)
 ```
 
 `*Above`/`*Below` are **edge-detected**: they emit once when the condition flips from false to true, not
-every frame the body stays past the threshold — gscore tracks the previous state per binding. `*Stay`
+every frame the body stays past the threshold — MusicScene tracks the previous state per binding. `*Stay`
 emits **per contacting body** (each with its own cooldown/rate) and stops tracking a body once it leaves.
 All of these use `on` / `payload` (§6) and the emission modes (§8); none use `/signal`.
 
@@ -413,9 +413,9 @@ enters. Create them with `new bouncer` / `new portal` — their Area is auto-ena
 
 ```python
 # bumper: mirror-reflect + outward kick
-s("/gscore/scene/bump/bouncer", "strength", 3.0, "gain", 1.0, "minSpeed", 0.5)
+s("/ms/scene/bump/bouncer", "strength", 3.0, "gain", 1.0, "minSpeed", 0.5)
 # portal: directional random teleport
-s("/gscore/scene/pa/portal", "link", "pb", "pc")   # enter pa -> random of {pb, pc}
+s("/ms/scene/pa/portal", "link", "pb", "pc")   # enter pa -> random of {pb, pc}
 ```
 
 **Bouncer** sets the outgoing velocity to `reflect(v, n)·gain + n·strength`, where `n` is the outward

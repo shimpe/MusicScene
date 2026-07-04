@@ -1,9 +1,9 @@
 // =============================================================================
 // Pachinko music box — a SuperCollider port of tools/example_pachinko.py
 //
-// A gravity-fed generative sequencer for gscore_osc (3D space). Small balls rain
+// A gravity-fed generative sequencer for MusicScene (3D space). Small balls rain
 // through an offset grid of pegs and fall into five pentatonic bins (C D E G A).
-// gscore emits two OSC streams back to us, and — unlike the Python version, which
+// MusicScene emits two OSC streams back to us, and — unlike the Python version, which
 // only prints them — THIS program synthesises them into sound locally:
 //
 //     /music/pin   <ball> <pin>  <ball-speed>          -> a percussive "plink"  (\pinPlink)
@@ -15,17 +15,17 @@
 // top the instant it lands (we listen for our own /music/note), with a slow watchdog
 // re-dropping any ball that jams in the pegs.
 //
-// REQUIRES gscore_osc 0.8.x+ (3D space) — leans on two features, same as the .py:
+// REQUIRES MusicScene 0.8.x+ (3D space) — leans on two features, same as the .py:
 //   * sizable primitives:  small balls/pegs via `new circle <r>`.
 //   * `physics planar 1`:  pins balls to z=0 so they can't drift out of the thin
 //                          bins over time (without it the board goes silent ~30 s in).
 //
-// PORTS:  gscore listens on 7400 and sends its replies to 7401. We send commands to
+// PORTS:  MusicScene listens on 7400 and sends its replies to 7401. We send commands to
 //         7400 and open UDP 7401 to receive — mind that no other instance holds 7401.
 //
 // USAGE:
 //   1. Boot the audio server if it isn't up:   evaluating the block below does it.
-//   2. Run the Godot project with gscore_osc set to 3D (exactly ONE instance).
+//   2. Run the Godot project with MusicScene set to 3D (exactly ONE instance).
 //   3. Put the cursor inside the big ( ... ) block and press Ctrl+Enter (Cmd+Enter).
 //   4. Balls start raining; you should hear plinks + pentatonic notes.
 //   5. To stop, evaluate the CLEANUP block at the bottom.
@@ -58,9 +58,9 @@ s.waitForBoot({
     s.sync;   // make sure both defs exist on the server before any Synth() call
 
     // ---- configuration ------------------------------------------------------
-    ~engine  = NetAddr("127.0.0.1", 7400);          // where gscore listens
+    ~engine  = NetAddr("127.0.0.1", 7400);          // where MusicScene listens
     ~nb      = 5;                                    // number of balls in play
-    ~notes   = ["C4", "D4", "E4", "G4", "A4"];       // pentatonic bins (literals sent to gscore)
+    ~notes   = ["C4", "D4", "E4", "G4", "A4"];       // pentatonic bins (literals sent to MusicScene)
     ~binx    = [-0.44, -0.22, 0.0, 0.22, 0.44];      // bin x positions (normalized)
     ~even    = [-0.48, -0.32, -0.16, 0.0, 0.16, 0.32, 0.48];  // peg columns, even rows
     ~odd     = [-0.4, -0.24, -0.08, 0.08, 0.24, 0.4];         // peg columns, offset rows
@@ -80,18 +80,18 @@ s.waitForBoot({
     ~drop = { |i|
         ~lastDrop[i] = Main.elapsedTime;
         Routine({
-            ~engine.sendMsg("/gscore/scene/ball" ++ i ++ "/physics",
+            ~engine.sendMsg("/ms/scene/ball" ++ i ++ "/physics",
                 "velocity", rrand(-0.5, 0.5), -0.4, 0.0);
             0.03.wait;
-            ~engine.sendMsg("/gscore/scene/ball" ++ i,
+            ~engine.sendMsg("/ms/scene/ball" ++ i,
                 "pos", rrand(-0.14, 0.14), 1.0, 0.0);
         }).play;
     };
 
     // ---- open the reply port and register listeners -------------------------
     if(thisProcess.openUDPPort(7401),
-        { "gscore-pachinko: listening for replies on UDP 7401".postln; },
-        { "gscore-pachinko: UDP 7401 already open (or busy) — continuing".postln; }
+        { "MusicScene-pachinko: listening for replies on UDP 7401".postln; },
+        { "MusicScene-pachinko: UDP 7401 already open (or busy) — continuing".postln; }
     );
 
     // A ball landed in a bin: play the note, pan by bin, recycle the ball.
@@ -131,20 +131,20 @@ s.waitForBoot({
 
     // ---- build the board (paced, ~9 s of setup traffic) ---------------------
     ~build = Routine({
-        ~snd.("/gscore/scene", "reset");
+        ~snd.("/ms/scene", "reset");
 
         // offset peg grid — small ROUND pegs (sized visual + matching sphere collider)
         ~ys.do({ |y, r|
             var xs = if(r % 2 == 0, { ~even }, { ~odd });
             xs.do({ |x, c|
                 var pid = "peg" ++ (r * 100 + c);   // stable unique id per (row, col)
-                ~snd.("/gscore/scene/" ++ pid, "new", "sphere", 0.025);
-				~snd.("/gscore/scene/" ++ pid, "color", 0.8, 0.6, 0.0);
-                ~snd.("/gscore/scene/" ++ pid ++ "/physics", "enable", "static");
-                ~snd.("/gscore/scene/" ++ pid ++ "/collider", "sphere", 0.022);
-                ~snd.("/gscore/scene/" ++ pid ++ "/physics", "friction", 0.0);
-                ~snd.("/gscore/scene/" ++ pid ++ "/physics", "bounce", 0.7);
-                ~snd.("/gscore/scene/" ++ pid, "pos", x, y, 0.0);
+                ~snd.("/ms/scene/" ++ pid, "new", "sphere", 0.025);
+				~snd.("/ms/scene/" ++ pid, "color", 0.8, 0.6, 0.0);
+                ~snd.("/ms/scene/" ++ pid ++ "/physics", "enable", "static");
+                ~snd.("/ms/scene/" ++ pid ++ "/collider", "sphere", 0.022);
+                ~snd.("/ms/scene/" ++ pid ++ "/physics", "friction", 0.0);
+                ~snd.("/ms/scene/" ++ pid ++ "/physics", "bounce", 0.7);
+                ~snd.("/ms/scene/" ++ pid, "pos", x, y, 0.0);
             });
         });
 
@@ -152,56 +152,56 @@ s.waitForBoot({
         // size the VISUAL to match the collider so they read as walls/floor.
         [[-0.58, "wallL"], [0.58, "wallR"]].do({ |pair|
             var wx = pair[0], nm = pair[1];
-            ~snd.("/gscore/scene/" ++ nm, "new", "rect", 0.08, 1.5);
-            ~snd.("/gscore/scene/" ++ nm ++ "/physics", "enable", "static");
-            ~snd.("/gscore/scene/" ++ nm ++ "/physics", "friction", 0.0);
-            ~snd.("/gscore/scene/" ++ nm ++ "/collider", "rect", 0.08, 1.5);
-            ~snd.("/gscore/scene/" ++ nm, "pos", wx, 0.5, 0.0);
+            ~snd.("/ms/scene/" ++ nm, "new", "rect", 0.08, 1.5);
+            ~snd.("/ms/scene/" ++ nm ++ "/physics", "enable", "static");
+            ~snd.("/ms/scene/" ++ nm ++ "/physics", "friction", 0.0);
+            ~snd.("/ms/scene/" ++ nm ++ "/collider", "rect", 0.08, 1.5);
+            ~snd.("/ms/scene/" ++ nm, "pos", wx, 0.5, 0.0);
         });
-        ~snd.("/gscore/scene/floor", "new", "rect", 1.2, 0.6);
-        ~snd.("/gscore/scene/floor/physics", "enable", "static");
-        ~snd.("/gscore/scene/floor/physics", "friction", 0.0);
-        ~snd.("/gscore/scene/floor/collider", "rect", 1.2, 0.6);
-        ~snd.("/gscore/scene/floor", "pos", 0.0, -0.22, 0.0);
+        ~snd.("/ms/scene/floor", "new", "rect", 1.2, 0.6);
+        ~snd.("/ms/scene/floor/physics", "enable", "static");
+        ~snd.("/ms/scene/floor/physics", "friction", 0.0);
+        ~snd.("/ms/scene/floor/collider", "rect", 1.2, 0.6);
+        ~snd.("/ms/scene/floor", "pos", 0.0, -0.22, 0.0);
 
         // five pentatonic bins (sensor areas) — each plays a note as a ball enters
         ~binx.do({ |x, b|
             var bid = "bin" ++ b, note = ~notes[b];
-            ~snd.("/gscore/scene/" ++ bid, "new", "rect", 0.2, 0.24);
-            ~snd.("/gscore/scene/" ++ bid ++ "/physics", "enable", "area");
-            ~snd.("/gscore/scene/" ++ bid ++ "/collider", "rect", 0.2, 0.24);
-            ~snd.("/gscore/scene/" ++ bid, "pos", x, 0.12, 0.0);
-            ~snd.("/gscore/scene/" ++ bid ++ "/on", "areaEnter", "/music/note", "cooldown", 0.05);
+            ~snd.("/ms/scene/" ++ bid, "new", "rect", 0.2, 0.24);
+            ~snd.("/ms/scene/" ++ bid ++ "/physics", "enable", "area");
+            ~snd.("/ms/scene/" ++ bid ++ "/collider", "rect", 0.2, 0.24);
+            ~snd.("/ms/scene/" ++ bid, "pos", x, 0.12, 0.0);
+            ~snd.("/ms/scene/" ++ bid ++ "/on", "areaEnter", "/music/note", "cooldown", 0.05);
             // payload:  <bin (self)>  <note (literal)>  <ball (other)>  <ball speed>
-            ~snd.("/gscore/scene/" ++ bid ++ "/payload", "areaEnter",
+            ~snd.("/ms/scene/" ++ bid ++ "/payload", "areaEnter",
                 "self", "=" ++ note, "other", "otherspeed");
         });
 
         // small balls, pinned to the z=0 plane, dropped from the top
         ~nb.do({ |i|
             var bid = "ball" ++ i;
-            ~snd.("/gscore/scene/" ++ bid, "new", "sphere", 0.02);
-			~snd.("/gscore/scene/" ++ bid, "color", 0.1.rrand(0.7), 0.1.rrand(0.7), 0.1.rrand(0.7));
-            ~snd.("/gscore/scene/" ++ bid ++ "/physics", "enable", "rigid");
-            ~snd.("/gscore/scene/" ++ bid ++ "/collider", "sphere", 0.02);
-            ~snd.("/gscore/scene/" ++ bid ++ "/physics", "planar", 1);
-            ~snd.("/gscore/scene/" ++ bid ++ "/physics", "friction", 0.0);
-            ~snd.("/gscore/scene/" ++ bid ++ "/physics", "bounce", 0.5);
+            ~snd.("/ms/scene/" ++ bid, "new", "sphere", 0.02);
+			~snd.("/ms/scene/" ++ bid, "color", 0.1.rrand(0.7), 0.1.rrand(0.7), 0.1.rrand(0.7));
+            ~snd.("/ms/scene/" ++ bid ++ "/physics", "enable", "rigid");
+            ~snd.("/ms/scene/" ++ bid ++ "/collider", "sphere", 0.02);
+            ~snd.("/ms/scene/" ++ bid ++ "/physics", "planar", 1);
+            ~snd.("/ms/scene/" ++ bid ++ "/physics", "friction", 0.0);
+            ~snd.("/ms/scene/" ++ bid ++ "/physics", "bounce", 0.5);
             // plink whenever this ball hits a pin. `other peg*` matches any peg id;
             // a small cooldown keeps rapid double-hits in check.
-            ~snd.("/gscore/scene/" ++ bid ++ "/on", "collisionEnter", "/music/pin",
+            ~snd.("/ms/scene/" ++ bid ++ "/on", "collisionEnter", "/music/pin",
                 "other", "peg*", "cooldown", 0.03);
-            ~snd.("/gscore/scene/" ++ bid ++ "/payload", "collisionEnter",
+            ~snd.("/ms/scene/" ++ bid ++ "/payload", "collisionEnter",
                 "self", "other", "otherspeed");
             ~drop.(i);
         });
 
-        ~snd.("/gscore/physics", "gravity", 0.0, -1.0, 0.0);
-        ~snd.("/gscore/physics", "enable", 1);
+        ~snd.("/ms/physics", "gravity", 0.0, -1.0, 0.0);
+        ~snd.("/ms/physics", "enable", 1);
 
         // frame the board (it sits a little above the default centre)
-        ~snd.("/gscore/camera", "pos", 0.0, 0.42, 2.1);
-        ~snd.("/gscore/camera", "lookAt", 0.0, 0.42, 0.0);
+        ~snd.("/ms/camera", "pos", 0.0, 0.42, 2.1);
+        ~snd.("/ms/camera", "lookAt", 0.0, 0.42, 0.0);
 
         "".postln;
         "Pachinko built — balls raining through the pegs into pentatonic bins.".postln;
@@ -220,7 +220,7 @@ s.waitForBoot({
 if(~watchdog.notNil) { ~watchdog.stop };
 OSCdef(\music_note).free;
 OSCdef(\music_pin).free;
-~engine.sendMsg("/gscore/physics", "enable", 0);   // freeze the board
+~engine.sendMsg("/ms/physics", "enable", 0);   // freeze the board
 "Pachinko stopped.".postln;
 )
 

@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="MusicScene — gscore_osc"
+config/name="MusicScene"
 config/description="OSC-controlled INScore-inspired interactive music-score / world system."
 run/main_scene="uid://bnc7tiusqtes3"
 config/features=PackedStringArray("4.7", "Forward Plus")
@@ -18,7 +18,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GScoreOSC="*uid://bi0bofnnp72f4"
+MusicSceneOSC="*uid://bi0bofnnp72f4"
 
 [display]
 
@@ -28,9 +28,9 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gscore_osc/plugin.cfg")
+enabled=PackedStringArray("res://addons/musicscene/plugin.cfg")
 
-[gscore_osc]
+[ms]
 
 space="3d"
 network/listen_port=7400

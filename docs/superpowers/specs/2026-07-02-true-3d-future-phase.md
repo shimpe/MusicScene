@@ -4,17 +4,17 @@
 
 ## Context
 
-gscore_osc's 3D mode (`gscore_osc/space = "3d"`) is already a genuine 3D coordinate + physics +
+MusicScene's 3D mode (`ms/space = "3d"`) is already a genuine 3D coordinate + physics +
 camera system, not a 2D fake:
 
 - **Coordinates**: `pos x y z`, per-axis `x`/`y`/`z`, and `gravity`/`velocity`/`force` all take a real z
-  (`to_world_point` / `to_world_vector` in `core/GScoreSpatial3D.gd`).
+  (`to_world_point` / `to_world_vector` in `core/MSSpatial3D.gd`).
 - **Camera**: freely positionable/aimable — `pos`, `lookAt`, `up`, `target`, `follow` (chase/orbit),
-  perspective/orthographic (`core/GScoreCamera.gd`). The front view is only the *default*.
+  perspective/orthographic (`core/MSCamera.gd`). The front view is only the *default*.
 - **Physics**: 3D joints with real axes; box/sphere colliders with genuine depth (`collider box w h d`,
   depth is a first-class argument).
 - **Arbitrary content**: `instantiate <scene>` loads any Godot `PackedScene`, incl. a pre-imported 3D
-  `.tscn` (`core/GScoreRegistry.gd`).
+  `.tscn` (`core/MSRegistry.gd`).
 - `planar 1` is an **opt-in** constraint (pin a body to z=0); by default bodies are free in 3D.
 
 What keeps it feeling "2.5D" today is the built-in *visual vocabulary and defaults*, not the math:
@@ -27,7 +27,7 @@ in space" aesthetic.
 Only `circle` (SphereMesh) has volume. `rect` = flat quad, `text`/`image` = billboards, `line` = flat,
 `notation` = textured quad. There is a box *collider* but no box *visual*.
 - Add `box`/`cube`, `cylinder`, `capsule` (maybe `cone`/`torus`) mesh primitives in `create_primitive`
-  (`GScoreSpatial3D`); give each a matching auto-collider.
+  (`MSSpatial3D`); give each a matching auto-collider.
 - **Effort: low.** Mostly mirrors the existing `circle`/`rect` cases.
 
 ### (b) Lighting + lit/PBR materials

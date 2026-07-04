@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""LilyPond -> single PNG/SVG page, honouring gscore's {input} -> {output} contract.
+"""LilyPond -> single PNG/SVG page, honouring MusicScene's {input} -> {output} contract.
 
 LilyPond names its own outputs (`-page1.png`, `.cropped.png`, …) and defaults to a full A4 page
-with whitespace, so gscore can't call it directly. This wrapper runs LilyPond, finds the produced
+with whitespace, so MusicScene can't call it directly. This wrapper runs LilyPond, finds the produced
 file (preferring the tightly-cropped one), and copies it to exactly <output>.
 
 Usage:
     ly_to_score.py <input.ly> <output.(png|svg)> [--page N] [--dpi N] [--no-crop]
                    [--lilypond "<path-or-command>"]
 
-LilyPond is located from --lilypond, else $GSCORE_LILYPOND, else PATH, else common install dirs.
-Configure in gscore (Project Settings):
-    gscore_osc/notation/engraver/lilypond =
+LilyPond is located from --lilypond, else $MS_LILYPOND, else PATH, else common install dirs.
+Configure in MusicScene (Project Settings):
+    ms/notation/engraver/lilypond =
         py "<proj>/tools/ly_to_score.py" {input} {output} --page {page} --lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"
-    gscore_osc/notation/engraver_output = "png"
+    ms/notation/engraver_output = "png"
 """
 import argparse
 import glob
@@ -30,7 +30,7 @@ def resolve_lilypond(explicit: str):
         if os.path.isfile(explicit):
             return [explicit]
         return shlex.split(explicit, posix=False)
-    env = os.environ.get("GSCORE_LILYPOND")
+    env = os.environ.get("MS_LILYPOND")
     if env:
         return shlex.split(env, posix=False) if not os.path.isfile(env) else [env]
     found = shutil.which("lilypond")
@@ -65,11 +65,11 @@ def main() -> int:
 
     lily = resolve_lilypond(a.lilypond)
     if not lily:
-        print("ly_to_score: LilyPond not found — pass --lilypond <path>, set $GSCORE_LILYPOND, "
+        print("ly_to_score: LilyPond not found — pass --lilypond <path>, set $MS_LILYPOND, "
               "or add it to PATH.", file=sys.stderr)
         return 3
 
-    tmp = tempfile.mkdtemp(prefix="gscore_ly_")
+    tmp = tempfile.mkdtemp(prefix="ms_ly_")
     base = os.path.join(tmp, "score")
     cmd = list(lily)
     if fmt == "png":

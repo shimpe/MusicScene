@@ -1,6 +1,6 @@
 extends SceneTree
 func _init() -> void:
-	var V = load("res://addons/gscore_osc/notation/GScoreNotationVerovioPositions.gd")
+	var V = load("res://addons/musicscene/notation/MSNotationVerovioPositions.gd")
 	var base := "C:/Scripts/Temp/claude/D--Projects-MusicScene/4ede0533-d976-4a03-a010-fa7d8dd4b832/scratchpad/"
 	var pos = V._parse_svg(base + "vr_out.svg")
 	var tm = V._parse_timemap(base + "vr_out.json")

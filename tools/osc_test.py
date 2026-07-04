@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Dependency-free OSC test client for gscore_osc.
+"""Dependency-free OSC test client for MusicScene.
 
-Sends a sequence of /gscore commands to the running Godot project and prints every reply/event
+Sends a sequence of /ms commands to the running Godot project and prints every reply/event
 received. Doubles as a minimal reference OSC implementation for Python clients.
 
 Usage:
@@ -120,51 +120,51 @@ def main():
     time.sleep(0.3)
 
     print("\n== basic ==")
-    send("/gscore/ping")
-    send("/gscore/version")
-    send("/gscore/info")
+    send("/ms/ping")
+    send("/ms/version")
+    send("/ms/info")
 
     print("\n== notation ==")
-    send("/gscore/scene", "clear")
-    send("/gscore/scene/score", "new", "notation")
-    send("/gscore/scene/score", "notation", "png", "res://scores/page1.png")
-    send("/gscore/scene/score", "pos", 0.0, 0.0)
-    send("/gscore/scene/score", "scale", 0.9)
-    send("/gscore/scene/score/cursor", "show", 1)
-    send("/gscore/scene/score/cursor", "pos", 0.2, 0.5)
-    send("/gscore/scene/score/cursor", "color", 1.0, 0.0, 0.0, 0.8)
-    send("/gscore/scene/score/region", "m1", "rect", 0.1, 0.25, 0.2, 0.1)
-    send("/gscore/scene/score/region", "m1", "highlight", 1)
-    send("/gscore/scene/score", "notationInfo")
-    send("/gscore/scene/score", "pages")
+    send("/ms/scene", "clear")
+    send("/ms/scene/score", "new", "notation")
+    send("/ms/scene/score", "notation", "png", "res://scores/page1.png")
+    send("/ms/scene/score", "pos", 0.0, 0.0)
+    send("/ms/scene/score", "scale", 0.9)
+    send("/ms/scene/score/cursor", "show", 1)
+    send("/ms/scene/score/cursor", "pos", 0.2, 0.5)
+    send("/ms/scene/score/cursor", "color", 1.0, 0.0, 0.0, 0.8)
+    send("/ms/scene/score/region", "m1", "rect", 0.1, 0.25, 0.2, 0.1)
+    send("/ms/scene/score/region", "m1", "highlight", 1)
+    send("/ms/scene/score", "notationInfo")
+    send("/ms/scene/score", "pages")
 
     print("\n== physics ==")
-    send("/gscore/scene/floor", "new", "rect")
-    send("/gscore/scene/floor", "pos", 0.0, -0.8)
-    send("/gscore/scene/floor", "size", 1.8, 0.05)
-    send("/gscore/scene/floor/physics", "enable", "static")
-    send("/gscore/scene/floor/collider", "rect", 1.8, 0.05)
-    send("/gscore/scene/ball", "new", "circle")
-    send("/gscore/scene/ball", "pos", 0.0, 0.8)
-    send("/gscore/scene/ball/physics", "enable", "rigid")
-    send("/gscore/scene/ball/collider", "circle", 0.05)
-    send("/gscore/scene/ball/physics", "bounce", 0.7)
-    send("/gscore/scene/ball/on", "collisionEnter", "/synth/hit", "minIntensity", 0.05, "cooldown", 0.05)
-    send("/gscore/scene/ball/payload", "collisionEnter", "self", "other", "intensity", "x", "y", "time")
-    send("/gscore/physics", "enable", 1)
-    send("/gscore/physics", "gravity", 0.0, -1.0)
+    send("/ms/scene/floor", "new", "rect")
+    send("/ms/scene/floor", "pos", 0.0, -0.8)
+    send("/ms/scene/floor", "size", 1.8, 0.05)
+    send("/ms/scene/floor/physics", "enable", "static")
+    send("/ms/scene/floor/collider", "rect", 1.8, 0.05)
+    send("/ms/scene/ball", "new", "circle")
+    send("/ms/scene/ball", "pos", 0.0, 0.8)
+    send("/ms/scene/ball/physics", "enable", "rigid")
+    send("/ms/scene/ball/collider", "circle", 0.05)
+    send("/ms/scene/ball/physics", "bounce", 0.7)
+    send("/ms/scene/ball/on", "collisionEnter", "/synth/hit", "minIntensity", 0.05, "cooldown", 0.05)
+    send("/ms/scene/ball/payload", "collisionEnter", "self", "other", "intensity", "x", "y", "time")
+    send("/ms/physics", "enable", 1)
+    send("/ms/physics", "gravity", 0.0, -1.0)
 
     print("\n== queries / binding / instantiate ==")
-    send("/gscore/scene/list")
-    send("/gscore/scene/ball", "exists")
-    send("/gscore/scene/ball", "capabilities")
-    send("/gscore/app/root", "/root/Main/Stage")
-    send("/gscore/bindRel", "existingBall", "Actors/ExistingBall")
-    send("/gscore/scene/existingBall", "capabilities")
-    send("/gscore/assets/allowScene", "res://osc_spawnable/PhysicalNote.tscn")
-    send("/gscore/scene/note42", "instantiate", "res://osc_spawnable/PhysicalNote.tscn")
-    send("/gscore/scene/note42", "exists")
-    send("/gscore/scene/score", "dump")
+    send("/ms/scene/list")
+    send("/ms/scene/ball", "exists")
+    send("/ms/scene/ball", "capabilities")
+    send("/ms/app/root", "/root/Main/Stage")
+    send("/ms/bindRel", "existingBall", "Actors/ExistingBall")
+    send("/ms/scene/existingBall", "capabilities")
+    send("/ms/assets/allowScene", "res://osc_spawnable/PhysicalNote.tscn")
+    send("/ms/scene/note42", "instantiate", "res://osc_spawnable/PhysicalNote.tscn")
+    send("/ms/scene/note42", "exists")
+    send("/ms/scene/score", "dump")
 
     print("\n== waiting for collision events (4s) ==")
     time.sleep(4.0)
@@ -177,16 +177,16 @@ def main():
     def got(pred):
         return any(pred(a, args) for a, args in received)
     checks = {
-        "pong": "/gscore/pong" in addrs,
-        "reply version": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["version"]),
-        "reply notationInfo": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["notationInfo"]),
-        "reply pages": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["pages"]),
-        "reply scene/list": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["scene/list"]),
-        "reply exists": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["exists"]),
-        "reply capabilities": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["capabilities"]),
-        "reply dump": got(lambda a, ar: a == "/gscore/reply" and ar[:1] == ["dump"]),
+        "pong": "/ms/pong" in addrs,
+        "reply version": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["version"]),
+        "reply notationInfo": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["notationInfo"]),
+        "reply pages": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["pages"]),
+        "reply scene/list": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["scene/list"]),
+        "reply exists": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["exists"]),
+        "reply capabilities": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["capabilities"]),
+        "reply dump": got(lambda a, ar: a == "/ms/reply" and ar[:1] == ["dump"]),
         "/synth/hit": "/synth/hit" in addrs,
-        "/gscore/event/physics": "/gscore/event/physics" in addrs,
+        "/ms/event/physics": "/ms/event/physics" in addrs,
     }
     ok = 0
     for name, passed in checks.items():
