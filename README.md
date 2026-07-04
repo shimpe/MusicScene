@@ -8,17 +8,21 @@ An **OSC-controlled, INScore-inspired interactive music-score / world system** f
 
 External OSC clients (Max/MSP, Pure Data, SuperCollider, Python, TouchDesigner, Ableton
 bridges, …) can **create, bind, control, animate, query, and receive events** from Godot scene
-objects under the root namespace `/gscore`. Beyond INScore it adds **Godot 2D physics,
+objects under the root namespace `/gscore`. Beyond INScore it adds **Godot physics (2D and 3D),
 collision-driven OSC emission, binding to existing nodes, PackedScene instantiation, exposing
-methods/properties/signals over OSC, and first-class music-notation display**.
+methods/properties/signals over OSC, first-class music-notation display, lit 3D volumetric
+primitives, multi-port OSC output, and collision reactors (bouncers & portals)**.
 
 Built as a Godot addon at `addons/gscore_osc/`. Pure GDScript. Targets **Godot 4.7** (uses
 stable Godot 4.x APIs). **Works in both 2D and 3D** — selectable via the `gscore_osc/space`
 project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-and-3d)).
 
-> Status: the full v1 API is implemented and verified headlessly against Godot 4.7 in **both 2D
-> and 3D** — see [Verifying](#verifying). `10/10` OSC acceptance checks pass in each mode, plus
-> codec, SVG and signal-forwarding self-tests. The project ships defaulting to **3D**.
+> Status: the OSC API is implemented and verified headlessly against Godot 4.7 in **both 2D and
+> 3D** — see [Verifying](#verifying). `tools/osc_test.py` runs a `10/10` over-the-wire acceptance
+> pass in each mode, and a CI self-test suite (`.github/workflows/ci.yml`) covers the OSC codec,
+> SVG backend, physics joints, sensor zones, the event system, scene clear/reset, camera, planar
+> locking, volumetric primitives, material mode, lighting, multi-port OSC output, and bouncers/
+> portals. This project ships defaulting to **3D**.
 
 > **New here?** Start with the step-by-step **[TUTORIAL.md](TUTORIAL.md)** — it walks through using
 > the addon in a fresh project, in both 2D and 3D, with a copy-paste OSC client. For the mechanics and
@@ -28,11 +32,11 @@ project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-a
 
 ## Table of contents
 
-- [What it is](#what-it-is) · [Core principle](#core-principle) · [Install / start](#install--start)
+- [What it is](#what-it-is) · [Core principle](#core-principle) · [Install / start](#install--start) · [Dimensions (2D/3D)](#dimensions-2d-and-3d)
 - [Ports](#ports--networking) · [Coordinates](#coordinate-system) · [Creating objects](#creating-objects)
 - [Notation](#music-notation) (backends, cursor, regions, annotations) · [Binding nodes](#binding-existing-godot-nodes)
 - [Instantiating scenes](#instantiating-packedscenes) · [Physics & collisions](#physics--collision-events)
-- [Physics joints](#physics-joints) · [Sensors & trigger zones](#sensors--trigger-zones)
+- [Physics joints](#physics-joints) · [Sensors & trigger zones](#sensors--trigger-zones) · [Volumetric & lighting](#volumetric-primitives--lighting-3d) · [Collision reactors](#collision-reactors-bouncers--portals)
 - [Camera control](#camera-control) · [Methods/props](#controlled-method--property-access) · [Signals](#signal-to-osc-forwarding)
 - [Transport](#transport--time-mapping) · [Script runner](#script-runner) · [Permissions](#permissions--safety)
 - [Errors](#errors) · [API reference](#api-reference) · [Limitations](#known-limitations)
@@ -109,14 +113,15 @@ A placeholder engraved page (`res://scores/page1.png`) is included. To regenerat
 ## Dimensions: 2D and 3D
 
 The whole framework runs in either **2D** or **3D**, chosen once at boot by the project setting
-`gscore_osc/space` (`"2d"` | `"3d"`, default `"3d"`). The OSC API is identical; only the spatial
-behaviour differs, behind a backend (`GScoreSpatial2D` / `GScoreSpatial3D`):
+`gscore_osc/space` (`"2d"` | `"3d"`). This repo's `project.godot` sets it to `"3d"`; if the setting
+is absent (e.g. a fresh project), the addon falls back to `"2d"`. The OSC API is identical; only the
+spatial behaviour differs, behind a backend (`GScoreSpatial2D` / `GScoreSpatial3D`):
 
 | | 2D | 3D |
 |---|---|---|
-| objects | `Node2D` primitives (`_draw`) | `MeshInstance3D` (rect→quad, circle→sphere, line), `Sprite3D`, `Label3D` |
+| objects | `Node2D` primitives (`_draw`) | `MeshInstance3D` (rect→quad, circle/sphere→sphere, box/cube, cylinder, capsule, cone, line), `Sprite3D`, `Label3D`, `Area3D` (bouncer/portal) |
 | physics | `RigidBody2D`/`StaticBody2D`/`Area2D` | `RigidBody3D`/`StaticBody3D`/`Area3D` |
-| colliders | `rect`, `circle`, `polygon` | `box`/`rect`, `sphere`/`circle`, `auto` |
+| colliders | `rect`, `circle`, `polygon` | `box`/`rect`, `sphere`/`circle`, `cylinder`, `capsule`, `auto` |
 | notation | textured node in 2D | textured **quad in world space** (placed/rotated in 3D) |
 | camera | none needed | auto-created `Camera3D` if the scene has none |
 | picking | 2D hit-test | camera ray vs object AABB / notation quad plane |
@@ -188,7 +193,8 @@ over the page rect, top-left origin, y-down (same in 2D and 3D).
 /gscore/scene/<id> new <type> [args...]
 ```
 
-Built-in types: `group  text  rect  circle  line  image  sprite  area  notation`
+Built-in types: `group  text  rect  circle  line  image  sprite  area  notation` — plus 3D
+volumetrics `sphere  box/cube  cylinder  capsule  cone` and reactors `bouncer  portal`.
 
 `rect` and `circle` accept an optional size (in the app coordinate mode): `new circle <r>` and
 `new rect <w> [h]` (h defaults to w). Omit for the default size. The auto-collider created on
@@ -266,7 +272,7 @@ by exporting to PNG/SVG and pointing the image/svg backend at it.
   an OSC blob (use `notationData` to force, or just send markup/blob and it's auto-detected);
 - **symbolic music** that gscore engraves on the fly via a configured external engraver (below).
 
-See the tutorial's [Displaying scores](TUTORIAL.md#displaying-scores--every-source-option) section
+See the tutorial's [Displaying scores](TUTORIAL.md#9-displaying-scores--every-source-option) section
 for every form with examples.
 
 **SVG tips.** Put the `.svg` under `res://` so Godot imports it — if it shows a thumbnail in the
@@ -496,7 +502,7 @@ Global:
 > bodies, a pivot marker, and the working axis for a hinge/slider) — joints have no visual of their
 > own, so this is how you see them. `debug 0` removes both.
 
-Per object (`static → StaticBody2D`, `rigid → RigidBody2D`, `area → Area2D`):
+Per object (`static → StaticBody2D/3D`, `rigid → RigidBody2D/3D`, `area → Area2D/3D`, depending on `gscore_osc/space`):
 
 ```
 /gscore/scene/<id>/physics enable <static|rigid|area>
@@ -521,7 +527,7 @@ so match them to the visual — or just rely on the automatic shape:
 
 ```
 /gscore/scene/<id>/collider rect <w> <h> | circle <r> | polygon <x1> <y1> ... | auto
-/gscore/scene/<id>/collider box <w> <h> [d] | sphere <r>          # 3D
+/gscore/scene/<id>/collider box <w> <h> [d] | sphere <r> | cylinder <r> <h> | capsule <r> <h>   # 3D
 /gscore/scene/<id>/collider disabled <0|1> | offset <x> <y> [z]
 ```
 
@@ -863,7 +869,7 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 ```
 # system
 /gscore ping                         -> /gscore/pong
-/gscore/version | /gscore version    -> /gscore/reply version "0.5.0"
+/gscore/version | /gscore version    -> /gscore/reply version "0.12.0"
 /gscore/info    | /gscore info       -> /gscore/reply info ...
 /gscore/app coord <mode>
 /gscore/app root "<path>"
@@ -898,7 +904,7 @@ Replies use `/gscore/reply <topic> ...`. Compact map:
 # physics / events                                  (see "Physics & collision events")
 /gscore/physics enable|pause|gravity|debug|coord     /gscore/physics/layer <n> <name>
 /gscore/scene/<id>/physics enable|mass|gravityScale|friction|bounce|damping|velocity|...
-/gscore/scene/<id>/collider rect|circle|polygon|auto|disabled|offset
+/gscore/scene/<id>/collider rect|circle|polygon|box|sphere|cylinder|capsule|auto|disabled|offset
 /gscore/scene/<id>/on <event> <target> [opts]   /off   /payload   /signal
 
 # camera (3D only)
@@ -956,8 +962,8 @@ py tools/osc_test.py
 - In 3D: `pixels` coord mode falls back to world units; click picking uses the object's axis-
   aligned bounding box (not exact mesh geometry); a single `Camera3D` is auto-created only if the
   scene has none.
-- A bound RigidBody2D with non-zero `gravity_scale` will receive both Godot's gravity and
-  gscore's applied gravity — set its `gravity_scale` to 0, or use OSC-created bodies.
+- A bound RigidBody2D/RigidBody3D with non-zero `gravity_scale` will receive both Godot's gravity
+  and gscore's applied gravity — set its `gravity_scale` to 0, or use OSC-created bodies.
 - SVG rasterization depends on the Godot build's SVG module (present in standard 4.7 builds).
 
 ---
