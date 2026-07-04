@@ -19,11 +19,16 @@ forever (an inexhaustible energy source), see example_chaos_globe.py.
 
 USAGE
     1. Run the Godot project with gscore_osc set to 3D (gscore_osc/space = "3d").
-    2. python tools/example_pendulum_joints.py     (or: py tools\\example_pendulum_joints.py)
+    2. python examples/python/example_pendulum_joints.py   (or: py examples\\python\\example_pendulum_joints.py)
     3. Watch the "<- /music/note ..." lines stream by; Ctrl+C to stop.
 """
+import os
+import sys
 import time
-from gosc import s   # tiny OSC client sitting next to this file (also prints incoming messages)
+
+# gosc.py lives in the repo's tools/ dir; make it importable from here.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
+from gosc import s   # tiny OSC client in tools/ (importing it also prints incoming replies)
 
 
 def build():
