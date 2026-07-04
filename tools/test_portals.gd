@@ -23,6 +23,8 @@ func _process(_d: float) -> bool:
 		check(body != null and osc.spatial.is_area(body), "portal body is an Area (area adapter auto-enabled)")
 		osc.dispatcher.dispatch("/gscore/scene/prt/portal", ["link", "a", "b"])
 		check(osc.reactors._portals.get("prt", []) == ["a", "b"], "portal link stored")
+		osc.dispatcher.dispatch("/gscore/scene/prt/portal", ["unlink"])
+		check(not osc.reactors._portals.has("prt"), "portal unlink clears targets")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

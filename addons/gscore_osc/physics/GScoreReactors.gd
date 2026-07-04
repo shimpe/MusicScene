@@ -2,7 +2,7 @@ extends RefCounted
 ## Collision reactors: bouncers (mirror-reflect + impulse) and portals (random teleport).
 ## Config is keyed by object id; behavior fires from GScorePhysicsAdapter._on_area_enter via on_contact().
 
-var ctx
+var ctx = null
 
 # id -> { "strength": float, "gain": float, "min_speed": float }
 var _bouncers: Dictionary = {}
@@ -32,6 +32,9 @@ func configure_portal(obj, args: Array) -> void:
 	var cmd := str(args[0]).to_lower() if args.size() > 0 else ""
 	match cmd:
 		"link":
+			if args.size() < 2:
+				ctx.error("bad_arguments", "/gscore/scene/" + obj.osc_id + "/portal", "link needs at least one target id")
+				return
 			var ids: Array = []
 			for j in range(1, args.size()):
 				ids.append(str(args[j]))
