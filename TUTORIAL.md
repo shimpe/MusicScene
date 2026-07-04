@@ -1079,26 +1079,26 @@ statically in Project Settings under `gscore_osc/network/send_ports` (e.g. `"740
 
 ## Next steps
 
-- **Creative example — a physics-driven sequencer:** `tools/example_chaos_globe.py` seals several
+- **Creative example — a physics-driven sequencer:** `examples/python/example_chaos_globe.py` seals several
   balls in a box and slowly **rotates the direction of gravity**, so they tumble chaotically forever
   (an inexhaustible energy source — unlike a pendulum, which the engine's damping quickly winds down).
   Five pentatonic sensor zones in a ring emit `/music/note <zone> <note> <speed>` as balls pass
   through — a never-repeating melody driven by real physics. Run the project in 3D, then
-  `python tools/example_chaos_globe.py`, and point a synth at `/music/note`. It ties together gravity
+  `python examples/python/example_chaos_globe.py`, and point a synth at `/music/note`. It ties together gravity
   control, sensor zones, payload constants, and `otherspeed`. A **SuperCollider** port,
-  `tools/example_chaos_globe.scd`, drives the board *and* synthesises the notes locally (a warm,
+  `examples/supercollider/example_chaos_globe.scd`, drives the board *and* synthesises the notes locally (a warm,
   reverberant bell panned to each zone's place in the ring).
-- **Joints example:** `tools/example_pendulum_joints.py` builds a hinge-linked double pendulum whose
+- **Joints example:** `examples/python/example_pendulum_joints.py` builds a hinge-linked double pendulum whose
   tip strikes the same pentatonic pads — a focused demo of joints + sensor zones. (It swings and then
   settles, so it's a linkage demo rather than the endless generator above.) A **SuperCollider** port,
-  `tools/example_pendulum_joints.scd`, plays each pad as a soft marimba/mallet, panned across the swing.
-- **Pachinko music box:** `tools/example_pachinko.py` rains small balls through an offset peg grid into
+  `examples/supercollider/example_pendulum_joints.scd`, plays each pad as a soft marimba/mallet, panned across the swing.
+- **Pachinko music box:** `examples/python/example_pachinko.py` rains small balls through an offset peg grid into
   five pentatonic bins — a gravity-fed generative sequencer. Shows sizable primitives (`new circle <r>`
   for small balls/pegs), `physics planar` (keeps them in-plane so the bins keep firing), and
   event-driven recycling (the client re-drops each ball the instant it lands). A **SuperCollider**
-  port, `tools/example_pachinko.scd`, drives the same board over OSC *and* synthesises the two reply
+  port, `examples/supercollider/example_pachinko.scd`, drives the same board over OSC *and* synthesises the two reply
   streams locally — a bell for `/music/note`, a percussive plink for `/music/pin` — so it needs no
   external synth. Boot the server, then evaluate the block.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
-- Worked examples: `addons/gscore_osc/examples/` (2D and 3D) and `tools/osc_test.py`.
+- Worked examples: `addons/gscore_osc/examples/` (Godot 2D/3D scenes), `examples/python/` and `examples/supercollider/` (OSC client demos), and `tools/osc_test.py` (reference client).
 - Architecture/design notes: `docs/superpowers/specs/`.
