@@ -102,7 +102,7 @@ s.waitForBoot({
         var pan   = (idx - 2) / 2.0;                     // -1 .. +1 across the five bins
         var freq  = ~noteFreq[note] ? 440;
         var amp   = (0.12 + (speed * 0.05)).clip(0.06, 0.3);
-        Synth(\pinNote, [\freq, freq, \amp, amp, \pan, pan]);
+        Synth(\pinNote , [\freq, freq, \amp, amp, \pan, pan]);
         ("  ♪ " ++ note ++ "   (bin " ++ idx ++ ")").postln;
         if(ball.asString.copyRange(0, 3) == "ball") {
             ~drop.(ball.asString.drop(4).asInteger);
@@ -138,7 +138,7 @@ s.waitForBoot({
             var xs = if(r % 2 == 0, { ~even }, { ~odd });
             xs.do({ |x, c|
                 var pid = "peg" ++ (r * 100 + c);   // stable unique id per (row, col)
-                ~snd.("/gscore/scene/" ++ pid, "new", "circle", 0.025);
+                ~snd.("/gscore/scene/" ++ pid, "new", "sphere", 0.025);
 				~snd.("/gscore/scene/" ++ pid, "color", 0.8, 0.6, 0.0);
                 ~snd.("/gscore/scene/" ++ pid ++ "/physics", "enable", "static");
                 ~snd.("/gscore/scene/" ++ pid ++ "/collider", "sphere", 0.022);
@@ -180,7 +180,7 @@ s.waitForBoot({
         // small balls, pinned to the z=0 plane, dropped from the top
         ~nb.do({ |i|
             var bid = "ball" ++ i;
-            ~snd.("/gscore/scene/" ++ bid, "new", "circle", 0.02);
+            ~snd.("/gscore/scene/" ++ bid, "new", "sphere", 0.02);
 			~snd.("/gscore/scene/" ++ bid, "color", 0.1.rrand(0.7), 0.1.rrand(0.7), 0.1.rrand(0.7));
             ~snd.("/gscore/scene/" ++ bid ++ "/physics", "enable", "rigid");
             ~snd.("/gscore/scene/" ++ bid ++ "/collider", "sphere", 0.02);
@@ -223,3 +223,5 @@ OSCdef(\music_pin).free;
 ~engine.sendMsg("/gscore/physics", "enable", 0);   // freeze the board
 "Pachinko stopped.".postln;
 )
+
+OSCFunc.trace(false);   // prints every incoming OSC message
