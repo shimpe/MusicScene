@@ -221,7 +221,7 @@ func create_primitive(type: String, args: Array) -> Node:
 				else:
 					s.texture = tex
 			return s
-		"area":
+		"area", "bouncer", "portal":
 			var a := Area2D.new(); a.name = "Area"
 			var col := CollisionShape2D.new()
 			var shape := RectangleShape2D.new(); shape.size = Vector2(120, 120)

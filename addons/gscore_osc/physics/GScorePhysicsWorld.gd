@@ -142,6 +142,11 @@ func _ensure_adapter(obj):
 	return obj.physics_adapter
 
 
+## Ensure this object has an active Area adapter (used by bouncers/portals at creation).
+func enable_area(obj) -> void:
+	_ensure_adapter(obj).enable("area")
+
+
 func register_adapter(a) -> void:
 	if a not in _adapters:
 		_adapters.append(a)

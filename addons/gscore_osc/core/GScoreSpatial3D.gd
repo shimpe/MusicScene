@@ -372,7 +372,7 @@ func create_primitive(type: String, args: Array) -> Node:
 				else:
 					sp.texture = tex
 			return sp
-		"area":
+		"area", "bouncer", "portal":
 			var a := Area3D.new(); a.name = "Area"; a.monitoring = true; a.monitorable = true
 			var col := CollisionShape3D.new()
 			var box := BoxShape3D.new(); box.size = Vector3(1, 1, 1)

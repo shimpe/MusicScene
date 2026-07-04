@@ -90,6 +90,8 @@ func create_builtin(id: String, type: String, args: Array) -> GScoreObject:
 	ctx.objects_root.add_child(node)
 	var obj := register_object(id, node, OWN_CREATED)
 	obj.type_hint = type
+	if type == "bouncer" or type == "portal":
+		ctx.physics_world.enable_area(obj)
 	if type == "notation" and ctx.notation != null:
 		ctx.notation.attach(obj)
 	if ctx.verbose:
