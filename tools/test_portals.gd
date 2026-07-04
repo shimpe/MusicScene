@@ -21,6 +21,8 @@ func _process(_d: float) -> bool:
 		check(obj != null and obj.type_hint == "portal", "type_hint is portal")
 		var body = obj.physics_adapter.body if (obj != null and obj.physics_adapter != null) else null
 		check(body != null and osc.spatial.is_area(body), "portal body is an Area (area adapter auto-enabled)")
+		osc.dispatcher.dispatch("/gscore/scene/prt/portal", ["link", "a", "b"])
+		check(osc.reactors._portals.get("prt", []) == ["a", "b"], "portal link stored")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false

@@ -288,6 +288,8 @@ func _handle_scene_subsystem(id: String, sub: String, args: Array) -> void:
 	match sub:
 		"physics": ctx.physics_world.handle_object(obj, args)
 		"collider": ctx.physics_world.handle_collider(obj, args)
+		"bouncer": ctx.reactors.configure_bouncer(obj, args)
+		"portal": ctx.reactors.configure_portal(obj, args)
 		"on": ctx.events.handle_on(obj, args)
 		"off": ctx.events.handle_off(obj, args)
 		"payload": ctx.events.handle_payload(obj, args)

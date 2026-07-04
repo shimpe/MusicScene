@@ -195,6 +195,8 @@ func _on_exit(other: Node) -> void:
 
 func _on_area_enter(other: Node) -> void:
 	CollisionEvents.emit(ctx, obj, "areaEnter", other)
+	if ctx.reactors != null:
+		ctx.reactors.on_contact(obj, other)
 
 func _on_area_exit(other: Node) -> void:
 	CollisionEvents.emit(ctx, obj, "areaExit", other)

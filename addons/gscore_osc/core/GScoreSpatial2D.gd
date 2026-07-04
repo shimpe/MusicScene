@@ -251,6 +251,10 @@ func is_physics_body(node: Node) -> bool:
 	return node is PhysicsBody2D or node is Area2D
 
 
+func is_dynamic(node: Node) -> bool:
+	return node is RigidBody2D
+
+
 func make_body(kind: String) -> Node:
 	match kind:
 		"static":

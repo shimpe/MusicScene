@@ -27,6 +27,9 @@ func _process(_d: float) -> bool:
 			if c is CollisionShape2D or c is CollisionShape3D:
 				nshapes += 1
 		check(nshapes == 1, "collider override replaces the default shape (no double shape)")
+		osc.dispatcher.dispatch("/gscore/scene/bmp/bouncer", ["strength", 3.0, "gain", 0.9])
+		check(osc.reactors._bouncers.get("bmp", {}).get("strength", -1) == 3.0, "bouncer strength stored")
+		check(osc.reactors._bouncers.get("bmp", {}).get("gain", -1) == 0.9, "bouncer gain stored")
 		print("DONE pass=%d fail=%d" % [_pass, _fail])
 		return true
 	return false
