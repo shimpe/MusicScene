@@ -573,6 +573,30 @@ Example:
 Any visual object or notation region is clickable (centralized hit-testing — no per-object
 Area2D needed). Canonical: `/gscore/event/input <event> <self> <x> <y>`.
 
+### Collision reactors: bouncers & portals
+
+Area sensors that act on a body the instant it enters. Both are created as first-class types (their Area
+is auto-enabled) and still emit `areaEnter`, so you can attach sound/scoring with `on areaEnter …`.
+
+```
+/gscore/scene/<id> new bouncer                        # a bumper
+/gscore/scene/<id>/collider circle|box <dims…>        # any collider shape
+/gscore/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>
+        # mirror-reflect the body's velocity + kick it outward by `strength`.
+        # normal is exact for round (center-to-center) and box (entered face) colliders.
+        # gain=1.0 (energy-preserving), strength=0 by default; strength/minSpeed are normalized units.
+
+/gscore/scene/<id> new portal
+/gscore/scene/<id>/collider circle <r>
+/gscore/scene/<id>/portal link <id1> [<id2> …]        # directional targets (A→B ≠ B→A)
+/gscore/scene/<id>/portal unlink
+        # a body entering is teleported to a random linked target, velocity preserved,
+        # with a re-entry cooldown so it doesn't instantly ping-pong.
+```
+
+Reactors are pass-through (they don't block); use static walls with `bounce` to contain a play area.
+See [ADVANCED.md](ADVANCED.md) for the mechanics and gotchas.
+
 ---
 
 ## Physics joints
@@ -708,6 +732,8 @@ Volumetric mesh primitives (lit by default):
     new cylinder [r] [h]           lit cylinder (default r 0.3, h 0.8)
     new capsule [r] [h]            lit capsule (default r 0.3, h 0.9; h clamped >= 2r)
     new cone [r] [h]               lit cone (default r 0.3, h 0.8)
+    new bouncer                    Area that mirror-reflects + kicks a body that enters (a bumper)
+    new portal                     Area that teleports an entering body to a random linked portal
 
 `circle` is unchanged — a flat/unshaded token (same geometry as `sphere`). `collider cylinder`/
 `collider capsule` match the new meshes.

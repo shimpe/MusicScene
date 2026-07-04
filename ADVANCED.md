@@ -13,7 +13,7 @@ shown as `# -> …` comments. For the flat command reference see **[README.md](R
 
 - Part A — Notation overlays: [1. Annotations](#1-annotations) · [2. Addressable scores](#2-addressable-scores-mpos)
 - Part B — Discovering & binding: [3. discover](#3-discover) · [4. bindAll / bindGroup](#4-bindall--bindgroup) · [5. Safety & permissions](#5-safety--the-permission-model)
-- Part C — Events & forwarding: [6. payload](#6-payload) · [7. Signal forwarding](#7-signal-forwarding) · [8. Emission modes & throttling](#8-emission-modes--throttling) · [9. Continuous physics events](#9-continuous-physics-events)
+- Part C — Events & forwarding: [6. payload](#6-payload) · [7. Signal forwarding](#7-signal-forwarding) · [8. Emission modes & throttling](#8-emission-modes--throttling) · [9. Continuous physics events](#9-continuous-physics-events) · [10. Collision reactors](#10-collision-reactors-bouncers--portals)
 
 ---
 
@@ -402,6 +402,39 @@ All of these use `on` / `payload` (§6) and the emission modes (§8); none use `
 >   while past the threshold, that's not what these do.
 > - **`*Stay` fans out per other-body** and prunes bodies that leave, so its emit rate scales with the
 >   number of contacts (use `cooldown`/`maxRate` to tame it).
+
+---
+
+## 10. Collision reactors (bouncers & portals)
+
+Bouncers and portals are **pass-through Area** objects (like zones) that act on a rigid body the instant it
+enters. Create them with `new bouncer` / `new portal` — their Area is auto-enabled, and they still emit
+`areaEnter`, so `on areaEnter …` bindings drive sound/scoring.
+
+```python
+# bumper: mirror-reflect + outward kick
+s("/gscore/scene/bump/bouncer", "strength", 3.0, "gain", 1.0, "minSpeed", 0.5)
+# portal: directional random teleport
+s("/gscore/scene/pa/portal", "link", "pb", "pc")   # enter pa -> random of {pb, pc}
+```
+
+**Bouncer** sets the outgoing velocity to `reflect(v, n)·gain + n·strength`, where `n` is the outward
+surface normal — exact for round colliders (center-to-center) and box/rect colliders (the face the body
+enters, honoring rotation). `strength`/`minSpeed` are normalized units (like velocity/radii); `gain` is a
+dimensionless restitution (1.0 = energy-preserving).
+
+**Portal** teleports an entering body to a uniform-random one of its linked targets, preserving velocity.
+Links are **directional** (`pa link pb` does not imply `pb link pa`).
+
+> **Gotchas**
+> - Reactors are **pass-through** — they never physically block a body; contain a play area with ordinary
+>   static walls that have `bounce`.
+> - The box-bouncer normal is chosen from the face the body is **moving into** (velocity-based), so for a
+>   genuinely square box a glancing hit may reflect off the "entered" face rather than the nearest one —
+>   exact for walls, an approximation for corners.
+> - Portal re-entry is prevented by a short **cooldown** (~250 ms), not by the small exit nudge; the just-
+>   arrived body is ignored by portals until it leaves or the cooldown lapses.
+> - Only **rigid bodies** are acted on; an entering area/zone is ignored.
 
 ---
 

@@ -1077,6 +1077,29 @@ Now a client on 7401 and a monitor on 7402 each receive every reply and event. Y
 statically in Project Settings under `gscore_osc/network/send_ports` (e.g. `"7401,7402"`). Send
 `/gscore/info` to see the active ports.
 
+## Collision reactors: bouncers & portals
+
+**Bouncers** are bumpers: a ball that touches one is mirror-reflected and kicked outward. **Portals** teleport
+a ball to a linked partner. Both are Area objects (auto-enabled) that still fire `areaEnter`, so you can
+hang sound on them.
+
+```python
+# a bumper that kicks any ball that touches it
+s("/gscore/scene/bump1", "new", "bouncer")
+s("/gscore/scene/bump1/collider", "sphere", 0.12)
+s("/gscore/scene/bump1", "pos", 0.5, 0.6, 0.0)
+s("/gscore/scene/bump1/bouncer", "strength", 3.0)      # outward kick; gain defaults to 1.0
+s("/gscore/scene/bump1/on", "areaEnter", "/pinball/bumper")   # emit OSC on every hit
+
+# two portals: a ball entering p1 pops out of p2 keeping its speed
+s("/gscore/scene/p1", "new", "portal"); s("/gscore/scene/p1/collider", "sphere", 0.1); s("/gscore/scene/p1", "pos", 0.2, 0.5, 0.0)
+s("/gscore/scene/p2", "new", "portal"); s("/gscore/scene/p2/collider", "sphere", 0.1); s("/gscore/scene/p2", "pos", 0.8, 0.5, 0.0)
+s("/gscore/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
+```
+
+`strength`/`minSpeed` are in the same normalized units as velocity and radii. Reactors are pass-through
+(they don't physically block) — contain a play area with static walls that have `bounce`.
+
 ## Next steps
 
 - **Creative example — a physics-driven sequencer:** `examples/python/example_chaos_globe.py` seals several
@@ -1099,6 +1122,9 @@ statically in Project Settings under `gscore_osc/network/send_ports` (e.g. `"740
   port, `examples/supercollider/example_pachinko.scd`, drives the same board over OSC *and* synthesises the two reply
   streams locally — a bell for `/music/note`, a percussive plink for `/music/pin` — so it needs no
   external synth. Boot the server, then evaluate the block.
+- **Generative pinball (SuperCollider):** `examples/supercollider/example_pinball.scd` — a self-contained
+  pinball table using bouncers, portals, sensor-zone targets, bouncy walls and pins; all sound synthesised
+  locally. Boot the project in 3D and evaluate the block.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,
   `discover`, bulk binding, the permission model, `payload` and signal forwarding, emission modes, and

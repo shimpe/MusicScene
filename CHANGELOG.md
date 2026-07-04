@@ -3,6 +3,24 @@
 All notable changes to **gscore_osc** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.12.0] — 2026-07-04
+
+### Added
+- **Collision reactors: bouncers & portals.** Two new Area-based object types.
+  - `new bouncer` mirror-reflects a colliding body's velocity and adds an outward "kick" — a pinball
+    bumper. The surface normal is exact for round (circle/sphere) and box/rect colliders (the face the
+    body enters, honoring rotation). Configure with
+    `/gscore/scene/<id>/bouncer strength <s> gain <g> minSpeed <m>` (defaults `gain 1.0`, `strength 0`;
+    `strength`/`minSpeed` are in normalized units like velocity/radii).
+  - `new portal` teleports a colliding body to a random one of its linked targets, preserving velocity,
+    with a short re-entry cooldown to prevent ping-pong. Configure with
+    `/gscore/scene/<id>/portal link <id...>` (directional; A→B does not imply B→A) and `portal unlink`.
+  - Both are pass-through Areas and still emit `areaEnter`, so `on areaEnter …` bindings drive sound.
+    Dimension-agnostic (2D and 3D).
+- **Example:** `examples/supercollider/example_pinball.scd` — a self-contained generative pinball table
+  combining bouncers, portals, sensor-zone targets, bouncy walls and pins, with all sound synthesised
+  locally in SuperCollider.
+
 ## [0.11.0] — 2026-07-04
 
 ### Added
