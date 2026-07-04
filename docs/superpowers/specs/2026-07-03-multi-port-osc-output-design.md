@@ -91,7 +91,7 @@ server.start(int(_setting("network/listen_port", 7400)),
 
 With `network/send_ports` unset (default `""`), the list is `[network/send_port]` = `[7401]` —
 byte-for-byte identical to today. Settings are read on demand via
-`ProjectSettings.get_setting("ms/"+key, default)`, so no registration code is required.
+`ProjectSettings.get_setting("musicscene/"+key, default)`, so no registration code is required.
 
 ## Runtime config — `OscDispatcher.gd`
 

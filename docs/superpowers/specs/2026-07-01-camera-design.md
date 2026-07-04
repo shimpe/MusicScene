@@ -149,7 +149,7 @@ separate concern).
 
 New small methods this requires: `MSPhysicsWorld.reset()`, `MSEmissionScheduler.clear()`,
 and a public `MSCamera.reset()` (the same routine the `camera reset` verb uses). The coord-mode
-defaults are re-read from the `ms/app/coord_mode` / `ms/physics/coord_mode` settings
+defaults are re-read from the `musicscene/app/coord_mode` / `musicscene/physics/coord_mode` settings
 (fallback `"normalized"`).
 
 ---

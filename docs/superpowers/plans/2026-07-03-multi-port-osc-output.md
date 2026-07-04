@@ -428,7 +428,7 @@ Add this entry at the top of the version entries (note the em-dash `—` and tod
 ### Added
 - **Multi-port OSC output.** MusicScene can now fan every reply and event out to a list of ports, so a
   client and one or more monitors each receive a copy. Configure a static list with the
-  `ms/network/send_ports` project setting (e.g. `"7401,7402"`), or at runtime with
+  `musicscene/network/send_ports` project setting (e.g. `"7401,7402"`), or at runtime with
   `/ms/app/output <host> <port> [port2 …]`. `/ms/info` now reports the active output ports.
 
 ### Notes
@@ -446,7 +446,7 @@ By default MusicScene sends every reply and event to a single port (`network/sen
 so only one process can receive them (UDP unicast has one owner per port). To let a client **and**
 monitors each get a copy, send to a list of ports:
 
-    # static: project setting ms/network/send_ports
+    # static: project setting musicscene/network/send_ports
     "7401,7402,7403"
 
     # runtime: replaces the whole list (one port = the classic behavior)
@@ -468,7 +468,7 @@ MusicScene to mirror its output to several ports instead:
     /ms/app/output 127.0.0.1 7401 7402
 
 Now a client on 7401 and a monitor on 7402 each receive every reply and event. You can also set it
-statically in Project Settings under `ms/network/send_ports` (e.g. `"7401,7402"`). Send
+statically in Project Settings under `musicscene/network/send_ports` (e.g. `"7401,7402"`). Send
 `/ms/info` to see the active ports.
 ```
 

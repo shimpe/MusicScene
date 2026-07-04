@@ -30,7 +30,7 @@ window/stretch/mode="canvas_items"
 
 enabled=PackedStringArray("res://addons/musicscene/plugin.cfg")
 
-[ms]
+[musicscene]
 
 space="3d"
 network/listen_port=7400

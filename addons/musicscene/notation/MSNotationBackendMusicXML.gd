@@ -5,12 +5,12 @@ extends RefCounted
 ## user://musicscene_cache/notation/, so the engraver runs once per (source, format, page).
 ##
 ## Configure a per-format command (preferred) or a generic fallback in Project Settings:
-##   ms/notation/engraver/musicxml   e.g. "\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
-##   ms/notation/engraver/lilypond   e.g. "python tools/ly_to_png.py {input} {output}"
-##   ms/notation/engraver/abc        e.g. "python tools/abc_to_png.py {input} {output}"
-##   ms/notation/engraver/mei        ...
-##   ms/notation/external_renderer_path + external_renderer_args   (generic fallback)
-##   ms/notation/engraver_output      "png" (default) | "svg"   (what the command writes)
+##   musicscene/notation/engraver/musicxml   e.g. "\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
+##   musicscene/notation/engraver/lilypond   e.g. "python tools/ly_to_png.py {input} {output}"
+##   musicscene/notation/engraver/abc        e.g. "python tools/abc_to_png.py {input} {output}"
+##   musicscene/notation/engraver/mei        ...
+##   musicscene/notation/external_renderer_path + external_renderer_args   (generic fallback)
+##   musicscene/notation/engraver_output      "png" (default) | "svg"   (what the command writes)
 ## Tokens: {input} {output} {outbase} {outdir} {format} {page}
 
 const Result := preload("res://addons/musicscene/notation/MSNotationRenderResult.gd")
@@ -42,7 +42,7 @@ static func prepare(content: Dictionary, format: String, page: int, options: Dic
 	var cmd_tmpl := _command_for(format)
 	if cmd_tmpl == "":
 		return {"ok": false, "error":
-			"No engraver configured for '%s'. Set ms/notation/engraver/%s (or pre-render to PNG/SVG)."
+			"No engraver configured for '%s'. Set musicscene/notation/engraver/%s (or pre-render to PNG/SVG)."
 			% [format, format]}
 
 	Cache.ensure_dir()
@@ -255,4 +255,4 @@ static func _globalize(path: String) -> String:
 
 
 static func _setting(key: String, def):
-	return ProjectSettings.get_setting("ms/" + key, def)
+	return ProjectSettings.get_setting("musicscene/" + key, def)

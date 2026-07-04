@@ -9,8 +9,8 @@ func _init() -> void:
 
 	var wrapper := ProjectSettings.globalize_path("res://tools/ly_to_score.py")
 	var cmd := 'py "%s" {input} {output} --page {page} --dpi 150 --lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"' % wrapper
-	ProjectSettings.set_setting("ms/notation/engraver/lilypond", cmd)
-	ProjectSettings.set_setting("ms/notation/engraver_output", "png")
+	ProjectSettings.set_setting("musicscene/notation/engraver/lilypond", cmd)
+	ProjectSettings.set_setting("musicscene/notation/engraver_output", "png")
 
 	print("--- inline LilyPond (runtime-generated) ---")
 	var ly := FileAccess.get_file_as_string("res://scores/example.ly")

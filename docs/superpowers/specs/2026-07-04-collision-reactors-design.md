@@ -147,7 +147,7 @@ rigid body enters reactor's Area
 ## 2D + 3D
 
 Everything goes through `ctx.spatial` (identical method surface in both backends) and world-space vector
-math, so a single implementation serves both. Tests run once per `ms/space` value.
+math, so a single implementation serves both. Tests run once per `musicscene/space` value.
 
 ## Testing (headless `--script`, `SceneTree` pattern)
 

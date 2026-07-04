@@ -11,7 +11,7 @@
 **Conventions (apply to every task):**
 - GDScript uses **TAB** indentation. Every new `.gd` file needs a committed `.gd.uid` sidecar — generate it with `"/d/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe" --headless --import --path .`
 - Run a headless test with: `timeout 90 "/d/Godot/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64_console.exe" --headless --path . --script res://tools/<name>.gd` — success line is exactly `DONE pass=N fail=0` and no line starting with `FAIL:`.
-- Tests must pass in **both** spaces. Default `ms/space` is `3d`. To run a test in 2D, temporarily set the project setting, OR (preferred, no file mutation) the test itself is written space-agnostically and is run once as-is (3d) in CI; where a task's test is space-sensitive it is noted.
+- Tests must pass in **both** spaces. Default `musicscene/space` is `3d`. To run a test in 2D, temporarily set the project setting, OR (preferred, no file mutation) the test itself is written space-agnostically and is run once as-is (3d) in CI; where a task's test is space-sensitive it is noted.
 - Commit message trailer: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
 - Do **not** touch or commit any unrelated working-tree files.
 

@@ -4,7 +4,7 @@
 
 ## Context
 
-MusicScene's 3D mode (`ms/space = "3d"`) is already a genuine 3D coordinate + physics +
+MusicScene's 3D mode (`musicscene/space = "3d"`) is already a genuine 3D coordinate + physics +
 camera system, not a 2D fake:
 
 - **Coordinates**: `pos x y z`, per-axis `x`/`y`/`z`, and `gravity`/`velocity`/`force` all take a real z

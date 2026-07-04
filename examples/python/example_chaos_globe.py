@@ -19,7 +19,7 @@ gravity vector is an inexhaustible energy source, so the motion stays chaotic fo
 A little linear damping keeps the balls slow enough that they never escape the box.
 
 USAGE
-    1. Run the Godot project with MusicScene set to 3D (ms/space = "3d").
+    1. Run the Godot project with MusicScene set to 3D (musicscene/space = "3d").
     2. python examples/python/example_chaos_globe.py   (or: py examples\\python\\example_chaos_globe.py)
     3. Watch the "<- /music/note ..." lines stream by; Ctrl+C to stop.
 """

@@ -18,7 +18,7 @@ then settles — re-run this file to wind it up again. For motion that stays cha
 forever (an inexhaustible energy source), see example_chaos_globe.py.
 
 USAGE
-    1. Run the Godot project with MusicScene set to 3D (ms/space = "3d").
+    1. Run the Godot project with MusicScene set to 3D (musicscene/space = "3d").
     2. python examples/python/example_pendulum_joints.py   (or: py examples\\python\\example_pendulum_joints.py)
     3. Watch the "<- /music/note ..." lines stream by; Ctrl+C to stop.
 """

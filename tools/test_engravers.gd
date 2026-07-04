@@ -6,8 +6,8 @@ func _init() -> void:
 	var R = load("res://addons/musicscene/notation/MSNotationRenderer.gd")
 	var Cache = load("res://addons/musicscene/notation/MSNotationCache.gd")
 	Cache.clear()
-	print("lilypond cmd = ", ProjectSettings.get_setting("ms/notation/engraver/lilypond", ""))
-	print("musicxml cmd = ", ProjectSettings.get_setting("ms/notation/engraver/musicxml", ""))
+	print("lilypond cmd = ", ProjectSettings.get_setting("musicscene/notation/engraver/lilypond", ""))
+	print("musicxml cmd = ", ProjectSettings.get_setting("musicscene/notation/engraver/musicxml", ""))
 
 	print("--- inline LilyPond (direct lilypond.exe) ---")
 	var ly := FileAccess.get_file_as_string("res://scores/example.ly")

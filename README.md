@@ -14,7 +14,7 @@ methods/properties/signals over OSC, first-class music-notation display, lit 3D 
 primitives, multi-port OSC output, and collision reactors (bouncers & portals)**.
 
 Built as a Godot addon at `addons/musicscene/`. Pure GDScript. Targets **Godot 4.7** (uses
-stable Godot 4.x APIs). **Works in both 2D and 3D** — selectable via the `ms/space`
+stable Godot 4.x APIs). **Works in both 2D and 3D** — selectable via the `musicscene/space`
 project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-and-3d)).
 
 > Status: the OSC API is implemented and verified headlessly against Godot 4.7 in **both 2D and
@@ -93,12 +93,12 @@ The addon is wired to run **out of the box**:
    that falls onto a floor and emits OSC on impact.
 3. Send `/ms/ping` from any OSC client → you get `/ms/pong`.
 
-To run the **2D** example instead, set `ms/space = "2d"` and the main scene to
+To run the **2D** example instead, set `musicscene/space = "2d"` and the main scene to
 `ExampleMain.tscn` (Project Settings), or drop an `override.cfg` with those values.
 
 To use it in your own project: copy `addons/musicscene/` in, enable the **MusicScene** plugin in
 *Project → Project Settings → Plugins* (this installs the `MusicSceneOSC` autoload). Configuration
-lives under *Project Settings → ms/…* (see below).
+lives under *Project Settings → musicscene/…* (see below).
 
 ### Generating the placeholder score
 
@@ -113,7 +113,7 @@ A placeholder engraved page (`res://scores/page1.png`) is included. To regenerat
 ## Dimensions: 2D and 3D
 
 The whole framework runs in either **2D** or **3D**, chosen once at boot by the project setting
-`ms/space` (`"2d"` | `"3d"`). This repo's `project.godot` sets it to `"3d"`; if the setting
+`musicscene/space` (`"2d"` | `"3d"`). This repo's `project.godot` sets it to `"3d"`; if the setting
 is absent (e.g. a fresh project), the addon falls back to `"2d"`. The OSC API is identical; only the
 spatial behaviour differs, behind a backend (`MSSpatial2D` / `MSSpatial3D`):
 
@@ -132,7 +132,7 @@ extra `z` in 3D (e.g. `pos x y z`, `gravity 0 -0.6 0`).
 
 ## Ports / networking
 
-UDP. Defaults (Project Settings → `ms/network/`):
+UDP. Defaults (Project Settings → `musicscene/network/`):
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -284,7 +284,7 @@ features ThorVG can't rasterize), import it under `res://` or export to PNG.
 **Multi-page** raster/SVG: put `{page}` in the source path (e.g. `res://scores/p{page}.png`);
 the page count is probed automatically and `page`/`nextPage`/`prevPage` switch pages.
 
-**External engraver** configuration (Project Settings → `ms/notation/`). Set a per-format
+**External engraver** configuration (Project Settings → `musicscene/notation/`). Set a per-format
 command (preferred) or the generic fallback; works for a file path or inline symbolic data (MusicScene
 writes inline source to a temp file, runs the command, and caches the output):
 
@@ -502,7 +502,7 @@ Global:
 > bodies, a pivot marker, and the working axis for a hinge/slider) — joints have no visual of their
 > own, so this is how you see them. `debug 0` removes both.
 
-Per object (`static → StaticBody2D/3D`, `rigid → RigidBody2D/3D`, `area → Area2D/3D`, depending on `ms/space`):
+Per object (`static → StaticBody2D/3D`, `rigid → RigidBody2D/3D`, `area → Area2D/3D`, depending on `musicscene/space`):
 
 ```
 /ms/scene/<id>/physics enable <static|rigid|area>
@@ -830,7 +830,7 @@ See `addons/musicscene/examples/example_score.ms`.
 
 ## Permissions & safety
 
-Conservative defaults (Project Settings → `ms/permissions/`):
+Conservative defaults (Project Settings → `musicscene/permissions/`):
 
 | Capability | Default |
 |---|---|
@@ -847,7 +847,7 @@ Toggle at runtime:
 /ms/app/developer <0|1>          # developer mode relaxes restrictions for local prototyping
 ```
 
-Set `ms/developer_mode = true` (Project Settings) for unrestricted local prototyping.
+Set `musicscene/developer_mode = true` (Project Settings) for unrestricted local prototyping.
 
 ---
 
@@ -957,7 +957,7 @@ py tools/osc_test.py
   minimal. `positionEnter`/`positionExit` were intentionally not implemented — use area zones
   (`areaEnter`/`areaExit`/`areaStay`) or `yAbove`/`yBelow` instead.
 - OSC over UDP only (no TCP); no variables in the script runner.
-- The 2D/3D mode is global per run (`ms/space`), chosen at boot — not per-object, and not
+- The 2D/3D mode is global per run (`musicscene/space`), chosen at boot — not per-object, and not
   switchable at runtime.
 - In 3D: `pixels` coord mode falls back to world units; click picking uses the object's axis-
   aligned bounding box (not exact mesh geometry); a single `Camera3D` is auto-created only if the

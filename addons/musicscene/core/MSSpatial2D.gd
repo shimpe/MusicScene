@@ -1,7 +1,7 @@
 extends RefCounted
 ## 2D spatial backend. Owns everything dimension-specific for the 2D path: primitive creation,
 ## coordinate mapping (via MSCoordinateMapper), transforms, 2D physics bodies/colliders,
-## collision data, and pointer picking. Selected when ms/space == "2d".
+## collision data, and pointer picking. Selected when musicscene/space == "2d".
 ##
 ## All other MusicScene subsystems are dimension-agnostic and call these methods through ctx.spatial.
 

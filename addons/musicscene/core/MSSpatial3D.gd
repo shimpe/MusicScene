@@ -2,7 +2,7 @@ extends RefCounted
 ## 3D spatial backend. Owns everything dimension-specific for the 3D path: primitives
 ## (MeshInstance3D / Sprite3D / Label3D / Area3D), normalized<->world mapping, transforms,
 ## RigidBody3D/StaticBody3D/Area3D physics + Box/Sphere colliders, collision data, an auto
-## Camera3D, and camera-ray picking. Selected when ms/space == "3d".
+## Camera3D, and camera-ray picking. Selected when musicscene/space == "3d".
 ##
 ## Normalized space: x/y/z in [-1,1] mapped to a world cube of half-extent H (y-up, +z toward
 ## the camera). "world" mode uses raw Godot units; "pixels" falls back to world in 3D.

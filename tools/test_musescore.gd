@@ -9,8 +9,8 @@ func _init() -> void:
 
 	var wrapper := ProjectSettings.globalize_path("res://tools/mscore_to_score.py")
 	var cmd := 'py "%s" {input} {output} --page {page} --dpi 150' % wrapper
-	ProjectSettings.set_setting("ms/notation/engraver/musicxml", cmd)
-	ProjectSettings.set_setting("ms/notation/engraver_output", "png")
+	ProjectSettings.set_setting("musicscene/notation/engraver/musicxml", cmd)
+	ProjectSettings.set_setting("musicscene/notation/engraver_output", "png")
 
 	print("--- MusicXML from file ---")
 	var r1 = R.render("res://scores/example.musicxml", "musicxml", 1)

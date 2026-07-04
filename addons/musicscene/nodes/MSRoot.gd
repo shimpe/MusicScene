@@ -3,7 +3,7 @@ extends Node
 ## subsystem, parents OSC-created objects, runs the per-frame clocks, and exposes the reply/error
 ## helpers used across the codebase as `ctx.*`.
 ##
-## The dimension is chosen by ms/space ("2d" | "3d"): ctx.spatial is a MSSpatial2D or
+## The dimension is chosen by musicscene/space ("2d" | "3d"): ctx.spatial is a MSSpatial2D or
 ## MSSpatial3D, and all dimension-specific work goes through it. Everything else is shared.
 
 const OscServer := preload("res://addons/musicscene/core/OscServer.gd")
@@ -171,4 +171,4 @@ func send_event(address: String, args: Array) -> void:
 
 
 func _setting(key: String, def):
-	return ProjectSettings.get_setting("ms/" + key, def)
+	return ProjectSettings.get_setting("musicscene/" + key, def)

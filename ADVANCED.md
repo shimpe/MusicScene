@@ -194,7 +194,7 @@ about protecting *your* nodes.)
 
 There are three layers:
 
-1. **Five global kill-switches**, seeded from Project Settings (`ms/permissions/…`) and toggleable
+1. **Five global kill-switches**, seeded from Project Settings (`musicscene/permissions/…`) and toggleable
    at runtime. Defaults: `bind_existing`, `instantiate`, `call_methods`, `set_props` = **on**;
    `free_nodes` = **off**. A switch set off blocks that operation for everyone — even in developer mode.
 2. **`developer_mode`** (default off). When on, it short-circuits the per-capability checks so anything

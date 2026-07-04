@@ -1,7 +1,7 @@
 extends SceneTree
 ## Headless joint tests. Run:
 ##   <godot> --headless --path . --script res://tools/test_joints.gd
-## Tests whichever spatial backend is active (ms/space). Run once per space.
+## Tests whichever spatial backend is active (musicscene/space). Run once per space.
 var _f := 0
 var _pass := 0
 var _fail := 0

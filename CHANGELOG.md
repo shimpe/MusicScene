@@ -26,7 +26,7 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 ### Added
 - **Multi-port OSC output.** MusicScene can now fan every reply and event out to a list of ports, so a
   client and one or more monitors each receive a copy. Configure a static list with the
-  `ms/network/send_ports` project setting (e.g. `"7401,7402"`), or at runtime with
+  `musicscene/network/send_ports` project setting (e.g. `"7401,7402"`), or at runtime with
   `/ms/app/output <host> <port> [port2 …]`. `/ms/info` now reports the active output ports.
 
 ### Notes
@@ -194,7 +194,7 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 A large feature pass since the initial implementation.
 
 ### Added
-- **2D and 3D** support, selectable via `ms/space` (`"2d"` | `"3d"`), behind a spatial
+- **2D and 3D** support, selectable via `musicscene/space` (`"2d"` | `"3d"`), behind a spatial
   backend abstraction (`MSSpatial2D` / `MSSpatial3D`). Same OSC API for both; 3D auto-creates
   a `Camera3D` and uses camera-ray picking; notation renders on a textured quad in world space.
 - **Runtime-generated scores**: a notation source may be a file path (`res://` / `user://` /

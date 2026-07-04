@@ -5,7 +5,7 @@ This walks you through using the **MusicScene** addon in a brand-new Godot proje
 driving physics, and receiving collision/interaction events — all over OSC from an external
 client.
 
-> Same OSC API in both dimensions. The only difference is one project setting (`ms/space`)
+> Same OSC API in both dimensions. The only difference is one project setting (`musicscene/space`)
 > and whether your main scene is a `Node2D` or a `Node3D`.
 
 - [0. Prerequisites](#0-prerequisites)
@@ -59,7 +59,7 @@ IP on **UDP 7401**).
 
 > **Settings are optional.** MusicScene reads every setting with a sensible default, so it works
 > with zero configuration. You only need to add a setting when you want to change a default — most
-> importantly `ms/space = "3d"` for the 3D walkthrough (section 5).
+> importantly `musicscene/space = "3d"` for the 3D walkthrough (section 5).
 
 ---
 
@@ -159,7 +159,7 @@ If you see `<- /ms/pong`, you're connected. If not, jump to [Troubleshooting](#1
 You don't need a camera. MusicScene parents the objects it creates under its own autoload node and
 renders them in the viewport.
 
-> 2D is the default (`ms/space` defaults to `"2d"`), so there's nothing else to configure.
+> 2D is the default (`musicscene/space` defaults to `"2d"`), so there's nothing else to configure.
 
 ### 4.2 Coordinates
 
@@ -255,7 +255,7 @@ s("/ms/scene/score", "notationInfo")   # <- reply notationInfo score png ... ima
 Click the highlighted region in the Godot window → you receive `/score/measure score m1 <u> <v>`.
 
 > SVG works too (`notation svg "res://scores/page.svg"`). MusicXML/MEI/LilyPond route to an
-> external engraver you configure in Project Settings (`ms/notation/external_renderer_*`).
+> external engraver you configure in Project Settings (`musicscene/notation/external_renderer_*`).
 
 ### 4.6 Physics and collision → OSC
 
@@ -308,7 +308,7 @@ s("/ms/bindRel", "myNode", "SomeChild/Path")
 ```
 
 > By default only **exposed** nodes can be bound (safe default). For quick prototyping, set
-> `ms/developer_mode = true` to bind/call/set anything.
+> `musicscene/developer_mode = true` to bind/call/set anything.
 
 ---
 
@@ -319,10 +319,10 @@ renders on a quad in world space.
 
 ### 5.1 Switch to 3D
 
-Add the project setting **`ms/space = "3d"`**. Two easy ways:
+Add the project setting **`musicscene/space = "3d"`**. Two easy ways:
 
 - **Editor:** *Project → Project Settings*, turn on *Advanced Settings*, in the property box type
-  `ms/space`, set type *String*, value `3d`, click **Add**.
+  `musicscene/space`, set type *String*, value `3d`, click **Add**.
 - **Text:** add to `project.godot`:
 
   ```ini
@@ -422,7 +422,7 @@ s("/ms/scene/ball/on", "click", "/hit/ball")
 
 ### Switching back to 2D
 
-Set `ms/space = "2d"` (and choose a `Node2D` main scene) and restart. Same OSC scripts,
+Set `musicscene/space = "2d"` (and choose a `Node2D` main scene) and restart. Same OSC scripts,
 2D rendering.
 
 ---
@@ -472,7 +472,7 @@ s("/ms/joint/<id>", "<property>", <args...>)
 s("/ms/joint/<id>", "del")
 ```
 
-**Types are native per space** (set via `ms/space`):
+**Types are native per space** (set via `musicscene/space`):
 
 | | 2D | 3D |
 |---|---|---|
@@ -774,7 +774,7 @@ use features ThorVG can't handle), import it under `res://` or render to PNG.
 
 MusicScene can shell out to an external engraver to turn symbolic music into pages, then display and
 **cache** the result. Configure a per-format command in *Project Settings*
-(`ms/notation/engraver/<format>`), using these tokens: `{input} {output} {outbase}
+(`musicscene/notation/engraver/<format>`), using these tokens: `{input} {output} {outbase}
 {outdir} {format} {page}`. Quote paths that contain spaces.
 
 ```ini
@@ -1023,7 +1023,7 @@ Conservative defaults keep an open OSC port from doing anything dangerous:
   `OscExposable`).
 - **Free nodes** is off.
 
-For frictionless local prototyping, set `ms/developer_mode = true` to relax all of this.
+For frictionless local prototyping, set `musicscene/developer_mode = true` to relax all of this.
 
 ---
 
@@ -1037,8 +1037,8 @@ For frictionless local prototyping, set `ms/developer_mode = true` to relax all 
 | Objects don't appear (2D) | They're created at the viewport centre in normalized coords; make sure your main scene is running and nothing covers them. Try `s("/ms/scene/title","new","text","hi")`. |
 | Nothing visible (3D) | Confirm `space="3d"` (console says `space=3d`) and that a camera exists (the addon auto-creates one). Objects spawn near the origin inside a ±5-unit cube. |
 | `permission_denied` on bind/call/instantiate | The node/member/scene isn't exposed/whitelisted. Expose it, whitelist it, or enable developer mode. |
-| 3D changes ignored | `ms/space` is read once at startup — **restart** after changing it. |
-| MusicXML/MEI fails with `load_failed` | Configure an external engraver in `ms/notation/external_renderer_*`, or pre-render to PNG/SVG. |
+| 3D changes ignored | `musicscene/space` is read once at startup — **restart** after changing it. |
+| MusicXML/MEI fails with `load_failed` | Configure an external engraver in `musicscene/notation/external_renderer_*`, or pre-render to PNG/SVG. |
 | SVG score not visible | Put the `.svg` under `res://` (it loads via Godot's import — confirm it shows a thumbnail in the FileSystem dock). The page renders at native size centred on the object, so **scale it down** (`/ms/scene/score scale 0.3`) if it overflows. If the SVG shows no thumbnail, ThorVG can't rasterize it — export to PNG instead. Check the Output panel for a `load_failed` warning. |
 
 ---
@@ -1074,7 +1074,7 @@ MusicScene to mirror its output to several ports instead:
     /ms/app/output 127.0.0.1 7401 7402
 
 Now a client on 7401 and a monitor on 7402 each receive every reply and event. You can also set it
-statically in Project Settings under `ms/network/send_ports` (e.g. `"7401,7402"`). Send
+statically in Project Settings under `musicscene/network/send_ports` (e.g. `"7401,7402"`). Send
 `/ms/info` to see the active ports.
 
 ## Collision reactors: bouncers & portals

@@ -23,7 +23,7 @@ func _init() -> void:
 	print("ok=", r3.ok, " ", (r3.texture.get_size() if r3.ok else r3.error))
 
 	print("--- 4. external engraver (inline MusicXML via stub) ---")
-	ProjectSettings.set_setting("ms/notation/engraver/musicxml",
+	ProjectSettings.set_setting("musicscene/notation/engraver/musicxml",
 		'py "D:/Projects/MusicScene/tools/stub_engraver.py" {input} {output} {format}')
 	var mxml := '<?xml version="1.0"?><score-partwise><part-list/></score-partwise>'
 	var r4 = R.render(mxml, "musicxml", 1)
