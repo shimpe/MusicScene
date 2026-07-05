@@ -87,14 +87,22 @@ def test_dynamics():
     assert props["norepeat"]["dynam"] == 1
 
 
-# Regression guard: a voice carrying @dyn/@art must still build an asPbind whose numeric
-# properties (amp/vol, lag, legato) yield numbers, not the string default "0.5" (which used
-# to crash at play time with "Message '*' not understood" — a Character times a Float).
+# Regression guard: a voice carrying @dyn/@art must still build a playable asPbind. Two past bugs:
+#  (1) numeric property defaults ("0.5") slipped through as strings -> "Message '*' not understood"
+#      (a Character times a Float) at play time;
+#  (2) string properties were passed into the Pbind as symbols -> notes without an articulation got
+#      the empty symbol '' and SuperCollider dropped them as rests (melody started late).
+# Fix: numeric text is coerced to Float, and string-valued (notation-only) properties are left out of
+# the Pbind. So every drawn event must have a numeric amp and NO \art / \dyn key.
 ASPBIND_SCRIPT = r'''(
-var st, ok = true, sawWord = false;
+var st, ev, ok = true, hasArt = false, hasDyn = false;
 st = Panola("c5_4@dyn^mf^ e5 g5 e5_8*2/3@art[stacc:on] f5 g5").asPbind(\default, include_tempo:false).asStream;
-3.do({ var ev = st.next(()); if (ev.at(\amp).isNumber.not) { ok = false }; if (ev.at(\art).isKindOf(Symbol)) { sawWord = true } });
-(ok and: { sawWord }).if({ "ASPBIND-NUMERIC-OK".postln }, { ("ASPBIND-BAD amp/art").postln });
+6.do({ ev = st.next(());
+    if (ev.at(\amp).isNumber.not) { ok = false };
+    if (ev.includesKey(\art)) { hasArt = true };
+    if (ev.includesKey(\dyn)) { hasDyn = true };
+});
+(ok and: { hasArt.not } and: { hasDyn.not }).if({ "ASPBIND-OK".postln }, { ("ASPBIND-BAD amp-ok=" ++ ok ++ " art=" ++ hasArt ++ " dyn=" ++ hasDyn).postln });
 0.exit;
 )'''
 
@@ -108,5 +116,5 @@ def test_aspbind_materializes_with_expression():
         r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
     finally:
         os.unlink(path)
-    assert "ASPBIND-NUMERIC-OK" in r.stdout, r.stdout[-1500:]
+    assert "ASPBIND-OK" in r.stdout, r.stdout[-1500:]
     assert "not understood" not in r.stdout, r.stdout[-1500:]
