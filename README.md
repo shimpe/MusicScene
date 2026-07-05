@@ -291,8 +291,8 @@ writes inline source to a temp file, runs the command, and caches the output):
 ```
 engraver/musicxml      "C:/Program Files/MuseScore 4/bin/MuseScore4.exe" {input} -o {output} -T 10 -r 200
 engraver/lilypond      "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe" --png -dcrop=#t -dresolution=200 -o {outbase} {input}
-engraver/mei           py "res://tools/verovio_render.py" {input} {output} --page {page}      (pip install verovio)
-engraver/abc           py "res://tools/verovio_render.py" {input} {output} --page {page}
+engraver/mei · abc     built-in Verovio default — just `pip install verovio`, no setting needed
+                       (equals: py "res://addons/musicscene/tools/verovio_render.py" {input} {output} --page {page})
 engraver_output        "png" (default) | "svg"        tokens: {input} {output} {outbase} {outdir} {format} {page}
 engraver_output/<fmt>  per-format override (e.g. .../mei = "svg")
 external_renderer_path + external_renderer_args        generic fallback for any symbolic format
@@ -307,9 +307,11 @@ ready; results are cached so repeats are instant.
 (`{output}` plus the usual `.cropped` / `-page{N}` / `-N` variants LilyPond/MuseScore emit) and
 caches it, so you normally just set the engraver's path. Quote paths with spaces; `res://`/`user://`
 in a command are resolved too. **LilyPond and MuseScore ship working defaults** — set your install
-path and `notation musicxml/lilypond "<path-or-inline>"` (or `notationData`) works. Portable,
-auto-detecting wrappers are also bundled (`tools/ly_to_score.py`, `tools/mscore_to_score.py`).
-(MuseScore 4 can crash on a cold headless start; results are cached, so a retry succeeds.)
+path and `notation musicxml/lilypond "<path-or-inline>"` (or `notationData`) works. **MEI and ABC via
+Verovio need no settings at all** — the wrapper ships inside the addon and MusicScene falls back to it,
+so `pip install verovio` is enough. Portable, auto-detecting wrappers are also bundled
+(`addons/musicscene/tools/ly_to_score.py`, `.../mscore_to_score.py`). (MuseScore 4 can crash on a cold
+headless start; results are cached, so a retry succeeds.)
 
 Rendered pages are cached under `user://musicscene_cache/notation/`:
 
@@ -386,9 +388,10 @@ driven entirely by MusicScene.
 
 **Verovio** (for MEI/ABC, `pip install verovio`) gives the same note-level addressing + following and
 is the cleanest source: its SVG tags every note with a stable id and `renderToTimemap()` provides
-each note's exact time, so no source-tagging is needed. Configure `engraver/mei` (and `abc`) to the
-bundled `tools/verovio_render.py` (the default), then `addressable 1` + `notation mei "…"` →
-`elements`, note hotspots, and `cursor follow 1` work just like LilyPond. (Verovio also reads
+each note's exact time, so no source-tagging is needed. MEI/ABC use the bundled
+`addons/musicscene/tools/verovio_render.py` by default (no configuration), so `addressable 1` +
+`notation mei "…"` → `elements`, note hotspots, and `cursor follow 1` work just like LilyPond — the
+same command drives the following path (MusicScene appends `--timemap` itself). (Verovio also reads
 MusicXML, so you can point `engraver/musicxml` at it instead of MuseScore if you prefer.)
 
 ### Notation annotations

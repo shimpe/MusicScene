@@ -3,6 +3,25 @@
 All notable changes to **MusicScene** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Self-contained engravers.** The engraver helper scripts MusicScene shells out to
+  (`verovio_render.py`, `ly_to_score.py`, `mscore_to_score.py`) now live **inside the addon** under
+  `addons/musicscene/tools/`, so installing the addon alone is enough — no separate `tools/` copy.
+  (Client-side and test scripts such as `gosc.py`, `osc_test.py`, and `stub_engraver.py` stay at the
+  repo root.)
+
+### Added
+- **Zero-config Verovio.** MEI and ABC now fall back to the bundled
+  `res://addons/musicscene/tools/verovio_render.py` when no engraver is configured (launched via `py`
+  on Windows, `python3` elsewhere, writing SVG), so they engrave after `pip install verovio` with no
+  project settings. Override `musicscene/notation/engraver/mei` (or `/abc`) only to name a specific
+  interpreter — e.g. a virtualenv's `python.exe`.
+- **Better engraver diagnostics.** When an async engraver produces no output, the failure now reports
+  the process exit code (`[engraver process exited with code N …]`) instead of only "no recognizable
+  page", making a missing interpreter/script or an uninstalled dependency obvious.
+
 ## [0.12.0] — 2026-07-04
 
 ### Added

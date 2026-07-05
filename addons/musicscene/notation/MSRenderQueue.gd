@@ -147,12 +147,12 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 	})
 
 
-func _finish_lily(obj, cropped_user: String, options: Dictionary) -> void:
+func _finish_lily(obj, cropped_user: String, options: Dictionary, pid: int = -1) -> void:
 	var res := LilyPositions.finalize(cropped_user, options)
 	if res.ok:
 		obj._on_elements_done(res.texture, res.elements)
 	else:
-		obj._on_render_failed(res.error)
+		obj._on_render_failed(res.error + _exit_note(pid))
 
 
 ## Verovio addressable: run the wrapper to produce SVG + timemap, then join them into note elements.
@@ -190,12 +190,12 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 	})
 
 
-func _finish_verovio(obj, svg_user: String, tm_user: String, options: Dictionary) -> void:
+func _finish_verovio(obj, svg_user: String, tm_user: String, options: Dictionary, pid: int = -1) -> void:
 	var res := VerovioPositions.finalize(svg_user, tm_user, options)
 	if res.ok:
 		obj._on_elements_done(res.texture, res.elements)
 	else:
-		obj._on_render_failed(res.error)
+		obj._on_render_failed(res.error + _exit_note(pid))
 
 
 func _addr_cached(png_user: String, mpos_user: String) -> bool:
@@ -205,12 +205,24 @@ func _addr_cached(png_user: String, mpos_user: String) -> bool:
 	return FileAccess.file_exists(png_user) or FileAccess.file_exists("%s-1.png" % stem)
 
 
-func _finish_addressable(obj, png_user: String, mpos_user: String, page: int) -> void:
+func _finish_addressable(obj, png_user: String, mpos_user: String, page: int, pid: int = -1) -> void:
 	var res := Positions.finalize(png_user, mpos_user, page)
 	if res.ok:
 		obj._on_addressable_done(res.texture, res.measures)
 	else:
-		obj._on_render_failed(res.error)
+		obj._on_render_failed(res.error + _exit_note(pid))
+
+
+## When an async engraver job failed to produce output, explain why using its process exit code.
+## (Pass -1 for cache hits, which never ran a process.) OS.get_process_exit_code is Godot 4.4+.
+func _exit_note(pid: int) -> String:
+	if pid < 0:
+		return ""
+	var code := OS.get_process_exit_code(pid)
+	if code == 0:
+		return ""
+	return ("  [engraver process exited with code %d — check the command's interpreter/script path"
+		+ " and that its dependencies are installed (e.g. `pip install verovio`)]") % code
 
 
 func _process(_delta: float) -> void:
@@ -227,14 +239,14 @@ func _process(_delta: float) -> void:
 			continue
 		_jobs.remove_at(i)
 		if j.get("kind", "engrave") == "addr":
-			_finish_addressable(j.obj, j.png_user, j.mpos_user, j.page)
+			_finish_addressable(j.obj, j.png_user, j.mpos_user, j.page, j.pid)
 		elif j.kind == "lyaddr":
-			_finish_lily(j.obj, j.cropped_user, j.options)
+			_finish_lily(j.obj, j.cropped_user, j.options, j.pid)
 		elif j.kind == "vrv":
-			_finish_verovio(j.obj, j.svg_user, j.tm_user, j.options)
+			_finish_verovio(j.obj, j.svg_user, j.tm_user, j.options, j.pid)
 		else:
 			var res = ExternalBackend.finalize(j.out_user, j.out_ext, j.page, j.options)
 			if res.ok:
 				j.obj._on_render_done(res)
 			else:
-				j.obj._on_render_failed(res.error)
+				j.obj._on_render_failed(res.error + _exit_note(j.pid))

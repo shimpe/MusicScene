@@ -12,7 +12,7 @@ Usage:
 LilyPond is located from --lilypond, else $MS_LILYPOND, else PATH, else common install dirs.
 Configure in MusicScene (Project Settings):
     musicscene/notation/engraver/lilypond =
-        py "<proj>/tools/ly_to_score.py" {input} {output} --page {page} --lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"
+        py "res://addons/musicscene/tools/ly_to_score.py" {input} {output} --page {page} --lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"
     musicscene/notation/engraver_output = "png"
 """
 import argparse

@@ -1,5 +1,5 @@
 extends SceneTree
-## End-to-end MuseScore engraver test (real MuseScore via tools/mscore_to_score.py).
+## End-to-end MuseScore engraver test (real MuseScore via addons/musicscene/tools/mscore_to_score.py).
 ##   godot --headless --path . --script res://tools/test_musescore.gd
 
 func _init() -> void:
@@ -7,7 +7,7 @@ func _init() -> void:
 	var Cache = load("res://addons/musicscene/notation/MSNotationCache.gd")
 	Cache.clear()
 
-	var wrapper := ProjectSettings.globalize_path("res://tools/mscore_to_score.py")
+	var wrapper := ProjectSettings.globalize_path("res://addons/musicscene/tools/mscore_to_score.py")
 	var cmd := 'py "%s" {input} {output} --page {page} --dpi 150' % wrapper
 	ProjectSettings.set_setting("musicscene/notation/engraver/musicxml", cmd)
 	ProjectSettings.set_setting("musicscene/notation/engraver_output", "png")

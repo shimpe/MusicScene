@@ -13,7 +13,7 @@ Accepts any input MuseScore can import (MusicXML/.mxl/.mscz/MEI). MuseScore is l
 --mscore, else $MS_MUSESCORE, else PATH, else common install dirs.
 Configure in MusicScene (Project Settings):
     musicscene/notation/engraver/musicxml =
-        py "<proj>/tools/mscore_to_score.py" {input} {output} --page {page} --dpi 200
+        py "res://addons/musicscene/tools/mscore_to_score.py" {input} {output} --page {page} --dpi 200
     musicscene/notation/engraver_output = "png"
 """
 import argparse

@@ -6,12 +6,17 @@ extends RefCounted
 ##
 ## Configure a per-format command (preferred) or a generic fallback in Project Settings:
 ##   musicscene/notation/engraver/musicxml   e.g. "\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output}"
-##   musicscene/notation/engraver/lilypond   e.g. "python tools/ly_to_png.py {input} {output}"
-##   musicscene/notation/engraver/abc        e.g. "python tools/abc_to_png.py {input} {output}"
-##   musicscene/notation/engraver/mei        ...
+##   musicscene/notation/engraver/lilypond   e.g. "\"C:/.../lilypond.exe\" --png -dcrop=#t -o {outbase} {input}"
+##   musicscene/notation/engraver/abc        (defaults to the bundled Verovio wrapper — see below)
+##   musicscene/notation/engraver/mei        (defaults to the bundled Verovio wrapper — see below)
 ##   musicscene/notation/external_renderer_path + external_renderer_args   (generic fallback)
 ##   musicscene/notation/engraver_output      "png" (default) | "svg"   (what the command writes)
 ## Tokens: {input} {output} {outbase} {outdir} {format} {page}
+##
+## Zero-config Verovio: MEI and ABC fall back to the bundled wrapper
+## res://addons/musicscene/tools/verovio_render.py (launched via `py` on Windows, `python3`
+## elsewhere), so they work after `pip install verovio` with no settings. Override the setting to
+## point at a specific interpreter (e.g. a venv's python.exe) if Verovio lives in a virtualenv.
 
 const Result := preload("res://addons/musicscene/notation/MSNotationRenderResult.gd")
 const Cache := preload("res://addons/musicscene/notation/MSNotationCache.gd")
@@ -58,7 +63,7 @@ static func prepare(content: Dictionary, format: String, page: int, options: Dic
 		input_abs = ProjectSettings.globalize_path(in_user)
 
 	# Output format may be per-engraver (MuseScore -> png, Verovio -> svg).
-	var out_ext := str(_setting("notation/engraver_output/" + format, _setting("notation/engraver_output", "png")))
+	var out_ext := str(_setting("notation/engraver_output/" + format, _default_output_ext(cmd_tmpl)))
 	var out_user := Cache.path_for(Cache.key(cid, format, page, BACKEND, options), out_ext)
 	if Cache.has(out_user):
 		return {"ok": true, "cached": true, "out_user": out_user, "out_ext": out_ext}
@@ -134,7 +139,26 @@ static func _command_for(format: String) -> String:
 	if exe != "":
 		var a := str(_setting("notation/external_renderer_args", "{input} -o {output}"))
 		return "\"%s\" %s" % [exe, a]
+	return _builtin_default(format)
+
+
+## Built-in engraver for formats we ship a wrapper for, so notation works with zero project settings.
+## Verovio reads MEI and ABC natively; the bundled wrapper writes a cropped SVG (+ timemap when the
+## addressable path appends --timemap). Uses the platform's default launcher; override the
+## musicscene/notation/engraver/<format> setting to name a specific interpreter (e.g. a venv python).
+static func _builtin_default(format: String) -> String:
+	if format == "mei" or format == "abc":
+		var py := "py" if OS.get_name() == "Windows" else "python3"
+		return "%s \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page}" % py
 	return ""
+
+
+## Default output extension for an engraver command when engraver_output/<format> isn't set.
+## The bundled Verovio wrapper writes SVG; everything else defaults to the global engraver_output.
+static func _default_output_ext(cmd: String) -> String:
+	if cmd.to_lower().contains("verovio"):
+		return "svg"
+	return str(_setting("notation/engraver_output", "png"))
 
 
 static func _build_argv(template: String, input: String, output: String, format: String, page: int) -> PackedStringArray:

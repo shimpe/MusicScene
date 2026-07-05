@@ -1,5 +1,5 @@
 extends SceneTree
-## End-to-end LilyPond engraver test (real LilyPond via tools/ly_to_score.py).
+## End-to-end LilyPond engraver test (real LilyPond via addons/musicscene/tools/ly_to_score.py).
 ##   godot --headless --path . --script res://tools/test_lilypond.gd
 
 func _init() -> void:
@@ -7,7 +7,7 @@ func _init() -> void:
 	var Cache = load("res://addons/musicscene/notation/MSNotationCache.gd")
 	Cache.clear()
 
-	var wrapper := ProjectSettings.globalize_path("res://tools/ly_to_score.py")
+	var wrapper := ProjectSettings.globalize_path("res://addons/musicscene/tools/ly_to_score.py")
 	var cmd := 'py "%s" {input} {output} --page {page} --dpi 150 --lilypond "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"' % wrapper
 	ProjectSettings.set_setting("musicscene/notation/engraver/lilypond", cmd)
 	ProjectSettings.set_setting("musicscene/notation/engraver_output", "png")

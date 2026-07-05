@@ -711,6 +711,19 @@ run-time** — all through the same commands (works identically in 2D and 3D):
 /ms/scene/<id> notationInfo                          # <- reply notationInfo <id> <fmt> <src> <backend> <pages>
 ```
 
+> **Create the object first.** These commands address an **existing** notation object — they don't
+> create one. Send `new notation` once before any `notation` / `notationData` / `notationSource`, or
+> you'll get `/ms/error ['unknown_object', '/ms/scene/<id>', 'Unknown object: <id>']`:
+>
+> ```python
+> s("/ms/scene/score", "new", "notation")   # do this once, first
+> s("/ms/scene/score", "notationData", "abc", "X: 1\nT: Twinkle\nK: C\nC C G G A A G2 |")
+> ```
+>
+> Only `new`, `instantiate`, `bind`, `bindrel`, and `exists` work on an id that doesn't exist yet;
+> every other verb (including `notation`/`notationData`) errors with `unknown_object`. The examples
+> below all assume this `new notation` has already been sent.
+
 Formats: **`png` `jpg` `webp` `bmp`** (raster) · **`svg`** · **`musicxml` `mei` `lilypond` `abc`**
 (symbolic — these need an engraver, see C). `source_or_data` is treated as a **file path** unless
 it looks like data (starts with markup `<…`, contains newlines, or is an OSC blob); use
@@ -789,11 +802,12 @@ notation/engraver_output="png"   ; what your command writes: "png" (default) or 
 > engraver actually wrote (it looks for `{output}` plus the common `.cropped`, `-page{N}` and `-N`
 > variants that LilyPond/MuseScore produce), so you usually only need to set the engraver's path.
 > Quote paths that contain spaces. `res://`/`user://` paths are resolved too, so a bundled wrapper
-> script (`tools/ly_to_score.py`, `tools/mscore_to_score.py`) is a portable, auto-detecting
-> alternative if you'd rather not hard-code the engraver path.
+> script (`res://addons/musicscene/tools/ly_to_score.py`, `.../mscore_to_score.py`) is a portable,
+> auto-detecting alternative if you'd rather not hard-code the engraver path.
 >
-> This project ships **working defaults for LilyPond and MuseScore** — if either is installed, the
-> matching format works immediately (set your install path).
+> This project ships **working defaults for LilyPond, MuseScore, and Verovio** — install the tool (for
+> LilyPond/MuseScore, point the setting at its binary; Verovio is `pip install verovio`) and the
+> matching format works immediately.
 
 #### MuseScore
 
@@ -808,8 +822,9 @@ s("/ms/scene/score","notationData","musicxml","<?xml ...><score-partwise> ... </
 ```
 
 MuseScore is called directly with `-T` (trim to the music); MusicScene picks up its `out-1.png` page
-automatically. (Prefer auto-detecting the binary? Use the bundled `tools/mscore_to_score.py`
-wrapper instead.) Note: MuseScore 4 occasionally crashes on a cold start under headless automation —
+automatically. (Prefer auto-detecting the binary? Use the bundled
+`addons/musicscene/tools/mscore_to_score.py` wrapper instead.) Note: MuseScore 4 occasionally
+crashes on a cold start under headless automation —
 since rendered pages are cached, a retry succeeds and repeats are instant.
 
 #### LilyPond
@@ -828,7 +843,7 @@ s("/ms/scene/score","notationData","lilypond",ly)
 The default command runs LilyPond with `-dcrop=#t` (tight bounding box, no A4 whitespace); LilyPond
 writes `…cropped.png`, which MusicScene prefers automatically. For **SVG** output use
 `-dbackend=svg … -o {outbase} {input}` and set `engraver_output="svg"`. (Prefer auto-detecting the
-binary? Use the bundled `tools/ly_to_score.py` wrapper instead.)
+binary? Use the bundled `addons/musicscene/tools/ly_to_score.py` wrapper instead.)
 
 (Or set the generic fallback `notation/external_renderer_path` + `notation/external_renderer_args`
 used for any symbolic format.) Then point at a file **or send inline source**:
@@ -845,12 +860,65 @@ MusicScene writes inline source to a temp file, runs your command, caches the pa
 `user://musicscene_cache/notation/`, and displays it. The engraver runs **once** per
 (source, format, page) — repeats are cache hits.
 
-**Engraver tips.** MuseScore and LilyPond are handled by the bundled wrappers
-(`tools/mscore_to_score.py`, `tools/ly_to_score.py`) — they deal with per-page output naming and
-trimming so you don't have to. For other tools (Verovio `verovio -f musicxml -t png -o {outbase}
-{input}`, ABC via `abcm2ps`/`abc2svg`, etc.), wrap anything that names its own outputs in a small
-`input output` script — see `tools/mscore_to_score.py` / `tools/stub_engraver.py` for the exact
-contract MusicScene expects.
+#### Verovio (MEI · ABC) — and Python virtual environments
+
+Verovio is the **built-in default** engraver for **MEI** and **ABC** (it also reads MusicXML, PAE and
+Humdrum). The wrapper ships **inside the addon** at `res://addons/musicscene/tools/verovio_render.py`,
+and MusicScene falls back to it automatically — so MEI/ABC engrave with **zero project settings**,
+just install Verovio:
+
+```sh
+pip install verovio
+```
+
+That's it: `notation mei "…"` / `notationData abc "…"` now work. Under the hood the built-in default is
+equivalent to setting `notation/engraver/mei` (and `/abc`) to
+`py "res://addons/musicscene/tools/verovio_render.py" {input} {output} --page {page}` with
+`engraver_output` `svg` — but you don't have to write any of it. (`py` on Windows, `python3`
+elsewhere.)
+
+**Using a virtual environment (`.venv`).** If you keep Verovio in a venv — the tidy, common choice —
+the default `py`/`python3` may not find it: it runs your **system/base** Python, whose site-packages
+don't contain the venv's `verovio`, so the wrapper exits and the score stays blank (you'll see
+`[engraver process exited with code N …]` in the error).
+
+The fix is a one-line settings override. MusicScene spawns the engraver as a **direct process, not
+through a shell**, so there's nothing to "activate" — you name the venv's interpreter explicitly and
+it brings its own site-packages along. First create the venv and install Verovio into it:
+
+```sh
+python -m venv .venv
+.venv\Scripts\pip install verovio      # Windows
+.venv/bin/pip install verovio          # macOS / Linux
+```
+
+Then override the engraver command so its **first token** (`argv[0]`) is the venv's Python — keeping
+the bundled wrapper path:
+
+```ini
+[MusicScene]
+; Windows — absolute path to the venv's python.exe (quote it; double quotes group spaces)
+notation/engraver/mei="\"D:/path/to/.venv/Scripts/python.exe\" \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page}"
+notation/engraver/abc="\"D:/path/to/.venv/Scripts/python.exe\" \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page}"
+```
+
+On macOS / Linux the interpreter is `.venv/bin/python` in place of `.venv\Scripts\python.exe`.
+
+> **Tip — portable path.** If the venv lives *inside* the project folder, MusicScene resolves
+> `res://` for you, so you can write `"res://.venv/Scripts/python.exe"` and drop the machine-specific
+> absolute path entirely. (Godot ignores dot-folders like `.venv`, so a venv in the project tree is
+> safe.)
+
+One setting covers everything: the same command drives both plain rendering **and** the addressable /
+following path — MusicScene appends `--timemap` itself for note-level timing (see *Following scores*
+below), so you never edit the command for that.
+
+**Engraver tips.** MuseScore, LilyPond and Verovio are handled by wrappers **bundled in the addon**
+(`addons/musicscene/tools/mscore_to_score.py`, `.../ly_to_score.py`, `.../verovio_render.py`) — they
+deal with per-page output naming and trimming so you don't have to. For other tools (ABC via
+`abcm2ps`/`abc2svg`, a custom rasterizer, etc.), wrap anything that names its own outputs in a small
+`input output` script — see `addons/musicscene/tools/verovio_render.py` / `tools/stub_engraver.py`
+for the exact contract MusicScene expects.
 
 ### D. The run-time-generation workflow (the common case)
 
@@ -920,8 +988,9 @@ The cursor moves note-to-note in sync with the transport and emits a note event 
 one — driven entirely by MusicScene (no per-note messages from your client needed).
 
 The same works for **MEI / ABC via Verovio** (`pip install verovio`; it's the default engraver for
-those). Verovio is the cleanest option — its SVG has stable note ids and a timemap with exact
-timing, so addressing + following need no tagging tricks:
+those — keeping it in a `.venv`? see the **Verovio** section above). Verovio is the cleanest option —
+its SVG has stable note ids and a timemap with exact timing, so addressing + following need no
+tagging tricks:
 
 ```python
 s("/ms/scene/score","addressable",1)
@@ -1039,6 +1108,7 @@ For frictionless local prototyping, set `musicscene/developer_mode = true` to re
 | `permission_denied` on bind/call/instantiate | The node/member/scene isn't exposed/whitelisted. Expose it, whitelist it, or enable developer mode. |
 | 3D changes ignored | `musicscene/space` is read once at startup — **restart** after changing it. |
 | MusicXML/MEI fails with `load_failed` | Configure an external engraver in `musicscene/notation/external_renderer_*`, or pre-render to PNG/SVG. |
+| Verovio `verovio not installed`, or MEI/ABC stays blank | The engraver ran the wrong Python. If Verovio lives in a venv, point `musicscene/notation/engraver/mei` (and `/abc`) at the venv interpreter (`.venv/Scripts/python.exe` on Windows, `.venv/bin/python` elsewhere) instead of `py` — see the **Verovio** section. |
 | SVG score not visible | Put the `.svg` under `res://` (it loads via Godot's import — confirm it shows a thumbnail in the FileSystem dock). The page renders at native size centred on the object, so **scale it down** (`/ms/scene/score scale 0.3`) if it overflows. If the SVG shows no thumbnail, ThorVG can't rasterize it — export to PNG instead. Check the Output panel for a `load_failed` warning. |
 
 ---
