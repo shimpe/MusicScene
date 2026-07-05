@@ -52,6 +52,11 @@ s.waitForBoot({
     ~bpm    = 84;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
     ~lead   = 1;      // beats to show a page before it plays (just long enough to render). 0 = no pause; raise to linger.
     ~scoreScale = (~space == "3d").if({ 2.0 }, { 2.0 });   // grand-staff size — raise to enlarge
+    // Where the notes actually sit on the page (measured from Verovio's layout of a 4-bar grand staff
+    // with treble+bass clef and 4/4): the first note is at u~0.12 — after the clef/time signature, NOT
+    // at the barline — and the music ends near u~0.98. The playhead sweeps between these.
+    ~cursorStart = 0.12;
+    ~cursorEnd   = 0.98;
 
     // C-major note pools (MIDI). Right hand sings in the treble, left hand walks the bass.
     ~rhPool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81];   // C4 .. A5
@@ -143,14 +148,15 @@ s.waitForBoot({
     };
 
     // Sweep the playhead left->right across the grand staff over one page (16 beats), in step with
-    // playback. It's linear in time (Verovio spaces the four bars ~evenly); a small start offset skips
-    // the clef/time-signature margin so the cursor sits near the first note.
+    // playback. Linear in time (Verovio spaces the four bars ~evenly), anchored to the measured note
+    // span so the cursor starts ON the first note rather than at the barline.
     ~sweepCursor = {
         Routine({
             var steps = 96;
             var dur   = 16 / steps;                    // beats per step
+            var span  = ~cursorEnd - ~cursorStart;
             (steps + 1).do({ |k|
-                var u = 0.06 + ((k / steps) * 0.92);   // 0.06 (after the clef) -> 0.98 (final barline)
+                var u = ~cursorStart + ((k / steps) * span);
                 ~engine.sendMsg("/ms/scene/score/cursor", "pos", u, 0.5);
                 if(k < steps) { dur.wait };
             });
@@ -184,7 +190,7 @@ s.waitForBoot({
                 var rhBars = Array.fill(4, { ~genBar.(\rh) });
                 var lhBars = Array.fill(4, { ~genBar.(\lh) });
                 ~engine.sendMsg("/ms/scene/score", "notationData", "mei", ~meiScore.(rhBars, lhBars));
-                ~engine.sendMsg("/ms/scene/score/cursor", "pos", 0.06, 0.5);   // park the playhead at the start
+                ~engine.sendMsg("/ms/scene/score/cursor", "pos", ~cursorStart, 0.5);   // park the playhead on the first note
                 ~lead.wait;                       // show the page before it sounds
                 ~playPage.(rhBars, 0.22, 0.13);   // right hand
                 ~playPage.(lhBars, -0.22, 0.16);  // left hand
