@@ -13,6 +13,10 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   re-render, and works identically in 2D and 3D.
 
 ### Fixed
+- **Flicker on incremental 3D notation updates.** Re-rendering a 3D score (e.g. streaming notes one at
+  a time) briefly tinted the current page yellow while the new one engraved. The "engraving" tint now
+  appears only for the first render (when the page is empty); subsequent renders keep the previous page
+  fully visible until the new one is ready. (The 2D path already behaved this way.)
 - **Verovio scores padded with a wide white margin.** The bundled `verovio_render.py` set only
   `adjustPageHeight`, so a short excerpt was laid out on a full-width page and rendered with large empty
   space to the right. It now also sets `adjustPageWidth`, cropping the page to the music (a two-measure

@@ -127,6 +127,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_notation_bg.gd 2>&1 | tee notationbg.log
           grep -q "fail=0" notationbg.log && ! grep -q "FAIL:" notationbg.log
 
+      - name: Self-tests — incremental notation (no flicker)
+        run: |
+          ./godot --headless --path . --script res://tools/test_notation_incremental.gd 2>&1 | tee notationinc.log
+          grep -q "fail=0" notationinc.log && ! grep -q "FAIL:" notationinc.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log

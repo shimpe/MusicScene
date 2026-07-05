@@ -159,7 +159,10 @@ func _render() -> void:
 	# External engravers run async (non-blocking) via the render queue; fast backends stay sync.
 	if Renderer.backend_for(format) == "external" and ctx.render_queue != null:
 		_pending = true
-		page_mat.albedo_color = Color(0.85, 0.85, 0.6, 1.0)  # "engraving" tint
+		# Show the "engraving" tint only when there's nothing on the page yet; on incremental updates
+		# keep the previous page fully visible until the new one is ready (no flicker).
+		if _page_texture == null:
+			page_mat.albedo_color = Color(0.85, 0.85, 0.6, 1.0)
 		if addressable:
 			ctx.render_queue.submit_addressable(self, source_content, format, current_page, render_options, _force_data)
 		else:
