@@ -50,7 +50,7 @@ s.waitForBoot({
 
     ~space  = "3d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
     ~bpm    = 84;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
-    ~lead   = 1;      // beats to show a page before it plays (just long enough to render). 0 = no pause; raise to linger.
+    ~lead   = 0;      // beats to show a page before it plays (just long enough to render). 0 = no pause; raise to linger.
     ~scoreScale = (~space == "3d").if({ 2.0 }, { 2.0 });   // grand-staff size — raise to enlarge
     // Where the notes actually sit on the page (measured from Verovio's layout of a 4-bar grand staff
     // with treble+bass clef and 4/4): the first note is at u~0.12 — after the clef/time signature, NOT
