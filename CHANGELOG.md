@@ -7,10 +7,10 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ### Added
 - **Example — live two-hand score (SuperCollider).** `examples/supercollider/example_two_hands.scd`:
-  two independent random patterns (right/left hand) generate notes and rhythms bar by bar and send each
-  hand's score to MusicScene as ABC (filling four measures, then wiping and restarting from empty),
-  visualising a treble+bass staff pair (two stacked notation objects) as it plays. Demonstrates live
-  notation, zero-config Verovio, and `background`.
+  two independent random patterns (right/left hand) generate notes and rhythms; each cycle it builds a
+  full four-measure grand staff as a single MEI score (treble R.H. + bass L.H., braced), shows the
+  whole page, then plays it. Uses MEI rather than ABC because Verovio's ABC importer is single-voice;
+  demonstrates live zero-config Verovio notation and `background`.
 - **Notation background colour.** `/ms/scene/<id> background <colour>` (alias `bg`) fills an opaque
   "paper" behind a score — essential for Verovio/SVG scores, which draw ink on a transparent page.
   Accepts a named colour (`white`), hex (`#faf6e9`), or `r g b [a]` floats, plus `none` to clear. The

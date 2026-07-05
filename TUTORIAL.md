@@ -1213,10 +1213,10 @@ s("/ms/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
   pinball table using bouncers, portals, sensor-zone targets, bouncy walls and pins; all sound synthesised
   locally. Boot the project in 3D and evaluate the block.
 - **Live two-hand score (SuperCollider):** `examples/supercollider/example_two_hands.scd` — two random
-  "patterns" (right hand / left hand) invent notes and rhythms bar by bar and stream each hand's score
-  to MusicScene as ABC, filling four measures then wiping and restarting, so you watch it written live
-  as it plays. Shows live Verovio notation, a treble + bass staff pair (two stacked notation objects),
-  and `background`.
+  "patterns" (right hand / left hand) invent notes and rhythms; each cycle it builds a full four-measure
+  **grand staff** (one MEI score: treble R.H. + bass L.H., braced), shows it, then plays it. Uses MEI
+  rather than ABC because Verovio's ABC importer is single-voice — MEI lets a single notation object
+  hold both staves. Demonstrates live zero-config Verovio notation and `background`.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,
   `discover`, bulk binding, the permission model, `payload` and signal forwarding, emission modes, and

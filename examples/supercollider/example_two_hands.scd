@@ -1,39 +1,38 @@
 // =============================================================================
 // Two-hand generative score — a SuperCollider showcase for MusicScene's LIVE notation.
 //
-// Two independent random "patterns" — a right hand and a left hand — invent notes and
-// rhythms one bar at a time. Every bar, the program appends the new measure to each hand's
-// score and sends it to MusicScene as ABC; once FOUR measures are on the page it wipes them
-// and starts a fresh, empty score. So you watch the score fill up a bar at a time, then reset
-// and fill again — while sclang plays it. Nothing exotic: notes come from a C-major pool with
-// gentle stepwise motion, rhythms are plain (eighths, quarters, dotted quarters, halves).
+// Two independent random "patterns" — a right hand and a left hand — invent notes and rhythms.
+// Each cycle the program generates a full FOUR-MEASURE page, SHOWS it (sends the whole score at
+// once), pauses so you can read it, THEN plays it — and repeats with a fresh page. Nothing exotic:
+// notes come from a C-major pool with gentle stepwise motion, rhythms are plain (eighths, quarters,
+// dotted quarters, halves).
 //
-//     right hand -> /ms/scene/rh   (treble staff)
-//     left  hand -> /ms/scene/lh   (bass staff)
+// Both hands live in ONE score as a real grand staff — right hand on the treble staff, left hand on
+// the bass staff, braced together. Verovio's ABC importer is single-voice, so we emit MEI (Verovio's
+// native format) instead of ABC: that lets a single notation object hold both staves, and Verovio
+// spaces the grand staff for us. It needs no engraver configuration — `mei` engraves with zero config
+// (just `pip install verovio`).
 //
-// The two staves are SEPARATE notation objects stacked like a piano grand staff. Verovio's
-// ABC importer is single-voice, so one ABC string = one staff — two hands = two objects,
-// the right one in treble clef, the left in bass clef (`K:C clef=bass`).
+//     one grand-staff score -> /ms/scene/score   (treble = R.H., bass = L.H.)
 //
-// Every sound is synthesised locally (a soft additive tone), so no external synth is needed:
-// sclang generates the music, DRAWS it over OSC, and PLAYS it.
+// Everything is synthesised locally (a soft additive tone), so no external synth is needed: sclang
+// generates the music, DRAWS it over OSC, and PLAYS it.
 //
-// REQUIRES MusicScene with Verovio notation working — `pip install verovio` (MEI/ABC engrave
-// with zero config). Set ~space below to match your project's `musicscene/space`.
+// REQUIRES MusicScene with Verovio notation working — `pip install verovio`. Set ~space below to
+// match your project's `musicscene/space`.
 //
 // USAGE:
 //   1. Boot the audio server (evaluating the block below does it).
 //   2. Run the Godot project with MusicScene (exactly ONE instance).
 //   3. Put the cursor in the big ( ... ) block and press Ctrl+Enter (Cmd+Enter).
-//   4. Two staves appear and fill in four bars at a time, scrolling as the music plays.
+//   4. A four-measure grand staff appears, waits a bar, then plays — then the next page, forever.
 //   5. To stop, evaluate the CLEANUP block at the bottom.
 // =============================================================================
 
 (
 s.waitForBoot({
 
-    // A soft, slightly bell-like piano voice: three sine partials, a gentle tail, a
-    // touch of reverb. Amplitude/pan come from the caller (left vs right hand).
+    // A soft, slightly bell-like piano voice: three sine partials, a gentle tail, a touch of reverb.
     SynthDef(\pnote, { |freq = 440, amp = 0.15, pan = 0|
         var env  = EnvGen.kr(Env.perc(0.004, 1.2, 1, -4.5), doneAction: 2);
         var tone = SinOsc.ar(freq) + (SinOsc.ar(freq * 2) * 0.35) + (SinOsc.ar(freq * 3) * 0.12);
@@ -50,11 +49,8 @@ s.waitForBoot({
 
     ~space  = "2d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
     ~bpm    = 84;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
-
-    // Layout. Normalized coords are y-UP and centred at 0, so the right hand (treble) takes the
-    // upper (+y) slot and the left hand (bass) the lower (-y) slot. Tune these two to taste.
-    ~scoreScale = (~space == "3d").if({ 0.24 }, { 0.70 });   // staff size — RAISE to enlarge
-    ~staffGap   = (~space == "3d").if({ 0.22 }, { 0.32 });   // each staff's distance from centre
+    ~lead   = 4;      // beats to SHOW a page before it plays (a read pause / count-in) — raise/lower to taste
+    ~scoreScale = (~space == "3d").if({ 0.28 }, { 0.62 });   // grand-staff size — raise to enlarge
 
     // C-major note pools (MIDI). Right hand sings in the treble, left hand walks the bass.
     ~rhPool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81];   // C4 .. A5
@@ -64,44 +60,54 @@ s.waitForBoot({
     ~lhRhythm = [1, 1, 2, 2, 1.5, 0.5];
     ~restProb = 0.12;   // chance any event is a rest
 
-    // MIDI pitch-class -> ABC letter (C major only, so no accidentals are ever needed).
+    // MIDI pitch-class -> note letter (C major only, so no accidentals are ever needed).
     ~pcLetter = ["C", nil, "D", nil, "E", "F", nil, "G", nil, "A", nil, "B"];
 
-    // ---- ABC helpers --------------------------------------------------------
+    // ---- MEI helpers: build one grand-staff score --------------------------
+    // MEI `dur` is the note value (8=eighth, 4=quarter, 2=half); dur*2 (eighths) indexes this table
+    // to [dur-value, dots-attribute].
+    ~meiDurs = [nil, ["8", ""], ["4", ""], ["4", " dots=\"1\""], ["2", ""]];
 
-    // MIDI note -> ABC pitch token. Middle C (60) = "C"; up an octave = "c", "c'"; down = "C,", "C,,".
-    ~abcPitch = { |midi|
-        var pc   = midi % 12;
-        var oct  = (midi / 12).floor.asInteger - 1;
-        var base = ~pcLetter[pc] ? "C";
-        if(oct >= 5) {
-            base.toLower ++ ("'" ! (oct - 5)).join;
+    ~meiNote = { |dur, midi|
+        var d = ~meiDurs[(dur * 2).round.asInteger];
+        if(midi.isNil) {
+            "<rest dur=\"" ++ d[0] ++ "\"" ++ d[1] ++ "/>"
         } {
-            base ++ ("," ! (4 - oct)).join;
+            var pc  = midi % 12;
+            var oct = (midi / 12).floor.asInteger - 1;   // MEI octave: middle C (60) = oct 4
+            "<note dur=\"" ++ d[0] ++ "\"" ++ d[1] ++ " oct=\"" ++ oct.asString
+                ++ "\" pname=\"" ++ ~pcLetter[pc].toLower ++ "\"/>"
         };
     };
 
-    // One event [dur, midi-or-nil] -> ABC token, e.g. [1.0, 67] -> "G2", [0.5, nil] -> "z".
-    // With L:1/8 the length number is the note's duration measured in eighths (dur / 0.5).
-    ~abcTok = { |dur, midi|
-        var len   = (dur / 0.5).round.asInteger;
-        var pitch = midi.isNil.if({ "z" }, { ~abcPitch.(midi) });
-        pitch ++ (len == 1).if({ "" }, { len.asString });
-    };
+    ~meiLayer = { |bar| bar.collect({ |ev| ~meiNote.(ev[0], ev[1]) }).join };
 
-    ~barToAbc = { |bar| bar.collect({ |ev| ~abcTok.(ev[0], ev[1]) }).join(" ") };
-
-    // A rolling window of bars -> a complete little ABC tune for one hand.
-    ~windowAbc = { |win, clef|
-        var head = "X:1\nM:4/4\nL:1/8\nK:C" ++ (clef == \bass).if({ " clef=bass" }, { "" }) ++ "\n";
-        head ++ win.collect({ |bar| ~barToAbc.(bar) }).join(" | ") ++ " |]";
+    // A page = four bars per hand -> one MEI grand staff (staff 1 = treble/RH, staff 2 = bass/LH).
+    ~meiScore = { |rhBars, lhBars|
+        var body = "";
+        rhBars.size.do({ |i|
+            body = body
+                ++ "<measure n=\"" ++ (i + 1).asString ++ "\">"
+                ++ "<staff n=\"1\"><layer n=\"1\">" ++ ~meiLayer.(rhBars[i]) ++ "</layer></staff>"
+                ++ "<staff n=\"2\"><layer n=\"1\">" ++ ~meiLayer.(lhBars[i]) ++ "</layer></staff>"
+                ++ "</measure>";
+        });
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        ++ "<mei xmlns=\"http://www.music-encoding.org/ns/mei\" meiversion=\"4.0.0\">"
+        ++ "<music><body><mdiv><score>"
+        ++ "<scoreDef meter.count=\"4\" meter.unit=\"4\" key.sig=\"0\">"
+        ++ "<staffGrp symbol=\"brace\" bar.thru=\"true\">"
+        ++ "<staffDef n=\"1\" lines=\"5\" clef.shape=\"G\" clef.line=\"2\"/>"
+        ++ "<staffDef n=\"2\" lines=\"5\" clef.shape=\"F\" clef.line=\"4\"/>"
+        ++ "</staffGrp></scoreDef>"
+        ++ "<section>" ++ body ++ "</section>"
+        ++ "</score></mdiv></body></music></mei>";
     };
 
     // ---- the two generative "patterns" -------------------------------------
 
-    // Generate one 4/4 bar for a hand: fill exactly 4 beats with random durations from the
-    // hand's palette; each event is a rest (~restProb) or a note that steps near the previous
-    // one (a small random walk over the pool -> melodic, not jumpy).
+    // Generate one 4/4 bar for a hand: fill exactly 4 beats with random durations from the hand's
+    // palette; each event is a rest (~restProb) or a note that steps near the previous one.
     ~genBar = { |hand|
         var isRh    = (hand == \rh);
         var pool    = isRh.if({ ~rhPool }, { ~lhPool });
@@ -123,64 +129,53 @@ s.waitForBoot({
         bar;
     };
 
-    // Play one bar (fork a short routine so both hands sound together, on the shared clock).
-    ~playBar = { |bar, pan, amp|
+    // Play a whole page (four bars) for one hand: fork a routine so both hands sound together.
+    ~playPage = { |bars, pan, amp|
         Routine({
-            bar.do({ |ev|
-                if(ev[1].notNil) { Synth(\pnote, [\freq, ev[1].midicps, \amp, amp, \pan, pan]) };
-                ev[0].wait;
+            bars.do({ |bar|
+                bar.do({ |ev|
+                    if(ev[1].notNil) { Synth(\pnote, [\freq, ev[1].midicps, \amp, amp, \pan, pan]) };
+                    ev[0].wait;
+                });
             });
         }).play(~clock);
     };
 
-    // ---- build the two staves, then run the conductor -----------------------
+    // ---- build the score object, then run the conductor --------------------
     ~build = Routine({
         ~snd.("/ms/scene", "reset");
-
-        ["rh", "lh"].do({ |id|
-            ~snd.("/ms/scene/" ++ id, "new", "notation");
-            ~snd.("/ms/scene/" ++ id, "background", "white");     // opaque paper behind the ink
-        });
-
-        // Right hand (treble) on top (+y), left hand (bass) below (-y); both centred on x = 0.
-        ~snd.("/ms/scene/rh", "scale", ~scoreScale);
-        ~snd.("/ms/scene/lh", "scale", ~scoreScale);
+        ~snd.("/ms/scene/score", "new", "notation");
+        ~snd.("/ms/scene/score", "background", "white");
+        ~snd.("/ms/scene/score", "scale", ~scoreScale);
         if(~space == "3d") {
-            ~snd.("/ms/scene/rh", "pos", 0.0, ~staffGap,     0.0);
-            ~snd.("/ms/scene/lh", "pos", 0.0, ~staffGap.neg, 0.0);
+            ~snd.("/ms/scene/score", "pos", 0.0, 0.0, 0.0);
         } {
-            ~snd.("/ms/scene/rh", "pos", 0.0, ~staffGap);
-            ~snd.("/ms/scene/lh", "pos", 0.0, ~staffGap.neg);
+            ~snd.("/ms/scene/score", "pos", 0.0, 0.0);
         };
 
         // fresh state
         if(~conductor.notNil) { ~conductor.stop };
         if(~clock.notNil)     { ~clock.stop };
         ~clock = TempoClock(~bpm / 60);
-        ~rhWin = []; ~lhWin = [];
         ~rhIdx = (~rhPool.size / 2).floor.asInteger;   // start each walk mid-range
         ~lhIdx = (~lhPool.size / 2).floor.asInteger;
 
-        // The conductor: each bar, both hands invent a measure; append it (wiping the page once four
-        // are shown); send each hand's score as ABC; play the new bar. Direct sendMsg keeps timing exact.
+        // The conductor: each cycle, invent a fresh 4-measure page for both hands, SHOW the whole
+        // grand staff, wait ~lead beats so it renders and can be read, THEN play the four measures.
         ~conductor = Routine({
             loop {
-                var rhBar = ~genBar.(\rh);
-                var lhBar = ~genBar.(\lh);
-                // Fill up to four measures, then wipe both staves and start a fresh score.
-                if(~rhWin.size >= 4) { ~rhWin = []; ~lhWin = [] };
-                ~rhWin = ~rhWin ++ [rhBar];
-                ~lhWin = ~lhWin ++ [lhBar];
-                ~engine.sendMsg("/ms/scene/rh", "notationData", "abc", ~windowAbc.(~rhWin, \treble));
-                ~engine.sendMsg("/ms/scene/lh", "notationData", "abc", ~windowAbc.(~lhWin, \bass));
-                ~playBar.(rhBar, 0.22, 0.13);
-                ~playBar.(lhBar, -0.22, 0.16);
-                4.wait;                       // one 4/4 bar
+                var rhBars = Array.fill(4, { ~genBar.(\rh) });
+                var lhBars = Array.fill(4, { ~genBar.(\lh) });
+                ~engine.sendMsg("/ms/scene/score", "notationData", "mei", ~meiScore.(rhBars, lhBars));
+                ~lead.wait;                       // show the page before it sounds
+                ~playPage.(rhBars, 0.22, 0.13);   // right hand
+                ~playPage.(lhBars, -0.22, 0.16);  // left hand
+                16.wait;                          // four 4/4 bars
             };
         }).play(~clock);
 
         "".postln;
-        "Two-hand generative score running — the staves fill four bars, then wipe and restart.".postln;
+        "Two-hand generative score — a fresh four-measure grand staff is shown, then played.".postln;
         "Evaluate the CLEANUP block to stop.".postln;
         "".postln;
     });
