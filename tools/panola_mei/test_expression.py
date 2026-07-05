@@ -23,3 +23,42 @@ def test_render_props_counts_dynam_and_artic():
     assert p["ok"] is True
     assert p["dynam"] == 1
     assert p["artics"] == 1
+
+
+def _dump(outdir, cases):
+    dir_sc = outdir.replace("\\", "/") + "/"
+    lines = ['File.mkdir("%s");' % dir_sc]
+    for n, expr in cases.items():
+        lines.append('File.use("%s%s.mei","w",{|f| f.write(%s) });' % (dir_sc, n, expr))
+    lines.append('"DONE".postln; 0.exit;')
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write("(\n" + "\n".join(lines) + "\n)\n")
+        path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "ERROR" not in r.stdout and "parse panola" not in r.stdout, r.stdout[-1500:]
+
+
+ART = {
+  "oneshot":  r'Panola.scoreAsMEI([Panola("c5_4@art^staccato^ d5 e5 c5_4")], "4/4", \Cmajor, [\treble], nil)',
+  "passage":  r'Panola.scoreAsMEI([Panola("c5_4@art[stacc:on] d5 e5 f5 g5@art[stacc:off] a5 b5 c6")], "4/4", \Cmajor, [\treble], nil)',
+  "layered":  r'Panola.scoreAsMEI([Panola("c5_4@art[acc:on] d5@art[stacc:on] e5@art[acc:off] f5")], "4/4", \Cmajor, [\treble], nil)',
+}
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_articulation():
+    outdir = tempfile.mkdtemp(prefix="panola_expr_")
+    try:
+        _dump(outdir, ART)
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in ART}
+        props = {k: render_props(v) for k, v in meis.items()}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    for k, p in props.items():
+        assert p["ok"], f"{k}: {p['stderr'][:200]}"
+    assert meis["oneshot"].count(' artic="stacc"') == 1
+    assert meis["passage"].count(' artic="stacc"') == 4
+    assert 'artic="acc"' in meis["layered"] and 'artic="acc stacc"' in meis["layered"] and 'artic="stacc"' in meis["layered"]
