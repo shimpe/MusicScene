@@ -32,6 +32,17 @@ func _init() -> void:
 	check(not flat.contains('<svg class="definition-scale"'), "inner <svg> element replaced")
 	check(flat.contains('color="black"'), "presentation attrs carried onto the <g>")
 	check(_opaque(flat) > 100, "flattened SVG rasterises to visible pixels (%d opaque)" % _opaque(flat))
+	check(not flat.contains('stroke="currentColor"'), "no stroke injected when the SVG has no CSS stroke idiom")
+
+	# Verovio-style: staff/bar lines are stroked ONLY via a <style> rule ThorVG ignores, so those lines
+	# vanish. The adapter must re-declare the stroke on the container so ThorVG draws them.
+	var styled := '<svg xmlns="http://www.w3.org/2000/svg" width="100px" height="100px">' \
+		+ '<style type="text/css">#p path {stroke:currentColor}</style>' \
+		+ '<svg class="definition-scale" color="black" viewBox="0 0 1000 1000">' \
+		+ '<path d="M100 500 L900 500" stroke-width="20"/></svg></svg>'
+	var sflat := SvgBackend.flatten_nested_viewbox(styled)
+	check(sflat.contains('stroke="currentColor"'), "CSS-only stroke re-declared on the container")
+	check(_opaque(sflat) > 100, "CSS-stroked line (staff) now rasterises: %d opaque" % _opaque(sflat))
 
 	# Idempotent: flattening an already-flat SVG changes nothing.
 	check(SvgBackend.flatten_nested_viewbox(flat) == flat, "flatten is idempotent")

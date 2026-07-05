@@ -59,12 +59,17 @@ static func _rasterize(svg_text: String, scale: float, page_count: int, label: S
 	return Result.make_ok(BACKEND, ImageTexture.create_from_image(img), page_count)
 
 
-## Godot's ThorVG rasteriser ignores the viewBox scaling of a NESTED <svg> — a common Verovio pattern
-## (an inner `<svg class="definition-scale" viewBox="0 0 W H">` with no width/height that scales a huge
-## coordinate space into the page). Such an SVG rasterises fully transparent (no error). We rewrite the
-## first nested `<svg viewBox>` into an equivalent `<g transform="translate() scale()">`, which ThorVG
-## DOES honour. Only the in-memory raster is changed; any on-disk SVG (used for note-position parsing)
-## is left untouched. A no-op for SVGs without a nested viewBox.
+## Adapt an SVG so Godot's ThorVG rasteriser draws it as intended. Fixes two ThorVG gaps that together
+## make Verovio scores render blank or incomplete; both changes are in-memory only, so any on-disk SVG
+## (used for note-position parsing) is untouched, and both are no-ops for SVGs that don't need them:
+##   1. Nested-<svg> viewBox: ThorVG ignores the viewBox scaling of a nested `<svg>` (Verovio's inner
+##      `<svg class="definition-scale" viewBox="0 0 W H">` with no width/height), so the page rasterises
+##      fully transparent. We rewrite it into an equivalent `<g transform="translate() scale()">`.
+##   2. CSS strokes: Verovio colours staff/bar/stem lines via a `<style>` rule (`path{stroke:currentColor}`)
+##      instead of a stroke attribute; ThorVG ignores the `<style>` block, so those lines vanish while
+##      filled glyphs (default black fill) survive. We re-declare `stroke="currentColor"` on the
+##      container when the SVG uses that idiom (elements keep their own stroke-width; glyphs have none,
+##      so their inherited stroke is a negligible sub-pixel outline).
 static func flatten_nested_viewbox(svg: String) -> String:
 	var root_open := svg.find("<svg")
 	if root_open < 0:
@@ -110,6 +115,9 @@ static func flatten_nested_viewbox(svg: String) -> String:
 		var v := _svg_attr(nested_tag, a)
 		if v != "":
 			carried += ' %s="%s"' % [a, v]
+	# Restore CSS-driven strokes (staff/bar/stem lines) that ThorVG would otherwise drop — see above.
+	if svg.contains("stroke:currentColor") and _svg_attr(nested_tag, "stroke") == "":
+		carried += ' stroke="currentColor"'
 	var g_open := '<g%s transform="translate(%s, %s) scale(%s, %s)">' % [carried, tx, ty, sx, sy]
 	return svg.substr(0, nested_open) + g_open \
 		+ svg.substr(nested_gt + 1, close - (nested_gt + 1)) + "</g>" + svg.substr(close + 6)

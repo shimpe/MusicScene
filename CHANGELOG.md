@@ -19,6 +19,11 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   flattens a nested `<svg viewBox>` into an equivalent `<g transform="scale()">` before rasterising;
   the on-disk SVG (used for note-position parsing / following) is untouched. Fixes plain display,
   addressable display, and inline Verovio SVGs sent over OSC.
+- **Missing staff and bar lines in Verovio scores.** Verovio colours staff/bar/stem lines with a
+  `<style>` CSS rule (`path{stroke:currentColor}`) rather than a `stroke` attribute; ThorVG ignores the
+  `<style>` block, so only the filled glyphs (clefs, noteheads, time signature) rendered while every
+  stroked line disappeared. The SVG adapter now re-declares `stroke="currentColor"` on the container
+  when an SVG uses that idiom, so ThorVG draws the lines (glyphs are unaffected).
 
 ### Changed
 - **Self-contained engravers.** The engraver helper scripts MusicScene shells out to
