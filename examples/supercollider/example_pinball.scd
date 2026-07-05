@@ -444,6 +444,7 @@ OSCdef(\music_note).free;
 OSCdef(\pin_click).free;
 OSCdef(\pin_drain).free;
 ~engine.sendMsg("/ms/physics", "enable", 0);   // freeze the board
+s.freeAll;                                     // silence any still-sounding synths
 "Pinball stopped.".postln;
 )
 

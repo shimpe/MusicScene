@@ -221,6 +221,7 @@ if(~watchdog.notNil) { ~watchdog.stop };
 OSCdef(\music_note).free;
 OSCdef(\music_pin).free;
 ~engine.sendMsg("/ms/physics", "enable", 0);   // freeze the board
+s.freeAll;                                     // silence any still-sounding synths
 "Pachinko stopped.".postln;
 )
 

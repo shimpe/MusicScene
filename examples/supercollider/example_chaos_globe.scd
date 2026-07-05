@@ -148,5 +148,6 @@ if(~shake.notNil) { ~shake.stop };
 OSCdef(\music_note).free;
 ~engine.sendMsg("/ms/physics", "gravity", 0.0, -1.0, 0.0);   // gravity back to down
 ~engine.sendMsg("/ms/physics", "enable", 0);                 // freeze the balls
+s.freeAll;                                                   // silence any still-sounding synths
 "Snow-globe stopped.".postln;
 )

@@ -136,5 +136,6 @@ s.waitForBoot({
 (
 OSCdef(\music_note).free;
 ~engine.sendMsg("/ms/physics", "enable", 0);   // freeze the pendulum
+s.freeAll;                                     // silence any still-sounding synths
 "Pendulum stopped.".postln;
 )
