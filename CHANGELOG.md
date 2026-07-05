@@ -5,6 +5,16 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ## [Unreleased]
 
+### Fixed
+- **Playback cursor across multiple staff-systems.** When Verovio wraps a wide score onto several lines,
+  the follow cursor now stays within the system of the note being played (instead of a full-page line at a
+  page-relative x that matched neither line). Addressable note data records each note's system plus a
+  per-system vertical band (`MSNotationVerovioPositions`); the 2D and 3D cursors draw only within their
+  system's band. New `cursor at <when>` command positions the cursor at a whole-note time, interpolating
+  `u` only within a system (never sweeping backwards at a wrap). `MSScore` now drives the cursor with
+  `cursor at` on its own audio clock — one clock for audio and cursor, and no reply round-trip — so the
+  note-accurate cursor is reliable and in sync.
+
 ### Added
 - **Panola score bridge (SuperCollider).** `MSScore` (`examples/supercollider/MSScore.sc`) turns
   [Panola](https://github.com/shimpe/panola) string(s) into a MusicScene score with one call: it builds

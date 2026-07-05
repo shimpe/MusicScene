@@ -28,7 +28,8 @@ var _force_data: bool = false
 var _pending: bool = false      # an async engrave is in flight
 var addressable: bool = false
 var measures: Array = []        # [{index, rect:Rect2(normalized), time}]   (MuseScore)
-var elements: Array = []        # [{index, when, line, char, u, v}]          (LilyPond notes)
+var elements: Array = []        # [{index, when, line, char, u, v, sys}]      (addressable notes)
+var systems: Array = []         # [{top, bottom}] per staff-system vertical band (page-normalized)
 var _follow: bool = false
 var _last_passed: int = -1
 var format: String = ""
@@ -44,6 +45,7 @@ var bg_color: Color = Color(0, 0, 0, 0)   # paper colour behind the score (trans
 # cursor state
 var cur_u: float = 0.1
 var cur_v: float = 0.5
+var cur_sys: int = -1          # current staff-system index (-1 = span the full page)
 var cur_color: Color = Color(1, 0, 0, 0.85)
 var cur_width: float = 0.04
 
@@ -210,7 +212,7 @@ func _measure_u(mi: int, frac: float) -> float:
 
 # --- LilyPond note-level addressing + following --------------------------
 
-func _on_elements_done(texture: Texture2D, p_elements: Array) -> void:
+func _on_elements_done(texture: Texture2D, p_elements: Array, p_systems: Array = []) -> void:
 	_pending = false
 	_set_page_texture(texture)
 	backend = "addressable-ly"
@@ -220,6 +222,7 @@ func _on_elements_done(texture: Texture2D, p_elements: Array) -> void:
 	page_world = Vector2(PAGE_HEIGHT * aspect, PAGE_HEIGHT)
 	(page_mesh.mesh as QuadMesh).size = page_world
 	elements = p_elements
+	systems = p_systems
 	_last_passed = -1
 	for e in elements:
 		var rid := "n%d" % int(e.index)
@@ -263,13 +266,54 @@ func _follow_u(when: float) -> float:
 	return last.u
 
 
+## Interpolated cursor position at whole-note time `when`: horizontal `u` (interpolated only within a
+## staff-system) and the system index it sits in. Mirrors MSNotationObject._follow_pos.
+func _follow_pos(when: float) -> Dictionary:
+	if elements.is_empty():
+		return {"u": cur_u, "sys": cur_sys}
+	var i := 0
+	for k in elements.size():
+		if elements[k].when <= when:
+			i = k
+		else:
+			break
+	var a = elements[i]
+	var uu: float = a.u
+	if i + 1 < elements.size():
+		var b = elements[i + 1]
+		if int(b.get("sys", 0)) == int(a.get("sys", 0)):
+			var span: float = b.when - a.when
+			if span > 0.0:
+				uu = lerpf(a.u, b.u, clampf((when - a.when) / span, 0.0, 1.0))
+	return {"u": uu, "sys": int(a.get("sys", 0))}
+
+
+func sys_for_v(vv: float) -> int:
+	if systems.is_empty():
+		return -1
+	for i in systems.size():
+		if vv >= systems[i].top and vv <= systems[i].bottom:
+			return i
+	var best := 0
+	var best_d := 1e20
+	for i in systems.size():
+		var d: float = absf(vv - (systems[i].top + systems[i].bottom) * 0.5)
+		if d < best_d:
+			best_d = d
+			best = i
+	return best
+
+
 func _process(_delta: float) -> void:
 	if not _follow or ctx == null or ctx.transport == null or not ctx.transport.playing or elements.is_empty():
 		return
 	var when: float = ctx.transport.beat / 4.0
 	if _last_passed >= 0 and _last_passed < elements.size() and when < elements[_last_passed].when:
 		_last_passed = -1
-	set_cursor_property("x", _follow_u(when))
+	var fp := _follow_pos(when)
+	cur_u = fp.u
+	cur_sys = fp.sys
+	_update_cursor()
 	while _last_passed + 1 < elements.size() and elements[_last_passed + 1].when <= when:
 		_last_passed += 1
 		var e = elements[_last_passed]
@@ -311,7 +355,9 @@ func handle_cursor(args: Array) -> void:
 	var cmd := _s(args, 0)
 	match cmd:
 		"show": cursor_node.visible = _b(args, 1, true)
-		"pos": cur_u = _f(args, 1); cur_v = _f(args, 2); _update_cursor()
+		"pos": cur_u = _f(args, 1); cur_v = _f(args, 2); cur_sys = sys_for_v(cur_v); _update_cursor()
+		"at":
+			var fp := _follow_pos(_f(args, 1)); cur_u = fp.u; cur_sys = fp.sys; _update_cursor()
 		"measure":
 			var mi := int(_f(args, 1, 1)) - 1
 			var mu := _measure_u(mi, _f(args, 2, 0.0))
@@ -347,8 +393,15 @@ func _update_cursor() -> void:
 	if q == null:
 		q = QuadMesh.new()
 		cursor_node.mesh = q
-	q.size = Vector2(cur_width, page_world.y)
-	cursor_node.position = Vector3((cur_u - 0.5) * page_world.x, 0.0, 0.02)
+	var h := page_world.y
+	var cy := 0.0
+	if cur_sys >= 0 and cur_sys < systems.size():
+		var top: float = systems[cur_sys].top
+		var bottom: float = systems[cur_sys].bottom
+		h = (bottom - top) * page_world.y
+		cy = (0.5 - (top + bottom) * 0.5) * page_world.y   # v is top-down; world y is up
+	q.size = Vector2(cur_width, h)
+	cursor_node.position = Vector3((cur_u - 0.5) * page_world.x, cy, 0.02)
 
 
 # --- Regions -------------------------------------------------------------

@@ -193,7 +193,7 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 func _finish_verovio(obj, svg_user: String, tm_user: String, options: Dictionary, pid: int = -1) -> void:
 	var res := VerovioPositions.finalize(svg_user, tm_user, options)
 	if res.ok:
-		obj._on_elements_done(res.texture, res.elements)
+		obj._on_elements_done(res.texture, res.elements, res.get("systems", []))
 	else:
 		obj._on_render_failed(res.error + _exit_note(pid))
 

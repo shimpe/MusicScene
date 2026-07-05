@@ -16,24 +16,52 @@ static func finalize(svg_path: String, timemap_path: String, options: Dictionary
 	if not res.ok:
 		return {"ok": false, "error": "verovio: " + res.error}
 
-	var positions := _parse_svg(svg_path)          # id -> {u, v}
+	var positions := _parse_svg(svg_path)          # id -> {u, v, sys}
 	var times := _parse_timemap(timemap_path)        # id -> qstamp (quarters)
 
 	var elements: Array = []
 	for id in positions.keys():
 		if not times.has(id):
 			continue
-		var p: Vector2 = positions[id]
+		var p: Dictionary = positions[id]
 		elements.append({
 			"id": id,
 			"when": times[id] / 4.0,   # quarters -> whole notes (matches transport.beat/4)
 			"line": -1, "char": -1,
-			"u": p.x, "v": p.y,
+			"u": p.u, "v": p.v, "sys_id": p.sys,
 		})
 	elements.sort_custom(func(a, b): return a.when < b.when)
 	for i in elements.size():
 		elements[i].index = i
-	return {"ok": true, "texture": res.texture, "elements": elements}
+
+	# group notes into staff-systems (Verovio wraps wide scores onto several) and give each a padded
+	# vertical band; stamp every element with its system index so a follow cursor can stay in one system.
+	var systems := _build_systems(elements)
+	return {"ok": true, "texture": res.texture, "elements": elements, "systems": systems}
+
+
+static func _build_systems(elements: Array) -> Array:
+	var by_sys := {}                       # sys_id -> [min_v, max_v]
+	for e in elements:
+		var sid = e.get("sys_id", "")
+		if by_sys.has(sid):
+			by_sys[sid][0] = minf(by_sys[sid][0], e.v)
+			by_sys[sid][1] = maxf(by_sys[sid][1], e.v)
+		else:
+			by_sys[sid] = [e.v, e.v]
+	var ids: Array = by_sys.keys()
+	ids.sort_custom(func(a, b): return by_sys[a][0] < by_sys[b][0])   # top to bottom
+	var systems: Array = []
+	var index := {}
+	for i in ids.size():
+		var mn: float = by_sys[ids[i]][0]
+		var mx: float = by_sys[ids[i]][1]
+		var pad: float = maxf(0.04, (mx - mn) * 0.15)
+		systems.append({"top": clampf(mn - pad, 0.0, 1.0), "bottom": clampf(mx + pad, 0.0, 1.0)})
+		index[ids[i]] = i
+	for e in elements:
+		e.sys = index.get(e.get("sys_id", ""), 0)
+	return systems
 
 
 # --- SVG: note id -> normalized position ---------------------------------
@@ -45,6 +73,7 @@ static func _parse_svg(svg_path: String) -> Dictionary:
 	var viewbox := Rect2(0, 0, 1, 1)
 	var tstack := [Vector2.ZERO]
 	var note_stack: Array = []     # current note id per open container ("" if none)
+	var sys_stack: Array = []      # current system id per open container ("" if none)
 	var recorded := {}             # note id -> true (first notehead only)
 	var out := {}
 
@@ -60,16 +89,21 @@ static func _parse_svg(svg_path: String) -> Dictionary:
 				if not empty:
 					tstack.append(tstack[-1])
 					note_stack.append(note_stack[-1] if note_stack.size() > 0 else "")
+					sys_stack.append(sys_stack[-1] if sys_stack.size() > 0 else "")
 			elif name == "g":
 				var t := _translate(p.get_named_attribute_value_safe("transform"))
 				var acc: Vector2 = tstack[-1] + t
 				var cls := p.get_named_attribute_value_safe("class")
 				var note_id: String = note_stack[-1] if note_stack.size() > 0 else ""
+				var sys_id: String = sys_stack[-1] if sys_stack.size() > 0 else ""
 				if cls == "note":
 					note_id = p.get_named_attribute_value_safe("id")
+				elif cls == "system":
+					sys_id = p.get_named_attribute_value_safe("id")
 				if not empty:
 					tstack.append(acc)
 					note_stack.append(note_id)
+					sys_stack.append(sys_id)
 			elif name == "use":
 				# the notehead glyph: its translate is the note's anchor
 				var cur: String = note_stack[-1] if note_stack.size() > 0 else ""
@@ -77,9 +111,11 @@ static func _parse_svg(svg_path: String) -> Dictionary:
 					var t := _translate(p.get_named_attribute_value_safe("transform"))
 					var pos: Vector2 = tstack[-1] + t
 					recorded[cur] = true
-					out[cur] = Vector2(
-						(pos.x - viewbox.position.x) / viewbox.size.x,
-						(pos.y - viewbox.position.y) / viewbox.size.y)
+					out[cur] = {
+						"u": (pos.x - viewbox.position.x) / viewbox.size.x,
+						"v": (pos.y - viewbox.position.y) / viewbox.size.y,
+						"sys": sys_stack[-1] if sys_stack.size() > 0 else "",
+					}
 		elif nt == XMLParser.NODE_ELEMENT_END:
 			var name := p.get_node_name()
 			if name == "g" or name == "svg":
@@ -87,6 +123,8 @@ static func _parse_svg(svg_path: String) -> Dictionary:
 					tstack.pop_back()
 				if note_stack.size() > 0:
 					note_stack.pop_back()
+				if sys_stack.size() > 0:
+					sys_stack.pop_back()
 	return out
 
 

@@ -13,9 +13,13 @@ MSScore — write a score in Panola, then show + play + follow it in MusicScene,
 
 `voices` may be Panola strings (wrapped automatically) or ready Panola instances. `scale` sizes the score
 in the scene (raise it if the notation looks too small); it defaults to 2.5 in "3d" and 0.7 in "2d". The
-MEI comes from Panola.scoreAsMEI (see the Panola quark). The cursor is note-accurate: MusicScene is made `addressable`,
-so it reports each note's on-page position (`elements`); MSScore replays that timemap on the same clock
-as playback. If `elements` never arrives (e.g. Verovio missing), the cursor falls back to a linear sweep.
+MEI comes from Panola.scoreAsMEI (see the Panola quark).
+
+The cursor is note-accurate and needs no reply round-trip: MusicScene is made `addressable`, so it knows
+every note's on-page position (and which staff-system it is in, since Verovio may wrap a wide score onto
+several lines). MSScore just tells it "the cursor is at beat N" on its own audio clock via `cursor at`;
+MusicScene maps that beat to the right note position and confines the line to that note's system. One
+clock drives both audio and cursor, so they stay in sync.
 
 INSTALL: put this file on SuperCollider's class path (e.g. copy to your Extensions folder, or add
 `examples/supercollider` via Preferences), then recompile the class library. Requires the Panola quark
@@ -23,32 +27,30 @@ with PanolaMEI, and MusicScene running (Verovio working; `pip install verovio`).
 */
 MSScore {
 	var <voices, <clefs, <meter, <key, <braces, <tempo, <id, <space, <instruments, <scale;
-	var <engine, <replyPort, <clock, <player, <cursorRoutine, <elements, <oscdef, <totalBeats;
+	var <engine, <clock, <player, <cursorRoutine, <totalBeats, <showDelay;
 
 	*new { | voices, clefs, meter = "4/4", key = \Cmajor, braces, tempo = 84, instruments,
-		id = "score", space = "2d", scale, host = "127.0.0.1", listenPort = 7400, replyPort = 7401 |
-		^super.new.init(voices, clefs, meter, key, braces, tempo, instruments, id, space, scale, host, listenPort, replyPort);
+		id = "score", space = "2d", scale, showDelay = 1.0, host = "127.0.0.1", listenPort = 7400 |
+		^super.new.init(voices, clefs, meter, key, braces, tempo, instruments, id, space, scale, showDelay, host, listenPort);
 	}
 
-	init { | v, cl, m, k, br, t, instr, i, sp, sc, host, lport, rport |
+	init { | v, cl, m, k, br, t, instr, i, sp, sc, sd, host, lport |
 		voices = v.collect({ |x| x.isKindOf(Panola).if({ x }, { Panola(x) }) });
 		clefs = cl ? voices.collect({ \treble });
 		meter = m; key = k; braces = br; tempo = t; id = i; space = sp;
 		instruments = instr ? voices.collect({ \default });
 		scale = sc ? (sp == "3d").if({ 2.5 }, { 0.7 });   // pass `scale:` to enlarge/shrink the score
-		engine = NetAddr(host, lport); replyPort = rport;
-		elements = [];
+		showDelay = sd;                                    // seconds to let the notation render before playing
+		engine = NetAddr(host, lport);
 		totalBeats = voices.collect({ |p| p.totalDuration }).maxItem;
 	}
 
 	// The MEI document for this score (also usable standalone / to write to a .mei file).
 	mei { ^Panola.scoreAsMEI(voices, meter, key, clefs, braces) }
 
-	// Display the notation and start listening for note positions. Non-blocking.
+	// Display the notation (addressable, so MusicScene knows note positions). Non-blocking.
 	show {
 		var m = this.mei;
-		this.pr_listen;
-		elements = [];
 		Routine({
 			var snd = { |... a| engine.sendMsg(*a); 0.02.wait };
 			snd.("/ms/scene/" ++ id, "new", "notation");
@@ -58,21 +60,13 @@ MSScore {
 			snd.("/ms/scene/" ++ id ++ "/cursor", "show", 1);
 			snd.("/ms/scene/" ++ id, "addressable", 1);
 			snd.("/ms/scene/" ++ id, "notationData", "mei", m);
-			// nudge for the note-position reply once it has rendered
-			0.6.wait;
-			6.do({ if (elements.size == 0) { engine.sendMsg("/ms/scene/" ++ id, "elements"); 0.4.wait } });
 		}).play;
 	}
 
-	// Show, then (once positions arrive) play the voices and follow with the cursor.
+	// Show, wait for the notation to render, then play the voices and follow with the cursor.
 	play {
 		this.show;
-		Routine({
-			var tries = 0;
-			0.6.wait;
-			while { (elements.size == 0) and: { tries < 8 } } { tries = tries + 1; 0.35.wait };
-			this.pr_startPlayback;
-		}).play;
+		Routine({ showDelay.wait; this.pr_startPlayback; }).play;
 	}
 
 	stop {
@@ -80,41 +74,21 @@ MSScore {
 		player.notNil.if({ player.stop });
 		cursorRoutine.notNil.if({ cursorRoutine.stop });
 		Server.default.freeAll;
-		oscdef.notNil.if({ oscdef.free; oscdef = nil });
 		engine.sendMsg("/ms/scene", "clear");
 	}
 
-	// ---- private ---------------------------------------------------------
-	pr_listen {
-		thisProcess.openUDPPort(replyPort);
-		oscdef = OSCdef(("msScore_" ++ id).asSymbol, { |msg|
-			// /ms/reply "elements" <id> [<index> <when> <line> <char> <u> <v>] ...
-			if ((msg[1].asSymbol == \elements) and: { msg[2].asSymbol == id.asSymbol }) {
-				var items = msg.copyRange(3, msg.size - 1), out = [];
-				(items.size div: 6).do({ |k| out = out.add([items[(k*6)+1], items[(k*6)+4]]) });   // [when, u]
-				elements = out.sort({ |a, b| a[0] < b[0] });
-			};
-		}, '/ms/reply', recvPort: replyPort);
-	}
-
 	pr_startPlayback {
+		var startBeat;
 		clock = TempoClock(tempo / 60);
 		player = Ppar(voices.collect({ |p, i| p.asPbind(instruments[i], include_tempo: false) })).play(clock, quant: 0);
+		startBeat = clock.beats;
+		// on the SAME clock as the audio, tell MusicScene where the cursor is (whole-note time = beats/4);
+		// MusicScene maps it to the note position + system. ~16 updates per beat for smooth motion.
 		cursorRoutine = Routine({
-			var last = 0.0;
-			if (elements.size > 0) {                       // note-accurate: replay the timemap
-				elements.do({ |e|
-					var beat = e[0] * 4;                   // `when` is in whole notes -> quarter beats
-					(beat - last).max(0).wait; last = beat;
-					engine.sendMsg("/ms/scene/" ++ id ++ "/cursor", "pos", e[1], 0.5);
-				});
-			} {                                            // fallback: linear sweep across the page
-				var steps = 96, dur = totalBeats / 96;
-				(steps + 1).do({ |kk|
-					engine.sendMsg("/ms/scene/" ++ id ++ "/cursor", "pos", 0.12 + ((kk / steps) * 0.86), 0.5);
-					if (kk < steps) { dur.wait };
-				});
+			while { (clock.beats - startBeat) <= (totalBeats + 0.5) } {
+				engine.sendMsg("/ms/scene/" ++ id ++ "/cursor", "at", (clock.beats - startBeat) / 4);
+				0.0625.wait;
 			};
-		}).play(clock);
+		}).play(clock, quant: 0);
 	}
 }

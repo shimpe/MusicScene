@@ -26,7 +26,8 @@ var _force_data: bool = false
 var _pending: bool = false      # an async engrave is in flight
 var addressable: bool = false   # extract measure/note positions and make them clickable
 var measures: Array = []        # [{index, rect:Rect2(normalized), time}]   (MuseScore)
-var elements: Array = []        # [{index, when, line, char, u, v}]          (LilyPond notes)
+var elements: Array = []        # [{index, when, line, char, u, v, sys}]      (addressable notes)
+var systems: Array = []         # [{top, bottom}] per staff-system vertical band (page-normalized)
 var _follow: bool = false       # cursor follows transport across elements
 var _last_passed: int = -1
 var format: String = ""
@@ -218,13 +219,16 @@ func _measure_u(mi: int, frac: float) -> float:
 
 # --- LilyPond note-level addressing + following --------------------------
 
-func _on_elements_done(texture: Texture2D, p_elements: Array) -> void:
+func _on_elements_done(texture: Texture2D, p_elements: Array, p_systems: Array = []) -> void:
 	_pending = false
 	_set_page_texture(texture)
 	backend = "addressable-ly"
 	page_count = 1
 	page_size = texture.get_size()
 	elements = p_elements
+	systems = p_systems
+	if cursor != null:
+		cursor.set_systems(systems)
 	_last_passed = -1
 	for e in elements:
 		var rid := "n%d" % int(e.index)
@@ -269,13 +273,36 @@ func _follow_u(when: float) -> float:
 	return last.u
 
 
+## Interpolated cursor position at whole-note time `when`: horizontal `u` (interpolated only within a
+## staff-system, so it never sweeps back across the page at a wrap) and the system index it sits in.
+func _follow_pos(when: float) -> Dictionary:
+	if elements.is_empty():
+		return {"u": cursor.u, "sys": cursor.sys}
+	var i := 0
+	for k in elements.size():
+		if elements[k].when <= when:
+			i = k
+		else:
+			break
+	var a = elements[i]
+	var uu: float = a.u
+	if i + 1 < elements.size():
+		var b = elements[i + 1]
+		if int(b.get("sys", 0)) == int(a.get("sys", 0)):
+			var span: float = b.when - a.when
+			if span > 0.0:
+				uu = lerpf(a.u, b.u, clampf((when - a.when) / span, 0.0, 1.0))
+	return {"u": uu, "sys": int(a.get("sys", 0))}
+
+
 func _process(_delta: float) -> void:
 	if not _follow or ctx == null or ctx.transport == null or not ctx.transport.playing or elements.is_empty():
 		return
 	var when: float = ctx.transport.beat / 4.0   # transport.beat is quarters; data-when is whole notes
 	if _last_passed >= 0 and _last_passed < elements.size() and when < elements[_last_passed].when:
 		_last_passed = -1   # transport rewound
-	cursor.set_u(_follow_u(when))
+	var fp := _follow_pos(when)
+	cursor.set_pos(fp.u, fp.sys)
 	while _last_passed + 1 < elements.size() and elements[_last_passed + 1].when <= when:
 		_last_passed += 1
 		var e = elements[_last_passed]
@@ -329,7 +356,12 @@ func handle_cursor(args: Array) -> void:
 		"pos":
 			cursor.u = _f(args, 1)
 			cursor.v = _f(args, 2)
+			cursor.sys = cursor.sys_for_v(cursor.v)
 			cursor.queue_redraw()
+		"at":
+			# jump the cursor to the interpolated position at whole-note time (system-aware).
+			var fp := _follow_pos(_f(args, 1))
+			cursor.set_pos(fp.u, fp.sys)
 		"measure":
 			# With addressable data, jump the cursor to a measure (+ optional beat fraction).
 			var mi := int(_f(args, 1, 1)) - 1
