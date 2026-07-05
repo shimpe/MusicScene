@@ -62,3 +62,22 @@ def test_panola_asmei_renders_all_cases():
     assert props["gmajor"]["sharps"] >= 1                                    # key signature drawn
     assert props["waltz"]["measures"] == 2                                   # 6 quarters in 3/4 = 2 bars
     assert props["beams"]["beams"] == 4 and props["beams"]["flag_glyphs"] == 0  # 8 eighths auto-beamed per beat
+
+
+def test_written_values_correct_for_all_plain_durations():
+    """After the parseDur rewrite, written value + dots must be correct for plain notes."""
+    import re
+    if not os.path.exists(SCLANG):
+        pytest.skip("sclang not installed")
+    outdir = tempfile.mkdtemp(prefix="panola_dur_")
+    scd = ('( File.use("%s/d.mei","w",{|f| f.write('
+           'Panola("c5_1 c5_2 c5_4 c5_8 c5_16 c5_4.").asMEI("16/4", \\Cmajor, \\treble)) });'
+           ' "DONE".postln; 0.exit; )' % outdir.replace("\\", "/"))
+    p = os.path.join(outdir, "s.scd")
+    open(p, "w").write(scd)
+    subprocess.run([SCLANG, p], capture_output=True, text=True, timeout=120)
+    mei = open(os.path.join(outdir, "d.mei"), encoding="utf-8").read()
+    shutil.rmtree(outdir, ignore_errors=True)
+    durs = re.findall(r'<note dur="(\d+)"( dots="(\d+)")?', mei)
+    got = [(d, (dots or "0")) for d, _, dots in durs]
+    assert got == [("1", "0"), ("2", "0"), ("4", "0"), ("8", "0"), ("16", "0"), ("4", "1")]
