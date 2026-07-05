@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Verovio engraver/positions wrapper for MusicScene.
 
-Renders MEI / MusicXML / ABC / PAE / Humdrum to a cropped SVG, and (with --timemap) also writes a
-timemap JSON (element id -> onset time). MusicScene rasterizes the SVG, reads stable note ids from it,
-and joins them to the timemap for note-level addressing + following.
+Renders MEI / MusicXML / ABC / PAE / Humdrum to an SVG cropped to the music (page width AND height
+shrink to the content, so a short excerpt isn't padded to a full page of white), and (with --timemap)
+also writes a timemap JSON (element id -> onset time). MusicScene rasterizes the SVG, reads stable note
+ids from it, and joins them to the timemap for note-level addressing + following.
 
 Usage:
-    py verovio_render.py <input> <output.svg> [--page N] [--timemap <file.json>] [--scale N]
+    py verovio_render.py <input> <output.svg> [--page N] [--timemap <file.json>] [--scale N] [--no-crop]
 
 Install: pip install verovio
 """
@@ -29,11 +30,15 @@ def main() -> int:
     ap.add_argument("--timemap", default="")
     ap.add_argument("--scale", type=int, default=40)
     ap.add_argument("--breaks", default="auto")  # "none" = single system strip
+    ap.add_argument("--no-crop", action="store_true", help="keep the full page width (default: crop to content)")
     a = ap.parse_args()
 
     tk = verovio.toolkit()
     tk.setOptions({
+        # Crop the page to the music so a short excerpt isn't padded to a full page of white
+        # (adjustPageWidth/Height shrink the page to the content's bounding box).
         "adjustPageHeight": True,
+        "adjustPageWidth": not a.no_crop,
         "breaks": a.breaks,
         "scale": a.scale,
         "header": "none",

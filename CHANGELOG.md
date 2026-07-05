@@ -13,6 +13,11 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   re-render, and works identically in 2D and 3D.
 
 ### Fixed
+- **Verovio scores padded with a wide white margin.** The bundled `verovio_render.py` set only
+  `adjustPageHeight`, so a short excerpt was laid out on a full-width page and rendered with large empty
+  space to the right. It now also sets `adjustPageWidth`, cropping the page to the music (a two-measure
+  line goes from 840→515 px wide). Pass `--no-crop` to keep the full page width. Positions/timemap and
+  the raster share the same cropped page, so addressable regions stay aligned.
 - **Verovio (and other nested-`<svg>`) scores rendered blank.** Godot's ThorVG rasteriser ignores the
   `viewBox` scaling of a *nested* `<svg>` — the "definition-scale" wrapper Verovio emits — so MEI/ABC
   scores rasterised fully transparent (no error, the score just "disappeared"). The SVG backend now
