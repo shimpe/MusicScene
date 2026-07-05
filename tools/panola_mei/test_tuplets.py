@@ -22,3 +22,62 @@ def test_render_props_counts_tuplets():
     p = render_props(MINIMAL_TUPLET)
     assert p["ok"] is True
     assert p["tuplets"] == 1
+
+
+CASES = {   # name -> Panola.scoreAsMEI expression
+    "triplet":    'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 c5_2 r_4")], "4/4", \\Cmajor, [\\treble], nil)',
+    "sixeighths": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 f5 g5 a5")], "4/4", \\Cmajor, [\\treble], nil)',
+    "mixed":      'Panola.scoreAsMEI([Panola("c5_4*2/3 d5_8*2/3 c5_2")], "4/4", \\Cmajor, [\\treble], nil)',
+    "quintuplet": 'Panola.scoreAsMEI([Panola("c5_16*4/5 d5 e5 f5 g5")], "4/4", \\Cmajor, [\\treble], nil)',
+    "quarter3":   'Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], "4/4", \\Cmajor, [\\treble], nil)',
+}
+
+
+def _dump(outdir, cases):
+    dir_sc = outdir.replace("\\", "/") + "/"
+    lines = ['File.mkdir("%s");' % dir_sc]
+    for n, expr in cases.items():
+        lines.append('File.use("%s%s.mei","w",{|f| f.write(%s) });' % (dir_sc, n, expr))
+    lines.append('"DONE".postln; 0.exit;')
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write("(\n" + "\n".join(lines) + "\n)\n")
+        path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "ERROR" not in r.stdout and "parse panola" not in r.stdout, r.stdout[-1500:]
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_eighth_triplet():
+    outdir = tempfile.mkdtemp(prefix="panola_tup_")
+    try:
+        _dump(outdir, {"triplet": CASES["triplet"]})
+        mei = open(os.path.join(outdir, "triplet.mei"), encoding="utf-8").read()
+        p = render_props(mei)
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    assert p["ok"], p["stderr"][:200]
+    assert p["tuplets"] == 1
+    assert '<tuplet num="3" numbase="2">' in mei
+    assert mei.count('<note dur="8"') == 3          # three written eighths inside the tuplet
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_duration_based_grouping():
+    outdir = tempfile.mkdtemp(prefix="panola_tup_")
+    keys = ["sixeighths", "mixed", "quintuplet", "quarter3"]
+    try:
+        _dump(outdir, {k: CASES[k] for k in keys})
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in keys}
+        props = {k: render_props(v) for k, v in meis.items()}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    for k, p in props.items():
+        assert p["ok"], f"{k}: {p['stderr'][:200]}"
+    assert props["sixeighths"]["tuplets"] == 2                                  # two triplets, not one 6-tuplet
+    assert meis["mixed"].count("<tuplet") == 1                                   # quarter+eighth = one triplet
+    assert meis["mixed"].count('<note dur="4"') >= 1 and meis["mixed"].count('<note dur="8"') >= 1
+    assert '<tuplet num="5" numbase="4">' in meis["quintuplet"]
+    assert '<tuplet num="3" numbase="2">' in meis["quarter3"] and meis["quarter3"].count('<note dur="4"') == 3
