@@ -47,8 +47,13 @@ s.waitForBoot({
     ~engine = NetAddr("127.0.0.1", 7400);        // where MusicScene listens
     ~snd    = { |... m| ~engine.sendMsg(*m); 0.02.wait; };   // paced send (Routine-only)
 
-    ~space  = "2d";   // <-- set to "3d" if your project runs MusicScene in 3D
+    ~space  = "2d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
     ~bpm    = 84;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
+
+    // Layout. Normalized coords are y-UP and centred at 0, so the right hand (treble) takes the
+    // upper (+y) slot and the left hand (bass) the lower (-y) slot. Tune these two to taste.
+    ~scoreScale = (~space == "3d").if({ 0.24 }, { 0.70 });   // staff size — RAISE to enlarge
+    ~staffGap   = (~space == "3d").if({ 0.22 }, { 0.32 });   // each staff's distance from centre
 
     // C-major note pools (MIDI). Right hand sings in the treble, left hand walks the bass.
     ~rhPool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81];   // C4 .. A5
@@ -136,13 +141,15 @@ s.waitForBoot({
             ~snd.("/ms/scene/" ++ id, "background", "white");     // opaque paper behind the ink
         });
 
-        // Stack right hand above left hand. (If they come out swapped, flip the two y values.)
+        // Right hand (treble) on top (+y), left hand (bass) below (-y); both centred on x = 0.
+        ~snd.("/ms/scene/rh", "scale", ~scoreScale);
+        ~snd.("/ms/scene/lh", "scale", ~scoreScale);
         if(~space == "3d") {
-            ~snd.("/ms/scene/rh", "pos", 0.0,  0.7, 0.0);  ~snd.("/ms/scene/rh", "scale", 0.30);
-            ~snd.("/ms/scene/lh", "pos", 0.0, -0.7, 0.0);  ~snd.("/ms/scene/lh", "scale", 0.30);
+            ~snd.("/ms/scene/rh", "pos", 0.0, ~staffGap,     0.0);
+            ~snd.("/ms/scene/lh", "pos", 0.0, ~staffGap.neg, 0.0);
         } {
-            ~snd.("/ms/scene/rh", "pos", 0.5, 0.34);       ~snd.("/ms/scene/rh", "scale", 0.45);
-            ~snd.("/ms/scene/lh", "pos", 0.5, 0.60);       ~snd.("/ms/scene/lh", "scale", 0.45);
+            ~snd.("/ms/scene/rh", "pos", 0.0, ~staffGap);
+            ~snd.("/ms/scene/lh", "pos", 0.0, ~staffGap.neg);
         };
 
         // fresh state
