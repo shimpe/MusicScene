@@ -29,6 +29,9 @@ CASES = {
   "chained":   r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5@slur^endstart^ f5 g5@slur^end^ a5")], "4/4", \Cmajor, [\treble], nil)',
   "unmatched": r'Panola.scoreAsMEI([Panola("c5_4 d5@slur^end^ e5 f5")], "4/4", \Cmajor, [\treble], nil)',
   "twovoice":  r'Panola.scoreAsMEI([Panola("c5_4 d5 e5 f5"), Panola("c3_4@slur^start^ e3 g3 c4@slur^end^")], "4/4", \Cmajor, [\treble, \bass], nil)',
+  # slur that both starts and ends inside the same triplet -> endpoints must get distinct sub-tuplet
+  # tstamps, else it collapses to a zero-length (invisible) slur
+  "intuplet":  r'Panola.scoreAsMEI([Panola("a5_8*2/3@slur^start^ c6 a5@slur^end^ c6_4 d6_4 e6_4")], "4/4", \Cmajor, [\treble], nil)',
 }
 
 
@@ -52,3 +55,7 @@ def test_slurs():
     assert '<slur tstamp="3" tstamp2="1m+1" staff="1"/>' in meis["chained"]
     assert props["unmatched"]["slurs"] == 0
     assert props["twovoice"]["slurs"] == 1 and 'staff="2"' in meis["twovoice"]
+    # within-tuplet slur: one slur, distinct endpoints (not the degenerate 0m+1), renders as an arc
+    assert props["intuplet"]["slurs"] == 1
+    assert '<slur tstamp="1" tstamp2="0m+1" staff="1"/>' not in meis["intuplet"]
+    assert props["intuplet"]["slur_arcs"] == 1
