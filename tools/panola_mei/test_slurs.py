@@ -19,3 +19,36 @@ def test_render_props_counts_slur():
     p = render_props(MINIMAL)
     assert p["ok"] is True
     assert p["slurs"] == 1
+
+
+from tools.panola_mei.test_expression import _dump, SCLANG
+
+CASES = {
+  "within":    r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5 f5@slur^end^ g5")], "4/4", \Cmajor, [\treble], nil)',
+  "crossbar":  r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5 f5 g5@slur^end^ a5 b5 c6")], "4/4", \Cmajor, [\treble], nil)',
+  "chained":   r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5@slur^endstart^ f5 g5@slur^end^ a5")], "4/4", \Cmajor, [\treble], nil)',
+  "unmatched": r'Panola.scoreAsMEI([Panola("c5_4 d5@slur^end^ e5 f5")], "4/4", \Cmajor, [\treble], nil)',
+  "twovoice":  r'Panola.scoreAsMEI([Panola("c5_4 d5 e5 f5"), Panola("c3_4@slur^start^ e3 g3 c4@slur^end^")], "4/4", \Cmajor, [\treble, \bass], nil)',
+}
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_slurs():
+    outdir = tempfile.mkdtemp(prefix="panola_slur_")
+    try:
+        _dump(outdir, CASES)
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in CASES}
+        props = {k: render_props(v) for k, v in meis.items()}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    for k, p in props.items():
+        assert p["ok"], f"{k}: {p['stderr'][:200]}"
+    assert props["within"]["slurs"] == 1
+    assert '<slur tstamp="1" tstamp2="0m+4" staff="1"/>' in meis["within"]
+    assert props["crossbar"]["slurs"] == 1
+    assert '<slur tstamp="1" tstamp2="1m+1" staff="1"/>' in meis["crossbar"]
+    assert props["chained"]["slurs"] == 2
+    assert '<slur tstamp="1" tstamp2="0m+3" staff="1"/>' in meis["chained"]
+    assert '<slur tstamp="3" tstamp2="1m+1" staff="1"/>' in meis["chained"]
+    assert props["unmatched"]["slurs"] == 0
+    assert props["twovoice"]["slurs"] == 1 and 'staff="2"' in meis["twovoice"]
