@@ -16,6 +16,11 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   note-accurate cursor is reliable and in sync.
 
 ### Added
+- **Tuplets in Panola notation.** `Panola.scoreAsMEI` / `MSScore` now render Panola tuplets (triplets,
+  quintuplets, …; `c5_8*2/3 d5 e5`) as proper MEI `<tuplet>` brackets instead of approximating them as the
+  nearest plain note value. Groups are formed by accumulated duration (so mixed-value tuplets like
+  `c5_4*2/3 d5_8*2/3` group correctly) and are kept whole within a bar; barline-crossing / incomplete /
+  nested cases render a best-effort bracket with a warning. (PanolaMEI in the Panola quark.)
 - **Paginated notation with automatic page-turn.** A notation object can lay a long score out on several
   fixed-size pages instead of one ever-taller page — `paginate 1 [pageHeight]` (addressable Verovio only).
   All pages are pre-rendered (each cropped to its music, so there is no blank space below the last system);
