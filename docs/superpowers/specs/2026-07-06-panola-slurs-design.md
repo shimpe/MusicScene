@@ -84,9 +84,11 @@ Example (4/4): `c5_4@slur^start^ d5 e5 f5@slur^end^ g5` (start beat 1 of bar 1, 
   endpoint anchors to its first fragment; the `tie` attribute on the note is untouched.
 - **Chords:** a slur endpoint on a chord works — `tstamp` hits the chord's beat and Verovio attaches the
   arc to the chord.
-- **Tuplets:** tuplet members are placed as an atomic group at the tuplet's onset, so a slur endpoint
-  that lands on a tuplet member snaps to the **tuplet's onset beat** (same simplification as `<dynam>`);
-  sub-tuplet endpoint precision is out of scope.
+- **Tuplets:** each tuplet member gets its **real sub-tuplet beat offset** (accumulated member
+  durations), so a slur (or dynamic) endpoint on a tuplet member is placed on the right note — a slur
+  that starts and ends inside one tuplet renders correctly rather than collapsing to a zero-length arc.
+  Fractional tstamps are rounded to 4 decimals. *(Initially this design snapped tuplet members to the
+  tuplet onset; that made a within-tuplet slur invisible, so it was fixed during implementation.)*
 - **Non-expression scores** are byte-for-byte unchanged (no `@slur` ⇒ empty `slurs` list ⇒ no `<slur>`).
 
 ## Testing
@@ -113,5 +115,5 @@ ordinary word-valued Panola property.
 - **In:** `@slur^start^` / `@slur^end^` / `@slur^endstart^` → measure-level `<slur tstamp tstamp2 staff>`;
   a single open slur at a time; chained slurs via `endstart`; cross-barline / cross-system via `Δm`;
   warn-and-recover error handling; whelk docs on `PanolaMEI.sc` + regenerated `HelpSource/`.
-- **Out (later / not planned):** nested or overlapping slurs, any playback effect (legato), sub-tuplet
-  endpoint precision, and slur direction/placement control (Verovio decides the arc side).
+- **Out (later / not planned):** nested or overlapping slurs, any playback effect (legato), and slur
+  direction/placement control (Verovio decides the arc side).
