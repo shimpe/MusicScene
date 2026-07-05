@@ -3,7 +3,8 @@
 //
 // Two independent random "patterns" — a right hand and a left hand — invent notes and rhythms.
 // Each cycle the program generates a full FOUR-MEASURE page, SHOWS it (sends the whole score at
-// once) so it's on screen before it sounds, THEN plays it — and repeats with a fresh page. Nothing exotic:
+// once) so it's on screen before it sounds, THEN plays it while a playhead cursor sweeps across the
+// staff in time with the music — and repeats with a fresh page. Nothing exotic:
 // notes come from a C-major pool with gentle stepwise motion, rhythms are plain (eighths, quarters,
 // dotted quarters, halves).
 //
@@ -141,6 +142,21 @@ s.waitForBoot({
         }).play(~clock);
     };
 
+    // Sweep the playhead left->right across the grand staff over one page (16 beats), in step with
+    // playback. It's linear in time (Verovio spaces the four bars ~evenly); a small start offset skips
+    // the clef/time-signature margin so the cursor sits near the first note.
+    ~sweepCursor = {
+        Routine({
+            var steps = 96;
+            var dur   = 16 / steps;                    // beats per step
+            (steps + 1).do({ |k|
+                var u = 0.06 + ((k / steps) * 0.92);   // 0.06 (after the clef) -> 0.98 (final barline)
+                ~engine.sendMsg("/ms/scene/score/cursor", "pos", u, 0.5);
+                if(k < steps) { dur.wait };
+            });
+        }).play(~clock);
+    };
+
     // ---- build the score object, then run the conductor --------------------
     ~build = Routine({
         ~snd.("/ms/scene", "reset");
@@ -152,6 +168,7 @@ s.waitForBoot({
         } {
             ~snd.("/ms/scene/score", "pos", 0.0, 0.0);
         };
+        ~snd.("/ms/scene/score/cursor", "show", 1);   // a playhead that follows the music
 
         // fresh state
         if(~conductor.notNil) { ~conductor.stop };
@@ -167,9 +184,11 @@ s.waitForBoot({
                 var rhBars = Array.fill(4, { ~genBar.(\rh) });
                 var lhBars = Array.fill(4, { ~genBar.(\lh) });
                 ~engine.sendMsg("/ms/scene/score", "notationData", "mei", ~meiScore.(rhBars, lhBars));
+                ~engine.sendMsg("/ms/scene/score/cursor", "pos", 0.06, 0.5);   // park the playhead at the start
                 ~lead.wait;                       // show the page before it sounds
                 ~playPage.(rhBars, 0.22, 0.13);   // right hand
                 ~playPage.(lhBars, -0.22, 0.16);  // left hand
+                ~sweepCursor.value;               // playhead follows the music across the page
                 16.wait;                          // four 4/4 bars
             };
         }).play(~clock);
