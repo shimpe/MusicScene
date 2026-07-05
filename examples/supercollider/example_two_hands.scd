@@ -50,7 +50,7 @@ s.waitForBoot({
     ~space  = "3d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
     ~bpm    = 84;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
     ~lead   = 1;      // beats to show a page before it plays (just long enough to render). 0 = no pause; raise to linger.
-    ~scoreScale = (~space == "3d").if({ 1.0 }, { 1.0 });   // grand-staff size — raise to enlarge
+    ~scoreScale = (~space == "3d").if({ 2.0 }, { 2.0 });   // grand-staff size — raise to enlarge
 
     // C-major note pools (MIDI). Right hand sings in the treble, left hand walks the bass.
     ~rhPool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81];   // C4 .. A5
