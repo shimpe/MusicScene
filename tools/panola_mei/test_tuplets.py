@@ -30,6 +30,9 @@ CASES = {   # name -> Panola.scoreAsMEI expression
     "mixed":      'Panola.scoreAsMEI([Panola("c5_4*2/3 d5_8*2/3 c5_2")], "4/4", \\Cmajor, [\\treble], nil)',
     "quintuplet": 'Panola.scoreAsMEI([Panola("c5_16*4/5 d5 e5 f5 g5")], "4/4", \\Cmajor, [\\treble], nil)',
     "quarter3":   'Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], "4/4", \\Cmajor, [\\treble], nil)',
+    "then_plain": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 c5_4 d5_4 e5_2")], "4/4", \\Cmajor, [\\treble], nil)',
+    "with_rest":  'Panola.scoreAsMEI([Panola("c5_8*2/3 r d5 c5_2 r_4")], "4/4", \\Cmajor, [\\treble], nil)',
+    "incomplete": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_4 d5 e5 f5")], "4/4", \\Cmajor, [\\treble], nil)',
 }
 
 
@@ -81,3 +84,24 @@ def test_duration_based_grouping():
     assert meis["mixed"].count('<note dur="4"') >= 1 and meis["mixed"].count('<note dur="8"') >= 1
     assert '<tuplet num="5" numbase="4">' in meis["quintuplet"]
     assert '<tuplet num="3" numbase="2">' in meis["quarter3"] and meis["quarter3"].count('<note dur="4"') == 3
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_tuplet_edge_cases():
+    outdir = tempfile.mkdtemp(prefix="panola_tup_")
+    keys = ["then_plain", "with_rest", "incomplete"]
+    try:
+        _dump(outdir, {k: CASES[k] for k in keys})
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in keys}
+        props = {k: render_props(v) for k, v in meis.items()}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    for k, p in props.items():
+        assert p["ok"], f"{k}: {p['stderr'][:200]}"
+    # a plain quarter after the triplet is NOT inside a tuplet
+    assert meis["then_plain"].count("<tuplet") == 1
+    assert '</tuplet><note dur="4"' in meis["then_plain"]
+    # a rest can be a tuplet member
+    assert "<tuplet" in meis["with_rest"] and "<rest" in meis["with_rest"].split("</tuplet>")[0]
+    # renders despite an incomplete run (partial bracket + warning)
+    assert props["incomplete"]["tuplets"] >= 1
