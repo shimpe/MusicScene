@@ -85,3 +85,28 @@ def test_dynamics():
     assert '<dynam tstamp="1" staff="1">p</dynam>' in meis["oneshot"]
     assert '<dynam tstamp="3" staff="1">f</dynam>' in meis["oneshot"]
     assert props["norepeat"]["dynam"] == 1
+
+
+# Regression guard: a voice carrying @dyn/@art must still build an asPbind whose numeric
+# properties (amp/vol, lag, legato) yield numbers, not the string default "0.5" (which used
+# to crash at play time with "Message '*' not understood" — a Character times a Float).
+ASPBIND_SCRIPT = r'''(
+var st, ok = true, sawWord = false;
+st = Panola("c5_4@dyn^mf^ e5 g5 e5_8*2/3@art[stacc:on] f5 g5").asPbind(\default, include_tempo:false).asStream;
+3.do({ var ev = st.next(()); if (ev.at(\amp).isNumber.not) { ok = false }; if (ev.at(\art).isKindOf(Symbol)) { sawWord = true } });
+(ok and: { sawWord }).if({ "ASPBIND-NUMERIC-OK".postln }, { ("ASPBIND-BAD amp/art").postln });
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_aspbind_materializes_with_expression():
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write(ASPBIND_SCRIPT)
+        path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "ASPBIND-NUMERIC-OK" in r.stdout, r.stdout[-1500:]
+    assert "not understood" not in r.stdout, r.stdout[-1500:]
