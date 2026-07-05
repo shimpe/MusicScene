@@ -62,3 +62,26 @@ def test_articulation():
     assert meis["oneshot"].count(' artic="stacc"') == 1
     assert meis["passage"].count(' artic="stacc"') == 4
     assert 'artic="acc"' in meis["layered"] and 'artic="acc stacc"' in meis["layered"] and 'artic="stacc"' in meis["layered"]
+
+
+DYN = {
+  "oneshot": r'Panola.scoreAsMEI([Panola("c5_4@dyn^p^ d5 e5@dyn^f^ g5")], "4/4", \Cmajor, [\treble], nil)',
+  "norepeat": r'Panola.scoreAsMEI([Panola("c5_4@dyn^mf^ d5 e5 g5")], "4/4", \Cmajor, [\treble], nil)',
+}
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_dynamics():
+    outdir = tempfile.mkdtemp(prefix="panola_expr_")
+    try:
+        _dump(outdir, DYN)
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in DYN}
+        props = {k: render_props(v) for k, v in meis.items()}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    for k, p in props.items():
+        assert p["ok"], f"{k}: {p['stderr'][:200]}"
+    assert props["oneshot"]["dynam"] == 2
+    assert '<dynam tstamp="1" staff="1">p</dynam>' in meis["oneshot"]
+    assert '<dynam tstamp="3" staff="1">f</dynam>' in meis["oneshot"]
+    assert props["norepeat"]["dynam"] == 1
