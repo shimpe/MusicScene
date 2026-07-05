@@ -90,19 +90,24 @@ def test_dynamics():
 # Regression guard: a voice carrying @dyn/@art must still build a playable asPbind. Two past bugs:
 #  (1) numeric property defaults ("0.5") slipped through as strings -> "Message '*' not understood"
 #      (a Character times a Float) at play time;
-#  (2) string properties were passed into the Pbind as symbols -> notes without an articulation got
-#      the empty symbol '' and SuperCollider dropped them as rests (melody started late).
-# Fix: numeric text is coerced to Float, and string-valued (notation-only) properties are left out of
-# the Pbind. So every drawn event must have a numeric amp and NO \art / \dyn key.
+#  (2) string properties entered the Pbind as symbols, and notes without an articulation got the empty
+#      symbol '' which SuperCollider drops as a rest (melody started late).
+# Fix: numeric text is coerced to Float; string-valued properties are KEPT in the Pbind (so a pattern
+# can read \art/\dyn) but unset notes take a non-empty default ("none", overridable). So every drawn
+# event must have a numeric amp AND a \art key that is a non-empty symbol (never '').
 ASPBIND_SCRIPT = r'''(
-var st, ev, ok = true, hasArt = false, hasDyn = false;
+var st, ev, ok = true, artOk = true, sawNone = false, sawStacc = false, ov;
 st = Panola("c5_4@dyn^mf^ e5 g5 e5_8*2/3@art[stacc:on] f5 g5").asPbind(\default, include_tempo:false).asStream;
 6.do({ ev = st.next(());
     if (ev.at(\amp).isNumber.not) { ok = false };
-    if (ev.includesKey(\art)) { hasArt = true };
-    if (ev.includesKey(\dyn)) { hasDyn = true };
+    if ((ev.at(\art).isKindOf(Symbol).not) or: { ev.at(\art) == '' }) { artOk = false };
+    if (ev.at(\art) == 'none') { sawNone = true };
+    if (ev.at(\art) == 'stacc:on') { sawStacc = true };
 });
-(ok and: { hasArt.not } and: { hasDyn.not }).if({ "ASPBIND-OK".postln }, { ("ASPBIND-BAD amp-ok=" ++ ok ++ " art=" ++ hasArt ++ " dyn=" ++ hasDyn).postln });
+ov = Panola("c5_4 e5@art[stacc:on]").asPbind(\default, include_tempo:false, custom_property_defaults: (art: "off")).asStream.next(());
+(ok and: { artOk } and: { sawNone } and: { sawStacc } and: { ov.at(\art) == 'off' }).if(
+    { "ASPBIND-OK".postln },
+    { ("ASPBIND-BAD amp=" ++ ok ++ " artOk=" ++ artOk ++ " none=" ++ sawNone ++ " stacc=" ++ sawStacc ++ " override=" ++ (ov.at(\art))).postln });
 0.exit;
 )'''
 
