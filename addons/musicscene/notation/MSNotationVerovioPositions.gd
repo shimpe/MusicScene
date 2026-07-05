@@ -40,6 +40,64 @@ static func finalize(svg_path: String, timemap_path: String, options: Dictionary
 	return {"ok": true, "texture": res.texture, "elements": elements, "systems": systems}
 
 
+## Multi-page (paginate) variant: the wrapper wrote <svg_stem>-<n>.svg per page + one global timemap.
+## Rasterize every page, read its note positions/systems, join with the timemap. Returns
+## {ok, pages:[{texture, systems}], elements:[{index, when, u, v, sys, page}], page_count}.
+static func finalize_paged(svg_stem: String, timemap_path: String, options: Dictionary = {}) -> Dictionary:
+	var page_paths := _page_svgs(svg_stem)
+	if page_paths.is_empty():
+		return {"ok": false, "error": "verovio: no page SVGs at " + svg_stem + "-N.svg"}
+	var times := _parse_timemap(timemap_path)
+	var pages: Array = []
+	var elements: Array = []
+	for pi in page_paths.size():
+		var svg_path: String = page_paths[pi]
+		var res = SvgBackend.render({"kind": "path", "path": svg_path, "text": "", "bytes": PackedByteArray()}, 1, options)
+		if not res.ok:
+			return {"ok": false, "error": "verovio: " + res.error}
+		var positions := _parse_svg(svg_path)
+		var page_elements: Array = []
+		for id in positions.keys():
+			if not times.has(id):
+				continue
+			var p: Dictionary = positions[id]
+			page_elements.append({
+				"id": id, "when": times[id] / 4.0, "line": -1, "char": -1,
+				"u": p.u, "v": p.v, "sys_id": p.sys, "page": pi + 1,
+			})
+		var systems := _build_systems(page_elements)   # stamps each element's sys (index within this page)
+		pages.append({"texture": res.texture, "systems": systems})
+		elements.append_array(page_elements)
+	elements.sort_custom(func(a, b): return a.when < b.when)
+	for i in elements.size():
+		elements[i].index = i
+	return {"ok": true, "pages": pages, "elements": elements, "page_count": pages.size()}
+
+
+static func _page_svgs(svg_stem: String) -> Array:
+	var dir := svg_stem.get_base_dir()
+	var base := svg_stem.get_file()
+	var da := DirAccess.open(dir)
+	if da == null:
+		return []
+	var found: Array = []
+	da.list_dir_begin()
+	var fn := da.get_next()
+	while fn != "":
+		if fn.begins_with(base + "-") and fn.ends_with(".svg"):
+			var num := fn.substr((base + "-").length())
+			num = num.left(num.length() - 4)   # strip ".svg"
+			if num.is_valid_int():
+				found.append({"n": int(num), "path": dir.path_join(fn)})
+		fn = da.get_next()
+	da.list_dir_end()
+	found.sort_custom(func(a, b): return a.n < b.n)
+	var out: Array = []
+	for f in found:
+		out.append(f.path)
+	return out
+
+
 static func _build_systems(elements: Array) -> Array:
 	var by_sys := {}                       # sys_id -> [min_v, max_v]
 	for e in elements:

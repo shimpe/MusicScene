@@ -15,6 +15,10 @@ MSScore — write a score in Panola, then show + play + follow it in MusicScene,
 in the scene (raise it if the notation looks too small); it defaults to 2.5 in "3d" and 0.7 in "2d". The
 MEI comes from Panola.scoreAsMEI (see the Panola quark).
 
+A long score is split into pages that turn automatically as the cursor reaches them (`paginate: true` by
+default; `pageHeight:` in Verovio units controls how many systems fit on a page — smaller = more pages).
+Set `paginate: false` for a single tight-cropped page.
+
 The cursor is note-accurate and needs no reply round-trip: MusicScene is made `addressable`, so it knows
 every note's on-page position (and which staff-system it is in, since Verovio may wrap a wide score onto
 several lines). MSScore just tells it "the cursor is at beat N" on its own audio clock via `cursor at`;
@@ -27,20 +31,22 @@ with PanolaMEI, and MusicScene running (Verovio working; `pip install verovio`).
 */
 MSScore {
 	var <voices, <clefs, <meter, <key, <braces, <tempo, <id, <space, <instruments, <scale;
-	var <engine, <clock, <player, <cursorRoutine, <totalBeats, <showDelay;
+	var <engine, <clock, <player, <cursorRoutine, <totalBeats, <showDelay, <paginate, <pageHeight;
 
 	*new { | voices, clefs, meter = "4/4", key = \Cmajor, braces, tempo = 84, instruments,
-		id = "score", space = "2d", scale, showDelay = 1.0, host = "127.0.0.1", listenPort = 7400 |
-		^super.new.init(voices, clefs, meter, key, braces, tempo, instruments, id, space, scale, showDelay, host, listenPort);
+		id = "score", space = "2d", scale, showDelay = 1.0, paginate = true, pageHeight = 1200,
+		host = "127.0.0.1", listenPort = 7400 |
+		^super.new.init(voices, clefs, meter, key, braces, tempo, instruments, id, space, scale, showDelay, paginate, pageHeight, host, listenPort);
 	}
 
-	init { | v, cl, m, k, br, t, instr, i, sp, sc, sd, host, lport |
+	init { | v, cl, m, k, br, t, instr, i, sp, sc, sd, pg, ph, host, lport |
 		voices = v.collect({ |x| x.isKindOf(Panola).if({ x }, { Panola(x) }) });
 		clefs = cl ? voices.collect({ \treble });
 		meter = m; key = k; braces = br; tempo = t; id = i; space = sp;
 		instruments = instr ? voices.collect({ \default });
 		scale = sc ? (sp == "3d").if({ 2.5 }, { 0.7 });   // pass `scale:` to enlarge/shrink the score
 		showDelay = sd;                                    // seconds to let the notation render before playing
+		paginate = pg; pageHeight = ph;                    // split long scores into pages that turn automatically
 		engine = NetAddr(host, lport);
 		totalBeats = voices.collect({ |p| p.totalDuration }).maxItem;
 	}
@@ -58,6 +64,7 @@ MSScore {
 			snd.("/ms/scene/" ++ id, "scale", scale);
 			if (space == "3d") { snd.("/ms/scene/" ++ id, "pos", 0.0, 0.0, 0.0) } { snd.("/ms/scene/" ++ id, "pos", 0.0, 0.0) };
 			snd.("/ms/scene/" ++ id ++ "/cursor", "show", 1);
+			snd.("/ms/scene/" ++ id, "paginate", paginate.if({ 1 }, { 0 }), pageHeight);
 			snd.("/ms/scene/" ++ id, "addressable", 1);
 			snd.("/ms/scene/" ++ id, "notationData", "mei", m);
 		}).play;

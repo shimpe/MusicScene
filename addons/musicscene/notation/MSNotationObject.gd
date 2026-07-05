@@ -28,6 +28,7 @@ var addressable: bool = false   # extract measure/note positions and make them c
 var measures: Array = []        # [{index, rect:Rect2(normalized), time}]   (MuseScore)
 var elements: Array = []        # [{index, when, line, char, u, v, sys}]      (addressable notes)
 var systems: Array = []         # [{top, bottom}] per staff-system vertical band (page-normalized)
+var pages: Array = []           # [{texture, systems}] all pages (when paginated); else empty
 var _follow: bool = false       # cursor follows transport across elements
 var _last_passed: int = -1
 var format: String = ""
@@ -95,17 +96,11 @@ func handle(verb: String, args: Array) -> void:
 		"render", "reload":
 			_render()
 		"page":
-			current_page = clampi(int(_f(args, 0, 1)), 1, page_count)
-			_render()
-			reply_current_page()
+			_go_page(int(_f(args, 0, 1)))
 		"nextpage":
-			current_page = clampi(current_page + 1, 1, page_count)
-			_render()
-			reply_current_page()
+			_go_page(current_page + 1)
 		"prevpage":
-			current_page = clampi(current_page - 1, 1, page_count)
-			_render()
-			reply_current_page()
+			_go_page(current_page - 1)
 		"pages":
 			reply_pages()
 		"system":
@@ -122,6 +117,12 @@ func handle(verb: String, args: Array) -> void:
 			reply_current_page()
 		"addressable":
 			addressable = _b(args, 0, true)
+			if not _is_content_empty():
+				_render()
+		"paginate":
+			render_options["paginate"] = _b(args, 0, true)
+			if args.size() > 1:
+				render_options["page_height"] = int(_f(args, 1, 1200))
 			if not _is_content_empty():
 				_render()
 		"measures":
@@ -243,6 +244,45 @@ func _on_elements_done(texture: Texture2D, p_elements: Array, p_systems: Array =
 			% [osc_id, elements.size(), int(page_size.x), int(page_size.y)])
 
 
+## Paginated addressable result: several pre-rendered pages, one global element list (each element tagged
+## with its page). Displays the first page; the follow cursor turns pages automatically.
+func _on_pages_done(p_pages: Array, p_elements: Array, p_page_count: int) -> void:
+	_pending = false
+	backend = "addressable"
+	pages = p_pages
+	elements = p_elements
+	page_count = p_page_count
+	_last_passed = -1
+	_show_page(clampi(current_page, 1, max(1, page_count)))
+	if ctx.verbose:
+		print("[MusicSceneOSC] notation '%s' addressable paged: %d notes across %d pages"
+			% [osc_id, elements.size(), page_count])
+
+
+## Show a pre-rendered page (paginated): swap its texture + per-page system bands, no re-render.
+func _show_page(p: int) -> void:
+	if pages.is_empty():
+		return
+	current_page = clampi(p, 1, pages.size())
+	var pg = pages[current_page - 1]
+	_set_page_texture(pg.texture)
+	page_size = pg.texture.get_size()
+	systems = pg.systems
+	if cursor != null:
+		cursor.set_systems(systems)
+	_update_geometry()
+	queue_redraw()
+
+
+func _go_page(p: int) -> void:
+	if pages.size() > 0:
+		_show_page(clampi(p, 1, page_count))
+	else:
+		current_page = clampi(p, 1, max(1, page_count))
+		_render()
+	reply_current_page()
+
+
 func reply_elements() -> void:
 	var vals: Array = [osc_id]
 	for e in elements:
@@ -277,7 +317,7 @@ func _follow_u(when: float) -> float:
 ## staff-system, so it never sweeps back across the page at a wrap) and the system index it sits in.
 func _follow_pos(when: float) -> Dictionary:
 	if elements.is_empty():
-		return {"u": cursor.u, "sys": cursor.sys}
+		return {"u": cursor.u, "sys": cursor.sys, "page": current_page}
 	var i := 0
 	for k in elements.size():
 		if elements[k].when <= when:
@@ -286,13 +326,15 @@ func _follow_pos(when: float) -> Dictionary:
 			break
 	var a = elements[i]
 	var uu: float = a.u
+	var pg: int = int(a.get("page", current_page))
 	if i + 1 < elements.size():
 		var b = elements[i + 1]
-		if int(b.get("sys", 0)) == int(a.get("sys", 0)):
+		# interpolate u only within the same page AND system (never sweep across a wrap or page turn)
+		if int(b.get("page", pg)) == pg and int(b.get("sys", 0)) == int(a.get("sys", 0)):
 			var span: float = b.when - a.when
 			if span > 0.0:
 				uu = lerpf(a.u, b.u, clampf((when - a.when) / span, 0.0, 1.0))
-	return {"u": uu, "sys": int(a.get("sys", 0))}
+	return {"u": uu, "sys": int(a.get("sys", 0)), "page": pg}
 
 
 func _process(_delta: float) -> void:
@@ -302,6 +344,8 @@ func _process(_delta: float) -> void:
 	if _last_passed >= 0 and _last_passed < elements.size() and when < elements[_last_passed].when:
 		_last_passed = -1   # transport rewound
 	var fp := _follow_pos(when)
+	if pages.size() > 0 and int(fp.page) != current_page:
+		_show_page(int(fp.page))
 	cursor.set_pos(fp.u, fp.sys)
 	while _last_passed + 1 < elements.size() and elements[_last_passed + 1].when <= when:
 		_last_passed += 1
@@ -359,8 +403,10 @@ func handle_cursor(args: Array) -> void:
 			cursor.sys = cursor.sys_for_v(cursor.v)
 			cursor.queue_redraw()
 		"at":
-			# jump the cursor to the interpolated position at whole-note time (system-aware).
+			# jump the cursor to the interpolated position at whole-note time (system- and page-aware).
 			var fp := _follow_pos(_f(args, 1))
+			if pages.size() > 0 and int(fp.page) != current_page:
+				_show_page(int(fp.page))
 			cursor.set_pos(fp.u, fp.sys)
 		"measure":
 			# With addressable data, jump the cursor to a measure (+ optional beat fraction).

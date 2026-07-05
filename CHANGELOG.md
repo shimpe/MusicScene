@@ -16,6 +16,12 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   note-accurate cursor is reliable and in sync.
 
 ### Added
+- **Paginated notation with automatic page-turn.** A notation object can lay a long score out on several
+  fixed-size pages instead of one ever-taller page — `paginate 1 [pageHeight]` (addressable Verovio only).
+  All pages are pre-rendered; the follow cursor turns the page automatically when playback crosses onto the
+  next one (and stays in the right staff-system), and `page` / `page+` / `page-` flip instantly between the
+  already-rendered pages. `MSScore` enables it by default (`paginate:` / `pageHeight:` arguments). Adds
+  `verovio_render.py --paginate` (writes `<out>-<n>.svg` per page) and `MSNotationVerovioPositions.finalize_paged`.
 - **Panola score bridge (SuperCollider).** `MSScore` (`examples/supercollider/MSScore.sc`) turns
   [Panola](https://github.com/shimpe/panola) string(s) into a MusicScene score with one call: it builds
   MEI via the Panola quark's new `Panola.asMEI` / `Panola.scoreAsMEI` (multi-staff, key/clef/meter,

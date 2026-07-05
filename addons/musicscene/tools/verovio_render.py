@@ -8,11 +8,16 @@ ids from it, and joins them to the timemap for note-level addressing + following
 
 Usage:
     py verovio_render.py <input> <output.svg> [--page N] [--timemap <file.json>] [--scale N] [--no-crop]
+    py verovio_render.py <input> <output.svg> --paginate [--page-height H] [--page-width W] [--timemap f]
+
+With --paginate the score is laid out on several fixed-size pages (readable for long fragments) and each
+page is written to <output_stem>-<n>.svg; without it, the single page is cropped to the music.
 
 Install: pip install verovio
 """
 import argparse
 import json
+import os
 import sys
 
 try:
@@ -20,6 +25,16 @@ try:
 except ImportError:
     sys.stderr.write("verovio not installed. Run: pip install verovio\n")
     sys.exit(3)
+
+
+def _write_timemap(tk, path: str) -> None:
+    if not path:
+        return
+    tm = tk.renderToTimemap()
+    if not isinstance(tm, str):
+        tm = json.dumps(tm)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(tm)
 
 
 def main() -> int:
@@ -31,34 +46,45 @@ def main() -> int:
     ap.add_argument("--scale", type=int, default=40)
     ap.add_argument("--breaks", default="auto")  # "none" = single system strip
     ap.add_argument("--no-crop", action="store_true", help="keep the full page width (default: crop to content)")
+    ap.add_argument("--paginate", action="store_true",
+                    help="lay the score out on several fixed-size pages; write <output_stem>-<n>.svg per page")
+    ap.add_argument("--page-height", type=int, default=1200)   # Verovio units; ~a few systems per page
+    ap.add_argument("--page-width", type=int, default=2100)
     a = ap.parse_args()
 
     tk = verovio.toolkit()
-    tk.setOptions({
-        # Crop the page to the music so a short excerpt isn't padded to a full page of white
-        # (adjustPageWidth/Height shrink the page to the content's bounding box).
-        "adjustPageHeight": True,
-        "adjustPageWidth": not a.no_crop,
-        "breaks": a.breaks,
-        "scale": a.scale,
-        "header": "none",
-        "footer": "none",
-    })
+    if a.paginate:
+        # Uniform fixed-size pages so Verovio breaks the score into readable pages (no cropping, so every
+        # page is the same size and the display doesn't jump when turning).
+        tk.setOptions({
+            "adjustPageHeight": False, "adjustPageWidth": False,
+            "pageHeight": a.page_height, "pageWidth": a.page_width,
+            "breaks": a.breaks, "scale": a.scale, "header": "none", "footer": "none",
+        })
+    else:
+        tk.setOptions({
+            # Crop the page to the music so a short excerpt isn't padded to a full page of white.
+            "adjustPageHeight": True, "adjustPageWidth": not a.no_crop,
+            "breaks": a.breaks, "scale": a.scale, "header": "none", "footer": "none",
+        })
     if not tk.loadFile(a.input):
         sys.stderr.write("verovio: could not load " + a.input + "\n")
         return 2
 
+    if a.paginate:
+        n = tk.getPageCount()
+        stem = a.output[:-4] if a.output.lower().endswith(".svg") else a.output
+        for pg in range(1, n + 1):
+            with open("%s-%d.svg" % (stem, pg), "w", encoding="utf-8") as f:
+                f.write(tk.renderToSVG(pg))
+        _write_timemap(tk, a.timemap)
+        print("verovio: wrote %d page(s) %s-N.svg%s" % (n, stem, " + timemap" if a.timemap else ""))
+        return 0
+
     page = max(1, min(a.page, tk.getPageCount()))
     with open(a.output, "w", encoding="utf-8") as f:
         f.write(tk.renderToSVG(page))
-
-    if a.timemap:
-        tm = tk.renderToTimemap()
-        if not isinstance(tm, str):
-            tm = json.dumps(tm)
-        with open(a.timemap, "w", encoding="utf-8") as f:
-            f.write(tm)
-
+    _write_timemap(tk, a.timemap)
     print("verovio: wrote " + a.output + (" + timemap" if a.timemap else ""))
     return 0
 

@@ -167,7 +167,14 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 	var svg_user := Cache.path_for(key, "svg")
 	var tm_user := Cache.path_for(key, "json")
 
-	if FileAccess.file_exists(svg_user) and FileAccess.file_exists(tm_user):
+	var paginate: bool = options.get("paginate", false)
+	var stem := svg_user.get_basename()
+
+	if paginate:
+		if FileAccess.file_exists(stem + "-1.svg") and FileAccess.file_exists(tm_user):
+			_finish_verovio_paged(notation_obj, stem, tm_user, options)
+			return
+	elif FileAccess.file_exists(svg_user) and FileAccess.file_exists(tm_user):
 		_finish_verovio(notation_obj, svg_user, tm_user, options)
 		return
 
@@ -175,6 +182,10 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 	var argv := ExternalBackend.build_argv(cmd, input_abs, ProjectSettings.globalize_path(svg_user), format, page)
 	argv.append("--timemap")
 	argv.append(ProjectSettings.globalize_path(tm_user))
+	if paginate:
+		argv.append("--paginate")
+		argv.append("--page-height")
+		argv.append(str(int(options.get("page_height", 1200))))
 	if argv.is_empty():
 		notation_obj._on_render_failed("verovio: empty command")
 		return
@@ -183,9 +194,10 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 		notation_obj._on_render_failed("verovio: could not launch " + argv[0])
 		return
 	if ctx.verbose:
-		print("[MusicSceneOSC] analyzing '%s' (%s/verovio) in background, pid %d" % [notation_obj.osc_id, format, pid])
+		print("[MusicSceneOSC] analyzing '%s' (%s/verovio%s) in background, pid %d"
+			% [notation_obj.osc_id, format, ("/paged" if paginate else ""), pid])
 	_jobs.append({
-		"kind": "vrv", "pid": pid, "obj": notation_obj,
+		"kind": "vrv", "pid": pid, "obj": notation_obj, "paginate": paginate, "stem": stem,
 		"svg_user": svg_user, "tm_user": tm_user, "options": options, "start": Time.get_ticks_msec(),
 	})
 
@@ -194,6 +206,14 @@ func _finish_verovio(obj, svg_user: String, tm_user: String, options: Dictionary
 	var res := VerovioPositions.finalize(svg_user, tm_user, options)
 	if res.ok:
 		obj._on_elements_done(res.texture, res.elements, res.get("systems", []))
+	else:
+		obj._on_render_failed(res.error + _exit_note(pid))
+
+
+func _finish_verovio_paged(obj, svg_stem: String, tm_user: String, options: Dictionary, pid: int = -1) -> void:
+	var res := VerovioPositions.finalize_paged(svg_stem, tm_user, options)
+	if res.ok:
+		obj._on_pages_done(res.pages, res.elements, res.page_count)
 	else:
 		obj._on_render_failed(res.error + _exit_note(pid))
 
@@ -243,7 +263,10 @@ func _process(_delta: float) -> void:
 		elif j.kind == "lyaddr":
 			_finish_lily(j.obj, j.cropped_user, j.options, j.pid)
 		elif j.kind == "vrv":
-			_finish_verovio(j.obj, j.svg_user, j.tm_user, j.options, j.pid)
+			if j.get("paginate", false):
+				_finish_verovio_paged(j.obj, j.stem, j.tm_user, j.options, j.pid)
+			else:
+				_finish_verovio(j.obj, j.svg_user, j.tm_user, j.options, j.pid)
 		else:
 			var res = ExternalBackend.finalize(j.out_user, j.out_ext, j.page, j.options)
 			if res.ok:
