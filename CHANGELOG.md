@@ -11,7 +11,9 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   full four-measure grand staff as a single MEI score (treble R.H. + bass L.H., braced), shows the
   whole page, then plays it with a playhead cursor sweeping across in time. Uses MEI rather than ABC
   because Verovio's ABC importer is single-voice; demonstrates live zero-config Verovio notation, the
-  notation cursor, and `background`.
+  notation cursor, and `background`. A companion `example_two_hands_patterns.scd` builds the same live
+  grand staff with the SuperCollider pattern library (`Pbrown`/`Prand`/`Pwrand`/`Pbind`/`Ppar`) instead
+  of routines, in D-flat (enharmonic C-sharp) natural minor.
 - **Notation background colour.** `/ms/scene/<id> background <colour>` (alias `bg`) fills an opaque
   "paper" behind a score — essential for Verovio/SVG scores, which draw ink on a transparent page.
   Accepts a named colour (`white`), hex (`#faf6e9`), or `r g b [a]` floats, plus `none` to clear. The
