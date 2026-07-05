@@ -9,9 +9,8 @@
 // just streams of notes (no "|"). Duration carries over until changed: "c5_4 e5 g5" = three quarters.
 //
 // REQUIRES:
-//   * The Panola quark installed WITH PanolaMEI.sc + Panola:asMEI (Classes/ of the panola quark).
-//   * MSScore.sc on SuperCollider's class path (copy examples/supercollider/MSScore.sc to your
-//     Extensions folder, or add examples/supercollider via Preferences, then recompile the class lib).
+//   * The MSScore quark:  Quarks.install("https://github.com/shimpe/msscore")
+//     (this also installs the Panola quark it depends on), then recompile the class library.
 //   * MusicScene running with Verovio (`pip install verovio`).
 //
 // USAGE:

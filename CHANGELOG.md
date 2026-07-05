@@ -28,14 +28,16 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   next one (and stays in the right staff-system), and `page` / `page+` / `page-` flip instantly between the
   already-rendered pages. `MSScore` enables it by default (`paginate:` / `pageHeight:` arguments). Adds
   `verovio_render.py --paginate` (writes `<out>-<n>.svg` per page) and `MSNotationVerovioPositions.finalize_paged`.
-- **Panola score bridge (SuperCollider).** `MSScore` (`examples/supercollider/MSScore.sc`) turns
+- **Panola score bridge (SuperCollider).** The `MSScore` quark
+  ([github.com/shimpe/msscore](https://github.com/shimpe/msscore), installable with `Quarks.install`) turns
   [Panola](https://github.com/shimpe/panola) string(s) into a MusicScene score with one call: it builds
   MEI via the Panola quark's new `Panola.asMEI` / `Panola.scoreAsMEI` (multi-staff, key/clef/meter,
-  chords, barline crossings auto-tied, eighths-and-shorter auto-beamed per beat, accidentals relative
-  to the key), shows the notation, plays the
+  chords, tuplets, barline crossings auto-tied, eighths-and-shorter auto-beamed per beat, accidentals
+  relative to the key), shows the notation, plays the
   voices (`Ppar`), and follows with a note-accurate cursor driven by MusicScene's addressable
   `elements` timemap. Example: `example_panola_score.scd`. (`Panola.asMEI`/`PanolaMEI` live in the
-  Panola quark.) Adds `tools/panola_mei/` — an MEI rendering harness + an end-to-end `Panola.asMEI` test.
+  Panola quark; `MSScore` is its own quark, no longer bundled here.) Adds `tools/panola_mei/` — an MEI
+  rendering harness + an end-to-end `Panola.asMEI` test.
 - **Example — live two-hand score (SuperCollider).** `examples/supercollider/example_two_hands.scd`:
   two independent random patterns (right/left hand) generate notes and rhythms; each cycle it builds a
   full four-measure grand staff as a single MEI score (treble R.H. + bass L.H., braced), shows the
