@@ -3,7 +3,7 @@
 //
 // Two independent random "patterns" — a right hand and a left hand — invent notes and rhythms.
 // Each cycle the program generates a full FOUR-MEASURE page, SHOWS it (sends the whole score at
-// once), pauses so you can read it, THEN plays it — and repeats with a fresh page. Nothing exotic:
+// once) so it's on screen before it sounds, THEN plays it — and repeats with a fresh page. Nothing exotic:
 // notes come from a C-major pool with gentle stepwise motion, rhythms are plain (eighths, quarters,
 // dotted quarters, halves).
 //
@@ -25,7 +25,7 @@
 //   1. Boot the audio server (evaluating the block below does it).
 //   2. Run the Godot project with MusicScene (exactly ONE instance).
 //   3. Put the cursor in the big ( ... ) block and press Ctrl+Enter (Cmd+Enter).
-//   4. A four-measure grand staff appears, waits a bar, then plays — then the next page, forever.
+//   4. A four-measure grand staff appears, then plays; the next page appears as that one ends, forever.
 //   5. To stop, evaluate the CLEANUP block at the bottom.
 // =============================================================================
 
@@ -47,10 +47,10 @@ s.waitForBoot({
     ~engine = NetAddr("127.0.0.1", 7400);        // where MusicScene listens
     ~snd    = { |... m| ~engine.sendMsg(*m); 0.02.wait; };   // paced send (Routine-only)
 
-    ~space  = "2d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
+    ~space  = "3d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
     ~bpm    = 84;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
-    ~lead   = 4;      // beats to SHOW a page before it plays (a read pause / count-in) — raise/lower to taste
-    ~scoreScale = (~space == "3d").if({ 0.28 }, { 0.62 });   // grand-staff size — raise to enlarge
+    ~lead   = 1;      // beats to show a page before it plays (just long enough to render). 0 = no pause; raise to linger.
+    ~scoreScale = (~space == "3d").if({ 1.0 }, { 1.0 });   // grand-staff size — raise to enlarge
 
     // C-major note pools (MIDI). Right hand sings in the treble, left hand walks the bass.
     ~rhPool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81];   // C4 .. A5
