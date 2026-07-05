@@ -1217,10 +1217,11 @@ s("/ms/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
   **grand staff** (one MEI score: treble R.H. + bass L.H., braced), shows it, then plays it. Uses MEI
   rather than ABC because Verovio's ABC importer is single-voice — MEI lets a single notation object
   hold both staves. Demonstrates live zero-config Verovio notation and `background`.
-- **Same, built with the pattern library (SuperCollider):** `examples/supercollider/example_two_hands_patterns.scd`
-  — the same live grand staff, but the music is generated with SuperCollider Patterns (`Pbrown` melodic
-  walks, `Prand` bar rhythms, `Pwrand` rests, `Pbind`/`Ppar` playback) instead of routines, in D-flat
-  natural minor (written as its enharmonic C-sharp minor). Shows a following playhead `cursor`.
+- **Pattern-library trio (SuperCollider):** `examples/supercollider/example_two_hands_patterns.scd`
+  — a pad melody over a two-hand piano, generated with SuperCollider Patterns (`Pbrown` melodic walks,
+  `Prand` bar rhythms, `Pwrand` rests, `Pbind`/`Ppar` playback) instead of routines, shown live as a
+  three-staff score (melody + braced piano) in D-flat natural minor (written as its enharmonic C-sharp
+  minor), with a following playhead `cursor`.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,
   `discover`, bulk binding, the permission model, `payload` and signal forwarding, emission modes, and
