@@ -24,6 +24,7 @@ def render_props(mei_or_path: str) -> dict:
         "measures": mei.count("<measure "),
         "ties": ('tie="i"' in mei) or ('tie="t"' in mei),
         "sharps": svg.count("E262"), "flats": svg.count("E260"),
+        "beams": svg.count('class="beam"'), "flag_glyphs": svg.count('class="flag"'),
     }
 
 if __name__ == "__main__":

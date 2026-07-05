@@ -22,6 +22,7 @@ CASES = {
     "ties":    'Panola.scoreAsMEI([Panola("c5_2 c5_1 c5_4")], "4/4", \\Cmajor, [\\treble], nil)',
     "gmajor":  'Panola.scoreAsMEI([Panola("f#5_4 g a b")], "4/4", \\Gmajor, [\\treble], nil)',
     "waltz":   'Panola.scoreAsMEI([Panola("c5_4 e g c5_4 e g")], "3/4", \\Cmajor, [\\treble], nil)',
+    "beams":   'Panola.scoreAsMEI([Panola("c5_8 d5 e5 f5 g5 a5 b5 c6")], "4/4", \\Cmajor, [\\treble], nil)',
 }
 
 
@@ -60,3 +61,4 @@ def test_panola_asmei_renders_all_cases():
     assert props["ties"]["ties"] and props["ties"]["measures"] == 2          # whole note split+tied across barline
     assert props["gmajor"]["sharps"] >= 1                                    # key signature drawn
     assert props["waltz"]["measures"] == 2                                   # 6 quarters in 3/4 = 2 bars
+    assert props["beams"]["beams"] == 4 and props["beams"]["flag_glyphs"] == 0  # 8 eighths auto-beamed per beat
