@@ -708,6 +708,7 @@ run-time** — all through the same commands (works identically in 2D and 3D):
 /ms/scene/<id> notationSource <source_or_data>      # change source, keep format
 /ms/scene/<id> render | reload                       # re-render current source
 /ms/scene/<id> page <n> | nextPage | prevPage | pages
+/ms/scene/<id> background <colour>                   # paper behind the score (see below)
 /ms/scene/<id> notationInfo                          # <- reply notationInfo <id> <fmt> <src> <backend> <pages>
 ```
 
@@ -782,6 +783,22 @@ s("/ms/scene/score","notation","svg",svg)
 The page renders at native pixel size centred on the object — **scale it down if it overflows**:
 `s("/ms/scene/score","scale",0.3)`. If a runtime SVG fails to rasterize (some engraver SVGs
 use features ThorVG can't handle), import it under `res://` or render to PNG.
+
+### Background colour (paper)
+
+Most engraved scores are **transparent** — Verovio, ABC and many SVGs draw the ink but no page, so the
+notes float over whatever is behind the object. Give the score an opaque "paper" with `background`:
+
+```python
+s("/ms/scene/score","background","white")     # named colour
+s("/ms/scene/score","background","#faf6e9")    # hex (a warm cream)
+s("/ms/scene/score","background",1,1,1)        # r g b (0..1), optional 4th = alpha
+s("/ms/scene/score","background","black",0.5)  # named/hex + alpha  → 50% translucent
+s("/ms/scene/score","background","none")       # back to transparent (the default)
+```
+
+The colour is composited **behind** the score, so the notes stay crisp and the cursor/regions still
+sit on top. It applies immediately (no re-render) and works the same in 2D and 3D. `bg` is an alias.
 
 ### C. Symbolic music (MusicXML / MEI / LilyPond / ABC) — MusicScene runs the engraver
 

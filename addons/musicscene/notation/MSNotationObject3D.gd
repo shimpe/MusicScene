@@ -7,6 +7,7 @@ extends Node3D
 
 const Renderer := preload("res://addons/musicscene/notation/MSNotationRenderer.gd")
 const Region3D := preload("res://addons/musicscene/notation/MSNotationRegion3D.gd")
+const Background := preload("res://addons/musicscene/notation/MSNotationBackground.gd")
 
 const PAGE_HEIGHT := 3.0   # default page height in world units
 
@@ -37,6 +38,8 @@ var page_count: int = 1
 var page_size: Vector2 = Vector2(600, 800)         # texture pixels (for [0,1] mapping)
 var page_world: Vector2 = Vector2(2.25, PAGE_HEIGHT)  # quad size in world units
 var render_options: Dictionary = {}
+var _page_texture: Texture2D = null       # raw rendered page, before background compositing
+var bg_color: Color = Color(0, 0, 0, 0)   # paper colour behind the score (transparent = none)
 
 # cursor state
 var cur_u: float = 0.1
@@ -114,6 +117,21 @@ func handle(verb: String, args: Array) -> void:
 				_render()
 		"measures": reply_measures()
 		"elements": reply_elements()
+		"background", "bg":
+			bg_color = Background.parse(args)
+			_apply_page_texture()
+
+
+func _set_page_texture(tex: Texture2D) -> void:
+	_page_texture = tex
+	_apply_page_texture()
+
+
+func _apply_page_texture() -> void:
+	if _page_texture == null:
+		return
+	page_mat.albedo_texture = Background.composite(_page_texture, bg_color)
+	page_mat.albedo_color = Color.WHITE
 
 
 func _set_content(value, force_data: bool) -> void:
@@ -152,8 +170,7 @@ func _render() -> void:
 
 func _on_addressable_done(texture: Texture2D, p_measures: Array) -> void:
 	_pending = false
-	page_mat.albedo_texture = texture
-	page_mat.albedo_color = Color.WHITE
+	_set_page_texture(texture)
 	backend = "addressable"
 	page_count = 1
 	page_size = texture.get_size()
@@ -192,8 +209,7 @@ func _measure_u(mi: int, frac: float) -> float:
 
 func _on_elements_done(texture: Texture2D, p_elements: Array) -> void:
 	_pending = false
-	page_mat.albedo_texture = texture
-	page_mat.albedo_color = Color.WHITE
+	_set_page_texture(texture)
 	backend = "addressable-ly"
 	page_count = 1
 	page_size = texture.get_size()
@@ -272,8 +288,7 @@ func _apply_result(res) -> void:
 	if not res.ok:
 		ctx.error("load_failed", _base() + "/notation", res.error)
 		return
-	page_mat.albedo_texture = res.texture
-	page_mat.albedo_color = Color.WHITE
+	_set_page_texture(res.texture)
 	backend = res.backend
 	page_count = res.page_count
 	page_size = res.texture.get_size()

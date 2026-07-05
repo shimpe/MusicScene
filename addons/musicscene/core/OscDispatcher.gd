@@ -10,6 +10,7 @@ const NOTATION_VERBS := [
 	"notation", "notationsource", "notationdata", "notationformat", "render", "reload",
 	"page", "nextpage", "prevpage", "pages", "system", "staff", "measure",
 	"part", "notationinfo", "currentpage", "addressable", "measures", "elements",
+	"background", "bg",
 ]
 
 var ctx = null

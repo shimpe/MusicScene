@@ -7,6 +7,7 @@ extends Node2D
 
 const Renderer := preload("res://addons/musicscene/notation/MSNotationRenderer.gd")
 const Cache := preload("res://addons/musicscene/notation/MSNotationCache.gd")
+const Background := preload("res://addons/musicscene/notation/MSNotationBackground.gd")
 
 var ctx = null
 var osc_id: String = ""
@@ -34,6 +35,8 @@ var current_page: int = 1
 var page_count: int = 1
 var page_size: Vector2 = Vector2(600, 800)
 var render_options: Dictionary = {}
+var _page_texture: Texture2D = null       # raw rendered page, before background compositing
+var bg_color: Color = Color(0, 0, 0, 0)   # paper colour behind the score (transparent = none)
 
 # Symbolic addressing hints (no geometry in v1, stored for clients/future use).
 var system_no: int = -1
@@ -124,6 +127,19 @@ func handle(verb: String, args: Array) -> void:
 			reply_measures()
 		"elements":
 			reply_elements()
+		"background", "bg":
+			bg_color = Background.parse(args)
+			_apply_page_texture()
+			queue_redraw()
+
+
+func _set_page_texture(tex: Texture2D) -> void:
+	_page_texture = tex
+	_apply_page_texture()
+
+
+func _apply_page_texture() -> void:
+	sprite.texture = Background.composite(_page_texture, bg_color)
 
 
 func _set_content(value, force_data: bool) -> void:
@@ -162,7 +178,7 @@ func _render() -> void:
 
 func _on_addressable_done(texture: Texture2D, p_measures: Array) -> void:
 	_pending = false
-	sprite.texture = texture
+	_set_page_texture(texture)
 	backend = "addressable"
 	page_count = 1
 	page_size = texture.get_size()
@@ -204,7 +220,7 @@ func _measure_u(mi: int, frac: float) -> float:
 
 func _on_elements_done(texture: Texture2D, p_elements: Array) -> void:
 	_pending = false
-	sprite.texture = texture
+	_set_page_texture(texture)
 	backend = "addressable-ly"
 	page_count = 1
 	page_size = texture.get_size()
@@ -281,7 +297,7 @@ func _apply_result(res) -> void:
 	if not res.ok:
 		ctx.error("load_failed", _base_addr() + "/notation", res.error)
 		return
-	sprite.texture = res.texture
+	_set_page_texture(res.texture)
 	backend = res.backend
 	page_count = res.page_count
 	page_size = res.texture.get_size()
@@ -500,7 +516,8 @@ func _draw() -> void:
 	if sprite != null and sprite.texture != null:
 		return
 	var r := Rect2(-page_size * 0.5, page_size)
-	draw_rect(r, Color(0.97, 0.97, 0.95, 1.0), true)
+	var paper := bg_color if bg_color.a > 0.0 else Color(0.97, 0.97, 0.95, 1.0)
+	draw_rect(r, paper, true)
 	draw_rect(r, Color(0.2, 0.2, 0.2, 0.6), false, 2.0)
 	var font := ThemeDB.fallback_font
 	if font != null:

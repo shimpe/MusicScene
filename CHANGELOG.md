@@ -5,6 +5,13 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ## [Unreleased]
 
+### Added
+- **Notation background colour.** `/ms/scene/<id> background <colour>` (alias `bg`) fills an opaque
+  "paper" behind a score — essential for Verovio/SVG scores, which draw ink on a transparent page.
+  Accepts a named colour (`white`), hex (`#faf6e9`), or `r g b [a]` floats, plus `none` to clear. The
+  colour is composited behind the page (cursor/regions stay on top), applies immediately without a
+  re-render, and works identically in 2D and 3D.
+
 ### Fixed
 - **Verovio (and other nested-`<svg>`) scores rendered blank.** Godot's ThorVG rasteriser ignores the
   `viewBox` scaling of a *nested* `<svg>` — the "definition-scale" wrapper Verovio emits — so MEI/ABC

@@ -249,8 +249,13 @@ Notation commands:
 /ms/scene/<id> render | reload
 /ms/scene/<id> page <n> | nextPage | prevPage | pages
 /ms/scene/<id> system <n> | staff <n> | measure <n> | part <id>
+/ms/scene/<id> background <colour>                  # paper behind a (transparent) score; bg alias
 /ms/scene/<id> notationInfo
 ```
+
+`background` fills an opaque page behind the score — needed for Verovio/SVG scores, which draw ink on a
+transparent page. Accepts a name (`white`), hex (`#faf6e9`), or `r g b [a]` floats, plus `none` to clear;
+it's composited behind the notes (cursor/regions stay on top) and works in 2D and 3D.
 
 ### Notation backends
 
