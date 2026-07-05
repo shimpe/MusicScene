@@ -1212,6 +1212,10 @@ s("/ms/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
 - **Generative pinball (SuperCollider):** `examples/supercollider/example_pinball.scd` — a self-contained
   pinball table using bouncers, portals, sensor-zone targets, bouncy walls and pins; all sound synthesised
   locally. Boot the project in 3D and evaluate the block.
+- **Live two-hand score (SuperCollider):** `examples/supercollider/example_two_hands.scd` — two random
+  "patterns" (right hand / left hand) invent notes and rhythms bar by bar and stream the **last four
+  measures** of each to MusicScene as ABC, so you watch the score being written as it plays. Shows
+  live Verovio notation, a treble + bass grand staff (two stacked notation objects), and `background`.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,
   `discover`, bulk binding, the permission model, `payload` and signal forwarding, emission modes, and
