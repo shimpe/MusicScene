@@ -42,7 +42,7 @@ s.waitForBoot({
     // The melody: a warm pad — three slightly detuned saws, low-passed, a slow attack/long release
     // (gated, so it sustains for the note's length), and generous reverb.
     SynthDef(\pad, { |freq = 440, amp = 0.1, pan = 0, gate = 1|
-        var env = EnvGen.kr(Env.asr(0.4, 1.0, 1.2, \sine), gate, doneAction: 2);
+        var env = EnvGen.kr(Env.asr(0.1, 1.0, 1.2, \sine), gate, doneAction: 2);
         var sig = VarSaw.ar(freq * [1.0, 1.006, 0.994], 0, 0.4).sum * 0.4;
         sig = LPF.ar(sig, 2200);
         sig = sig * env * amp;
@@ -59,7 +59,7 @@ s.waitForBoot({
     ~space  = "3d";   // "2d" or "3d" — match musicscene/space. 2D reads best (a score is landscape).
     ~bpm    = 76;     // tempo (quarter = 1 beat, 4 beats per 4/4 bar)
     ~lead   = 0;      // beats to show a page before it plays. 0 = play as it appears; raise to linger.
-    ~scoreScale = (~space == "3d").if({ 1.5 }, { 1.5 });   // score size — raise to enlarge (3 staves are tall)
+    ~scoreScale = (~space == "3d").if({ 2.0 }, { 2.0 });   // score size — raise to enlarge (3 staves are tall)
     // Measured first/last note positions for a 4-bar page with a four-sharp key signature.
     ~cursorStart = 0.17;
     ~cursorEnd   = 0.97;
@@ -229,6 +229,7 @@ s.waitForBoot({
 (
 if(~conductor.notNil) { ~conductor.stop };
 if(~clock.notNil)     { ~clock.stop };
+s.freeAll;                                 // silence any still-sounding synths (esp. the sustained pad)
 ~engine.sendMsg("/ms/scene", "clear");
 "Three-part pattern score stopped.".postln;
 )

@@ -215,6 +215,7 @@ s.waitForBoot({
 (
 if(~conductor.notNil) { ~conductor.stop };
 if(~clock.notNil)     { ~clock.stop };
+s.freeAll;                                 // silence any still-sounding synths
 ~engine.sendMsg("/ms/scene", "clear");
 "Two-hand score stopped.".postln;
 )
