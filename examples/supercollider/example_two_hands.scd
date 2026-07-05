@@ -2,10 +2,11 @@
 // Two-hand generative score — a SuperCollider showcase for MusicScene's LIVE notation.
 //
 // Two independent random "patterns" — a right hand and a left hand — invent notes and
-// rhythms one bar at a time. Every bar, the program sends the LAST FOUR MEASURES of each
-// hand to MusicScene as ABC, so you watch the score being written in real time while
-// sclang plays it. Nothing exotic: notes come from a C-major pool with gentle stepwise
-// motion, rhythms are plain (eighths, quarters, dotted quarters, halves).
+// rhythms one bar at a time. Every bar, the program appends the new measure to each hand's
+// score and sends it to MusicScene as ABC; once FOUR measures are on the page it wipes them
+// and starts a fresh, empty score. So you watch the score fill up a bar at a time, then reset
+// and fill again — while sclang plays it. Nothing exotic: notes come from a C-major pool with
+// gentle stepwise motion, rhythms are plain (eighths, quarters, dotted quarters, halves).
 //
 //     right hand -> /ms/scene/rh   (treble staff)
 //     left  hand -> /ms/scene/lh   (bass staff)
@@ -160,14 +161,16 @@ s.waitForBoot({
         ~rhIdx = (~rhPool.size / 2).floor.asInteger;   // start each walk mid-range
         ~lhIdx = (~lhPool.size / 2).floor.asInteger;
 
-        // The conductor: each bar, both hands invent a measure; keep only the last 4; send each
-        // hand's window as ABC; play the new bar. Direct sendMsg (no pacing) keeps timing exact.
+        // The conductor: each bar, both hands invent a measure; append it (wiping the page once four
+        // are shown); send each hand's score as ABC; play the new bar. Direct sendMsg keeps timing exact.
         ~conductor = Routine({
             loop {
                 var rhBar = ~genBar.(\rh);
                 var lhBar = ~genBar.(\lh);
-                ~rhWin = (~rhWin ++ [rhBar]).keep(-4);
-                ~lhWin = (~lhWin ++ [lhBar]).keep(-4);
+                // Fill up to four measures, then wipe both staves and start a fresh score.
+                if(~rhWin.size >= 4) { ~rhWin = []; ~lhWin = [] };
+                ~rhWin = ~rhWin ++ [rhBar];
+                ~lhWin = ~lhWin ++ [lhBar];
                 ~engine.sendMsg("/ms/scene/rh", "notationData", "abc", ~windowAbc.(~rhWin, \treble));
                 ~engine.sendMsg("/ms/scene/lh", "notationData", "abc", ~windowAbc.(~lhWin, \bass));
                 ~playBar.(rhBar, 0.22, 0.13);
@@ -177,7 +180,7 @@ s.waitForBoot({
         }).play(~clock);
 
         "".postln;
-        "Two-hand generative score running — the staves scroll four bars at a time.".postln;
+        "Two-hand generative score running — the staves fill four bars, then wipe and restart.".postln;
         "Evaluate the CLEANUP block to stop.".postln;
         "".postln;
     });
