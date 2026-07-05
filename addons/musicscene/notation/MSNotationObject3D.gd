@@ -39,6 +39,7 @@ var current_page: int = 1
 var page_count: int = 1
 var page_size: Vector2 = Vector2(600, 800)         # texture pixels (for [0,1] mapping)
 var page_world: Vector2 = Vector2(2.25, PAGE_HEIGHT)  # quad size in world units
+var _pages_max_h: float = 0.0   # tallest page texture (px); paginated pages share world-per-pixel so notes stay one size
 var render_options: Dictionary = {}
 var _page_texture: Texture2D = null       # raw rendered page, before background compositing
 var bg_color: Color = Color(0, 0, 0, 0)   # paper colour behind the score (transparent = none)
@@ -258,6 +259,9 @@ func _on_pages_done(p_pages: Array, p_elements: Array, p_page_count: int) -> voi
 	elements = p_elements
 	page_count = p_page_count
 	_last_passed = -1
+	_pages_max_h = 0.0
+	for pg in pages:
+		_pages_max_h = maxf(_pages_max_h, float(pg.texture.get_height()))
 	_show_page(clampi(current_page, 1, max(1, page_count)))
 	if ctx.verbose:
 		print("[MusicSceneOSC] notation3d '%s' addressable paged: %d notes across %d pages"
@@ -271,8 +275,10 @@ func _show_page(p: int) -> void:
 	var pg = pages[current_page - 1]
 	_set_page_texture(pg.texture)
 	page_size = pg.texture.get_size()
-	var aspect := page_size.x / page_size.y if page_size.y > 0 else 1.0
-	page_world = Vector2(PAGE_HEIGHT * aspect, PAGE_HEIGHT)
+	# Size every page by the same world-per-pixel (tallest page == PAGE_HEIGHT), so a shorter page is a
+	# shorter quad rather than one system stretched to full height — note size stays constant across pages.
+	var per_px: float = (PAGE_HEIGHT / _pages_max_h) if _pages_max_h > 0.0 else (PAGE_HEIGHT / maxf(1.0, page_size.y))
+	page_world = Vector2(page_size.x * per_px, page_size.y * per_px)
 	(page_mesh.mesh as QuadMesh).size = page_world
 	systems = pg.systems
 	_update_all()
