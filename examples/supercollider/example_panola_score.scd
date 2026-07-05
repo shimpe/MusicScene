@@ -36,7 +36,7 @@ s.waitForBoot({
 
 	~score = MSScore(
 		voices: [
-			"c5_4 e5 g5 c6 g5_4 e5 c5 e5 f5_4 a5 c6 a5 g5_2 c5_2",   // right hand (treble)
+			"c5_4 e5 g5_4. c6_8 g5_4 e5 c5 e5 f5_4 a5 c6 a5 g5_2 c5_2",   // right hand (treble)
 			"c3_2 g3 c3_2 e3 f3_2 g3 c3_1"                            // left hand (bass)
 		],
 		clefs:  [\treble, \bass],
@@ -44,8 +44,9 @@ s.waitForBoot({
 		key:    \Cmajor,
 		braces: [[1, 2]],                 // brace the two staves into a piano grand staff
 		tempo:  88,
+		scale:  3,                        // score size in the scene — raise/lower to fit your view
 		instruments: [\pnote, \pnote],
-		space:  "2d"                      // set "3d" to match your project's musicscene/space
+		space:  "3d"                      // set "3d" to match your project's musicscene/space
 	);
 
 	~score.play;

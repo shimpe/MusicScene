@@ -3,16 +3,17 @@ MSScore — write a score in Panola, then show + play + follow it in MusicScene,
 
     (
     ~score = MSScore(
-        voices: [ "c5_4 e2 g4 | a2 g4 f", "<c4_4 e4 g4> <c4_4 e4 g4> r_4 <b3_4 d4 g4>", "c3_2 g2_2" ],
+        voices: [ "c5_4 e5 g5 c6", "<c4_4 e4 g4> <c4_4 e4 g4> r_4 <b3_4 d4 g4>", "c3_2 g3_2" ],
         clefs:  [\treble, \treble, \bass],
-        meter: "4/4", key: \Cmajor, braces: [[2,3]], tempo: 84, space: "2d"
+        meter: "4/4", key: \Cmajor, braces: [[2,3]], tempo: 84, space: "2d", scale: 0.9
     );
     )
     ~score.play;   // display the notation, play the voices, follow with the cursor
     ~score.stop;   // stop, free synths, clear
 
-`voices` may be Panola strings (wrapped automatically) or ready Panola instances. The MEI comes from
-Panola.scoreAsMEI (see the Panola quark). The cursor is note-accurate: MusicScene is made `addressable`,
+`voices` may be Panola strings (wrapped automatically) or ready Panola instances. `scale` sizes the score
+in the scene (raise it if the notation looks too small); it defaults to 2.5 in "3d" and 0.7 in "2d". The
+MEI comes from Panola.scoreAsMEI (see the Panola quark). The cursor is note-accurate: MusicScene is made `addressable`,
 so it reports each note's on-page position (`elements`); MSScore replays that timemap on the same clock
 as playback. If `elements` never arrives (e.g. Verovio missing), the cursor falls back to a linear sweep.
 
@@ -21,12 +22,12 @@ INSTALL: put this file on SuperCollider's class path (e.g. copy to your Extensio
 with PanolaMEI, and MusicScene running (Verovio working; `pip install verovio`).
 */
 MSScore {
-	var <voices, <clefs, <meter, <key, <braces, <tempo, <id, <space, <instruments, <scoreScale;
+	var <voices, <clefs, <meter, <key, <braces, <tempo, <id, <space, <instruments, <scale;
 	var <engine, <replyPort, <clock, <player, <cursorRoutine, <elements, <oscdef, <totalBeats;
 
 	*new { | voices, clefs, meter = "4/4", key = \Cmajor, braces, tempo = 84, instruments,
-		id = "score", space = "2d", scoreScale, host = "127.0.0.1", listenPort = 7400, replyPort = 7401 |
-		^super.new.init(voices, clefs, meter, key, braces, tempo, instruments, id, space, scoreScale, host, listenPort, replyPort);
+		id = "score", space = "2d", scale, host = "127.0.0.1", listenPort = 7400, replyPort = 7401 |
+		^super.new.init(voices, clefs, meter, key, braces, tempo, instruments, id, space, scale, host, listenPort, replyPort);
 	}
 
 	init { | v, cl, m, k, br, t, instr, i, sp, sc, host, lport, rport |
@@ -34,7 +35,7 @@ MSScore {
 		clefs = cl ? voices.collect({ \treble });
 		meter = m; key = k; braces = br; tempo = t; id = i; space = sp;
 		instruments = instr ? voices.collect({ \default });
-		scoreScale = sc ? (sp == "3d").if({ 1.5 }, { 0.6 });
+		scale = sc ? (sp == "3d").if({ 2.5 }, { 0.7 });   // pass `scale:` to enlarge/shrink the score
 		engine = NetAddr(host, lport); replyPort = rport;
 		elements = [];
 		totalBeats = voices.collect({ |p| p.totalDuration }).maxItem;
@@ -52,7 +53,7 @@ MSScore {
 			var snd = { |... a| engine.sendMsg(*a); 0.02.wait };
 			snd.("/ms/scene/" ++ id, "new", "notation");
 			snd.("/ms/scene/" ++ id, "background", "white");
-			snd.("/ms/scene/" ++ id, "scale", scoreScale);
+			snd.("/ms/scene/" ++ id, "scale", scale);
 			if (space == "3d") { snd.("/ms/scene/" ++ id, "pos", 0.0, 0.0, 0.0) } { snd.("/ms/scene/" ++ id, "pos", 0.0, 0.0) };
 			snd.("/ms/scene/" ++ id ++ "/cursor", "show", 1);
 			snd.("/ms/scene/" ++ id, "addressable", 1);
