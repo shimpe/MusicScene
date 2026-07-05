@@ -117,6 +117,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_portals.gd 2>&1 | tee portals.log
           grep -q "fail=0" portals.log && ! grep -q "FAIL:" portals.log
 
+      - name: Self-tests — SVG viewBox flatten (Verovio rasterisation)
+        run: |
+          ./godot --headless --path . --script res://tools/test_svg_flatten.gd 2>&1 | tee svgflatten.log
+          grep -q "fail=0" svgflatten.log && ! grep -q "FAIL:" svgflatten.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log

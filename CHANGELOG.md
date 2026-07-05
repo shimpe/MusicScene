@@ -5,6 +5,14 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ## [Unreleased]
 
+### Fixed
+- **Verovio (and other nested-`<svg>`) scores rendered blank.** Godot's ThorVG rasteriser ignores the
+  `viewBox` scaling of a *nested* `<svg>` — the "definition-scale" wrapper Verovio emits — so MEI/ABC
+  scores rasterised fully transparent (no error, the score just "disappeared"). The SVG backend now
+  flattens a nested `<svg viewBox>` into an equivalent `<g transform="scale()">` before rasterising;
+  the on-disk SVG (used for note-position parsing / following) is untouched. Fixes plain display,
+  addressable display, and inline Verovio SVGs sent over OSC.
+
 ### Changed
 - **Self-contained engravers.** The engraver helper scripts MusicScene shells out to
   (`verovio_render.py`, `ly_to_score.py`, `mscore_to_score.py`) now live **inside the addon** under
