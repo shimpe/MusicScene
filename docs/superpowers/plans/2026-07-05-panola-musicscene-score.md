@@ -10,9 +10,24 @@
 
 **Spec:** `docs/superpowers/specs/2026-07-05-panola-musicscene-score-design.md`
 
-**CRITICAL CONSTRAINT — read before executing.** SuperCollider cannot be run in the authoring/CI environment.
-- **Phase 1 (Python reference + harness)** is fully automatable and TDD'd here. It is the *executable spec* for the MEI mapping and the oracle the SC port is checked against.
-- **Phase 2 (`Panola.asMEI`, sclang) and Phase 3 (`MSScore`, sclang)** are **written, not run** by the agent. Their "test" is: (a) mirror the validated Phase-1 reference exactly; (b) a provided `.scd` that the **user** evaluates to dump MEI to files / run the live demo; (c) the agent re-validates the dumped MEI files with the Phase-1 harness. Do not claim these phases "pass tests" — claim "code written; MEI output validated by rendering; interactive behaviour pending user run."
+**UPDATED APPROACH — sclang IS runnable.** `sclang` at `C:\Program Files\SuperCollider-3.14.1\sclang.exe`
+runs headlessly (`sclang script.scd`, end the script with `0.exit;`) and loads the Panola quark from
+`C:\Users\Stefaan Himpe\AppData\Local\SuperCollider\Extensions\panola`. So the **actual SC deliverable is
+directly testable** — no Python port needed. This supersedes the original Python-oracle plan below:
+- **Phase 1 is reduced to Task 1 only** — the `render_check.py` MEI→SVG rendering harness (still useful as
+  the notation validator, callable from Bash). Tasks 2–6's *algorithm* is implemented **directly in
+  SuperCollider** as part of Phase 2, and TDD'd by: generate MEI in sclang → render it with the harness →
+  assert. `ref.py` (the Python reimplementation) is **not built** (would duplicate the SC).
+- **Phase 2 (`Panola.asMEI`) is now fully TDD-able here**: a `test_asMEI.scd` run via sclang emits MEI for
+  known Panola strings; the harness renders + asserts (renders OK, staff/measure count, ties, key sig).
+  The algorithm decisions in Tasks 2–6 (element mapping, decomposition, meter+ties, multi-staff, key)
+  remain the spec — implement them in SC, testing after each.
+- **Phase 3 (`MSScore`)**: its MEI-building + OSC-message construction are unit-testable via sclang (mock
+  the `NetAddr`); the live cursor/audio round-trip still needs a running MusicScene + scsynth and is the
+  interactive acceptance check (Phase 4 example).
+
+**Original Python-oracle Phase 1 (Tasks 2–6) below is retained only as the algorithm specification** —
+implement the same logic in SuperCollider, not Python.
 
 **Two repos.**
 - This repo (`D:\Projects\MusicScene`): Phase 1 (`tools/panola_mei/`), Phase 3 (`MSScore`), Phase 4 (example + docs).
