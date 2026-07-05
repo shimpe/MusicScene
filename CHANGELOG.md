@@ -16,6 +16,11 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   note-accurate cursor is reliable and in sync.
 
 ### Added
+- **Slurs in Panola notation.** `Panola.scoreAsMEI` / `MSScore` now render slurs: `@slur^start^` opens a
+  slur and `@slur^end^` closes it (both notes under the arc), and `@slur^endstart^` closes one and opens
+  the next at the same note (chained phrases). One slur at a time; they cross barlines/systems. Notation
+  only — playback (`@pdur` legato) is unchanged. (PanolaMEI in the Panola quark, via measure-level
+  `<slur tstamp tstamp2>`.)
 - **Per-note expression in Panola notation.** `Panola.scoreAsMEI` / `MSScore` now render dynamics and
   articulation: `@dyn^mf^` → a `<dynam>` mark (emitted on change, so a one-shot yields one mark), and
   `@art[stacc:on]` / `@art[stacc:off]` (a layered set that persists over a passage) or `@art^acc^` (one
