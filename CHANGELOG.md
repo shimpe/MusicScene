@@ -6,6 +6,13 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 ## [Unreleased]
 
 ### Added
+- **Panola score bridge (SuperCollider).** `MSScore` (`examples/supercollider/MSScore.sc`) turns
+  [Panola](https://github.com/shimpe/panola) string(s) into a MusicScene score with one call: it builds
+  MEI via the Panola quark's new `Panola.asMEI` / `Panola.scoreAsMEI` (multi-staff, key/clef/meter,
+  chords, barline crossings auto-tied, accidentals relative to the key), shows the notation, plays the
+  voices (`Ppar`), and follows with a note-accurate cursor driven by MusicScene's addressable
+  `elements` timemap. Example: `example_panola_score.scd`. (`Panola.asMEI`/`PanolaMEI` live in the
+  Panola quark.) Adds `tools/panola_mei/` — an MEI rendering harness + an end-to-end `Panola.asMEI` test.
 - **Example — live two-hand score (SuperCollider).** `examples/supercollider/example_two_hands.scd`:
   two independent random patterns (right/left hand) generate notes and rhythms; each cycle it builds a
   full four-measure grand staff as a single MEI score (treble R.H. + bass L.H., braced), shows the

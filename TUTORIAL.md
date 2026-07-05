@@ -1222,6 +1222,11 @@ s("/ms/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
   `Prand` bar rhythms, `Pwrand` rests, `Pbind`/`Ppar` playback) instead of routines, shown live as a
   three-staff score (melody + braced piano) in D-flat natural minor (written as its enharmonic C-sharp
   minor), with a following playhead `cursor`.
+- **Panola score — the simple way (SuperCollider):** `examples/supercollider/example_panola_score.scd`
+  — write a score as [Panola](https://github.com/shimpe/panola) string(s) and `MSScore` renders it to
+  MEI (via the Panola quark's `Panola.scoreAsMEI`), shows it, plays the voices, and follows with a
+  note-accurate cursor. Multi-staff, keys, meters, chords, and auto-tied barline crossings — no
+  hand-built MEI. Needs the Panola quark (with `PanolaMEI`) and `MSScore.sc` on the SC class path.
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,
   `discover`, bulk binding, the permission model, `payload` and signal forwarding, emission modes, and
