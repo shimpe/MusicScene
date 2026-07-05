@@ -16,6 +16,13 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   note-accurate cursor is reliable and in sync.
 
 ### Added
+- **Per-note expression in Panola notation.** `Panola.scoreAsMEI` / `MSScore` now render dynamics and
+  articulation: `@dyn^mf^` → a `<dynam>` mark (emitted on change, so a one-shot yields one mark), and
+  `@art[stacc:on]` / `@art[stacc:off]` (a layered set that persists over a passage) or `@art^acc^` (one
+  note) → note `artic` (friendly names like `staccato`/`accent` map to MEI codes). Enabled by a new
+  general Panola feature — property values may be words, not only numbers (`@name[word]` / `@name^word^`);
+  `asPbind` passes word-valued properties through as symbols so such voices still play. (PanolaMEI + Panola
+  in the Panola quark.)
 - **Tuplets in Panola notation.** `Panola.scoreAsMEI` / `MSScore` now render Panola tuplets (triplets,
   quintuplets, …; `c5_8*2/3 d5 e5`) as proper MEI `<tuplet>` brackets instead of approximating them as the
   nearest plain note value. Groups are formed by accumulated duration (so mixed-value tuplets like
