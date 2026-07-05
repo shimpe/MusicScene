@@ -66,12 +66,41 @@ static func finalize_paged(svg_stem: String, timemap_path: String, options: Dict
 				"u": p.u, "v": p.v, "sys_id": p.sys, "page": pi + 1,
 			})
 		var systems := _build_systems(page_elements)   # stamps each element's sys (index within this page)
-		pages.append({"texture": res.texture, "systems": systems})
+		# A fixed-size page pads blank space below the last system; crop the raster to its actual drawn
+		# content (staff lines included) and rescale the note/system y's into the cropped page.
+		var crop := _crop_to_content(res.texture)
+		var span: float = crop.bottom - crop.top
+		if span > 0.0 and span < 0.999:
+			for e in page_elements:
+				e.v = (e.v - crop.top) / span
+			for band in systems:
+				band.top = (band.top - crop.top) / span
+				band.bottom = (band.bottom - crop.top) / span
+		pages.append({"texture": crop.texture, "systems": systems})
 		elements.append_array(page_elements)
 	elements.sort_custom(func(a, b): return a.when < b.when)
 	for i in elements.size():
 		elements[i].index = i
 	return {"ok": true, "pages": pages, "elements": elements, "page_count": pages.size()}
+
+
+## Crop a page raster vertically to its drawn content (transparent SVG background -> get_used_rect finds
+## the ink). Keeps full width (uniform page widths). Returns {texture, top, bottom} (top/bottom normalized).
+static func _crop_to_content(tex: Texture2D) -> Dictionary:
+	var img := tex.get_image()
+	if img == null:
+		return {"texture": tex, "top": 0.0, "bottom": 1.0}
+	var h := img.get_height()
+	var used := img.get_used_rect()
+	if used.size.y <= 0 or h <= 0:
+		return {"texture": tex, "top": 0.0, "bottom": 1.0}
+	var margin := int(h * 0.015)
+	var y0 := maxi(0, used.position.y - margin)
+	var y1 := mini(h, used.position.y + used.size.y + margin)
+	if y1 - y0 >= h:
+		return {"texture": tex, "top": 0.0, "bottom": 1.0}
+	var cropped := img.get_region(Rect2i(0, y0, img.get_width(), y1 - y0))
+	return {"texture": ImageTexture.create_from_image(cropped), "top": float(y0) / h, "bottom": float(y1) / h}
 
 
 static func _page_svgs(svg_stem: String) -> Array:
