@@ -35,7 +35,7 @@ s.waitForBoot({
 
 	~score = MSScore(
 		voices: [
-			"(c5_4@dyn^mf^ e5 g5_4. c6_8 g5_4 e5 c5_8 d5 e5_8*2/3@art[stacc:on] f g5_16*2/3 g-5 f5_4@art[stacc:off] a5_8*2/3 c6 a5 c6_4 a5 g5_2 c5_2)*4",   // right hand (treble)
+			"(c5_4@dyn^mf^ e5 g5_4. c6_8@slur^start^ g5_4 e5 c5_8@slur^endstart^ d5 e5_8*2/3@art[stacc:on] f@slur^end^ g5_16*2/3 g-5 f5_4@art[stacc:off] a5_8*2/3@slur^start^ c6 a5 c6_4@slur^end^ a5 g5_2 c5_2)*4",   // right hand (treble)
 			"(c3_2 g3 c3_2 e3 f3_2 g3 c3_1)*4"                            // left hand (bass)
 		],
 		clefs:  [\treble, \bass],
@@ -62,4 +62,5 @@ s.waitForBoot({
 ~score.stop;
 "Panola score stopped.".postln;
 )
+
 

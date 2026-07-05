@@ -2,7 +2,7 @@
 Usage:  py tools/panola_mei/render_check.py <file.mei>   (exit 0 = renders OK)
 Import: from tools.panola_mei.render_check import render_props
 """
-import sys, subprocess, os, tempfile
+import sys, subprocess, os, tempfile, re
 
 _WRAP = os.path.join(os.path.dirname(__file__), "..", "..",
                      "addons", "musicscene", "tools", "verovio_render.py")
@@ -27,6 +27,10 @@ def render_props(mei_or_path: str) -> dict:
         "beams": svg.count('class="beam"'), "flag_glyphs": svg.count('class="flag"'),
         "tuplets": mei.count("<tuplet "),
         "dynam": mei.count("<dynam "), "artics": mei.count(' artic="'),
+        "slurs": mei.count("<slur "),
+        # slur paths that render as a real curve (a degenerate zero-length slur draws a straight line
+        # with no cubic-Bezier "C" command)
+        "slur_arcs": sum("C" in d for d in re.findall(r'class="slur".*?<path[^>]*\bd="([^"]*)"', svg, re.S)),
     }
 
 if __name__ == "__main__":
