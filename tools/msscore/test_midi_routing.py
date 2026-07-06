@@ -111,3 +111,20 @@ def test_routing_midiout_array():
     assert "ERROR" not in r.stdout, r.stdout[-1500:]
     assert "E0_MIDIOUT:true" in r.stdout, r.stdout[-1500:]
     assert "E1_MIDIOUT:true" in r.stdout, r.stdout[-1500:]
+
+
+ALLNOTESOFF_SCRIPT = r'''(
+var s, calls = List.new, stub;
+stub = ( control: { |self, ch, cc, val| calls.add([ch, cc, val]) } );
+s = MSScore(voices: ["c4_4 d4"], backends: [\midi], midiOut: stub, channels: [5]);
+s.pr_allNotesOff;
+("CALLS:" ++ calls.asArray.asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_all_notes_off():
+    r = _run(ALLNOTESOFF_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "CALLS:[[5, 123, 0]]" in r.stdout, r.stdout[-1500:]
