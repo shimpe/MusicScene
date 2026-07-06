@@ -111,13 +111,17 @@ is `maxima`); its `meidur` is `nil` and SP2 would tie two maximas if ever needed
 4. **trySimpleDuration** — exact match to a note-type base value → single component, `dots 0`.
 5. **tryDottedDuration** — for each note-type, `dots` in `1..maxDots`, `dottedValue(base, dots)` (general
    formula `total = base + Σ base/2^i`) == `ql` → single dotted component.
-6. **tryTupletDuration** — for each note-type base and `actual` in `2..maxTupletActual`, `normal` in
+6. **splitIntoComponents** — greedy: repeatedly take `findLargestAssignableAtMost(remaining)` (largest
+   simple-or-dotted value ≤ remaining, searching all note-types and `dots 0..maxDots`), subtract, append.
+   Fails (returns none) if a step finds nothing or `components > maxComponents`. Multiple components =
+   tied notes. **Tried before the tuplet step:** a *dyadic* duration (denominator a power of two, e.g.
+   `0.625`, `1.25`) decomposes into tied ordinary notes; only non-dyadic values (`1/3`, `1/5`, …), which
+   cannot be split into binary/dotted notes, fall through to the tuplet step. *(This orders split before
+   tuplet — a deliberate refinement of the source pseudo code's stated order, so the Expected-examples
+   hold: `0.625` → eighth+32nd, not an 8:5 tuplet.)*
+7. **tryTupletDuration** — for each note-type base and `actual` in `2..maxTupletActual`, `normal` in
    `1..maxTupletNormal` (`actual != normal`), `base * normal / actual == ql` → candidate single component
    with one tuplet descriptor. Rank candidates (below) and return the best.
-7. **splitIntoComponents** — greedy: repeatedly take `findLargestAssignableAtMost(remaining)` (largest
-   simple-or-dotted value ≤ remaining, searching all note-types and `dots 1..maxDots`), subtract, append.
-   Fails (returns none) if a step finds nothing or `components > maxComponents`. Multiple components =
-   tied notes.
 8. **tryLargeTupletFallback** (only if `allowLargeTuplets`) — represent the whole `ql` as one large tuplet:
    for each note-type base, `ratio = ql / base`; `normal, actual = ratio.num, ratio.den`; accept if
    `actual ≤ maxLargeTupletActual and normal ≤ maxLargeTupletNormal`. Correct-but-ugly; exact mode only.
