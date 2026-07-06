@@ -150,3 +150,22 @@ def test_all_notes_off_dedupe():
     assert "ERROR" not in r.stdout, r.stdout[-1500:]
     assert "SAME_COUNT:1" in r.stdout, r.stdout[-1500:]   # same device+channel -> one send
     assert "DIFF_COUNT:2" in r.stdout, r.stdout[-1500:]   # same device, two channels -> two sends
+
+
+EXAMPLE_SCRIPT = r'''(
+var s = MSScore(
+    voices:   [ "c5_4@dyn^mf^ e5 g5 c6", "c3_2 g3_2" ],
+    clefs:    [ \treble, \bass ],
+    meter:    "4/4", key: \Cmajor, braces: [ [1, 2] ], tempo: 84, space: "2d",
+    backends: [\internal, \internal], midiOut: nil, channels: [0, 1]
+);
+("EXAMPLE_OK:" ++ (s.notNil and: { s.backends == [\internal, \internal] }).asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_example_constructs():
+    r = _run(EXAMPLE_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "EXAMPLE_OK:true" in r.stdout, r.stdout[-1500:]
