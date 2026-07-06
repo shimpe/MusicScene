@@ -211,3 +211,53 @@ var s = MSScore(voices: ["c4_4"], backends: [\midi], midiOut: \dev, channels: [9
 def test_channel_clamp():
     r = _run(CLAMP_SCRIPT)
     assert "CLAMP:[15]" in r.stdout, r.stdout[-1500:]
+
+
+# --- showCursor: hide the cursor line while keeping auto page-turn ---
+# show() sends the notation setup over OSC to the `engine` NetAddr. Point that at sclang's own OSC
+# port (NetAddr.langPort) so we can OSCdef-capture the cursor-visibility message `show` emits. No
+# server or MusicScene instance needed.
+SHOWCURSOR_HIDDEN_SCRIPT = r'''(
+var s, got = List.new;
+OSCdef(\capH, { |msg| got.add(msg) }, '/ms/scene/scoreHidden/cursor');
+Routine({
+    s = MSScore(voices: ["c5_4 e5 g5 c6"], id: "scoreHidden", showCursor: false, host: "127.0.0.1", listenPort: NetAddr.langPort);
+    s.show;
+    0.8.wait;
+    got.do({ |m| if (m[1] == \show) { ("CURSOR_SHOW:" ++ m[2].asString).postln } });
+    ("FLAG:" ++ s.showCursor.asString).postln;
+    OSCdef(\capH).free;
+    0.exit;
+}).play;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_show_cursor_hidden():
+    r = _run(SHOWCURSOR_HIDDEN_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "CURSOR_SHOW:0" in r.stdout, r.stdout[-1500:]   # show() hides the cursor line
+    assert "FLAG:false" in r.stdout, r.stdout[-1500:]
+
+
+SHOWCURSOR_DEFAULT_SCRIPT = r'''(
+var s, got = List.new;
+OSCdef(\capD, { |msg| got.add(msg) }, '/ms/scene/scoreDefault/cursor');
+Routine({
+    s = MSScore(voices: ["c5_4 e5 g5 c6"], id: "scoreDefault", host: "127.0.0.1", listenPort: NetAddr.langPort);
+    s.show;
+    0.8.wait;
+    got.do({ |m| if (m[1] == \show) { ("CURSOR_SHOW:" ++ m[2].asString).postln } });
+    ("FLAG:" ++ s.showCursor.asString).postln;
+    OSCdef(\capD).free;
+    0.exit;
+}).play;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_show_cursor_default():
+    r = _run(SHOWCURSOR_DEFAULT_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "CURSOR_SHOW:1" in r.stdout, r.stdout[-1500:]   # default: cursor shown
+    assert "FLAG:true" in r.stdout, r.stdout[-1500:]
