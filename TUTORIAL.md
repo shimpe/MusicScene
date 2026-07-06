@@ -140,8 +140,8 @@ With your Godot project **running**, in the `gosc.py` prompt:
 
 ```python
 s("/ms/ping")          # ->  <- /ms/pong []
-s("/ms/version")       # ->  <- /ms/reply ['version', '0.1.0']
-s("/ms/info")          # ->  <- /ms/reply ['info', 'MusicScene', ...]
+s("/ms/version")       # ->  <- /ms/reply ['version', '0.14.0']
+s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.14.0', ...]
 ```
 
 If you see `<- /ms/pong`, you're connected. If not, jump to [Troubleshooting](#13-troubleshooting).
@@ -254,8 +254,9 @@ s("/ms/scene/score", "notationInfo")   # <- reply notationInfo score png ... ima
 
 Click the highlighted region in the Godot window → you receive `/score/measure score m1 <u> <v>`.
 
-> SVG works too (`notation svg "res://scores/page.svg"`). MusicXML/MEI/LilyPond route to an
-> external engraver you configure in Project Settings (`musicscene/notation/external_renderer_*`).
+> SVG works too (`notation svg "res://scores/page.svg"`). MEI/ABC engrave with zero config once
+> `pip install verovio` is done; MusicXML/LilyPond route to a per-format engraver you configure in
+> Project Settings (`musicscene/notation/engraver/<format>`) — see §9C.
 
 ### 4.6 Physics and collision → OSC
 
@@ -326,7 +327,7 @@ Add the project setting **`musicscene/space = "3d"`**. Two easy ways:
 - **Text:** add to `project.godot`:
 
   ```ini
-  [MusicScene]
+  [musicscene]
   space="3d"
   ```
 
@@ -707,6 +708,7 @@ run-time** — all through the same commands (works identically in 2D and 3D):
 /ms/scene/<id> notationData <format> <data>         # force inline data (text or blob bytes)
 /ms/scene/<id> notationSource <source_or_data>      # change source, keep format
 /ms/scene/<id> render | reload                       # re-render current source
+/ms/scene/<id> paginate <0|1> [pageHeight]           # tall score -> fixed-height pages + auto page-turn
 /ms/scene/<id> page <n> | nextPage | prevPage | pages
 /ms/scene/<id> background <colour>                   # paper behind the score (see below)
 /ms/scene/<id> notationInfo                          # <- reply notationInfo <id> <fmt> <src> <backend> <pages>
@@ -808,7 +810,7 @@ MusicScene can shell out to an external engraver to turn symbolic music into pag
 {outdir} {format} {page}`. Quote paths that contain spaces.
 
 ```ini
-[MusicScene]
+[musicscene]
 notation/engraver/musicxml="\"C:/Program Files/MuseScore 4/bin/MuseScore4.exe\" {input} -o {output} -T 10 -r 200"
 notation/engraver/lilypond="\"C:/Program Files/lilypond-2.25.81/bin/lilypond.exe\" --png -dcrop=#t -dresolution=200 -o {outbase} {input}"
 notation/engraver/abc="abcm2ps {input} -O {outbase}"
@@ -913,7 +915,7 @@ Then override the engraver command so its **first token** (`argv[0]`) is the ven
 the bundled wrapper path:
 
 ```ini
-[MusicScene]
+[musicscene]
 ; Windows — absolute path to the venv's python.exe (quote it; double quotes group spaces)
 notation/engraver/mei="\"D:/path/to/.venv/Scripts/python.exe\" \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page}"
 notation/engraver/abc="\"D:/path/to/.venv/Scripts/python.exe\" \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page}"
@@ -1124,7 +1126,7 @@ For frictionless local prototyping, set `musicscene/developer_mode = true` to re
 | Nothing visible (3D) | Confirm `space="3d"` (console says `space=3d`) and that a camera exists (the addon auto-creates one). Objects spawn near the origin inside a ±5-unit cube. |
 | `permission_denied` on bind/call/instantiate | The node/member/scene isn't exposed/whitelisted. Expose it, whitelist it, or enable developer mode. |
 | 3D changes ignored | `musicscene/space` is read once at startup — **restart** after changing it. |
-| MusicXML/MEI fails with `load_failed` | Configure an external engraver in `musicscene/notation/external_renderer_*`, or pre-render to PNG/SVG. |
+| MusicXML/MEI fails with `load_failed` | For MEI/ABC just `pip install verovio` (zero-config default); for MusicXML/LilyPond configure a per-format engraver in `musicscene/notation/engraver/<format>`, or pre-render to PNG/SVG. |
 | Verovio `verovio not installed`, or MEI/ABC stays blank | The engraver ran the wrong Python. If Verovio lives in a venv, point `musicscene/notation/engraver/mei` (and `/abc`) at the venv interpreter (`.venv/Scripts/python.exe` on Windows, `.venv/bin/python` elsewhere) instead of `py` — see the **Verovio** section. |
 | SVG score not visible | Put the `.svg` under `res://` (it loads via Godot's import — confirm it shows a thumbnail in the FileSystem dock). The page renders at native size centred on the object, so **scale it down** (`/ms/scene/score scale 0.3`) if it overflows. If the SVG shows no thumbnail, ThorVG can't rasterize it — export to PNG instead. Check the Output panel for a `load_failed` warning. |
 

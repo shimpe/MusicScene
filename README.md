@@ -247,6 +247,7 @@ Notation commands:
 /ms/scene/<id> notationSource <source_or_data>
 /ms/scene/<id> notationFormat <format>
 /ms/scene/<id> render | reload
+/ms/scene/<id> paginate <0|1> [pageHeight]          # lay a long score on fixed-height pages; auto page-turn
 /ms/scene/<id> page <n> | nextPage | prevPage | pages
 /ms/scene/<id> system <n> | staff <n> | measure <n> | part <id>
 /ms/scene/<id> background <colour>                  # paper behind a (transparent) score; bg alias
@@ -288,6 +289,11 @@ features ThorVG can't rasterize), import it under `res://` or export to PNG.
 
 **Multi-page** raster/SVG: put `{page}` in the source path (e.g. `res://scores/p{page}.png`);
 the page count is probed automatically and `page`/`nextPage`/`prevPage` switch pages.
+
+**Paginate a tall score.** For a long auto-engraved (Verovio) score, `paginate 1 [pageHeight]` lays it
+out on several fixed-height pages instead of one ever-taller page; every page is pre-rendered (each
+cropped to its own music) and a following cursor turns the page automatically as playback crosses onto
+the next one. `page`/`nextPage`/`prevPage` still flip between the rendered pages. (Addressable Verovio only.)
 
 **External engraver** configuration (Project Settings → `musicscene/notation/`). Set a per-format
 command (preferred) or the generic fallback; works for a file path or inline symbolic data (MusicScene
@@ -877,7 +883,7 @@ Replies use `/ms/reply <topic> ...`. Compact map:
 ```
 # system
 /ms ping                         -> /ms/pong
-/ms/version | /ms version    -> /ms/reply version "0.12.0"
+/ms/version | /ms version    -> /ms/reply version "0.14.0"
 /ms/info    | /ms info       -> /ms/reply info ...
 /ms/app coord <mode>
 /ms/app root "<path>"
@@ -901,7 +907,7 @@ Replies use `/ms/reply <topic> ...`. Compact map:
 
 # notation                                          (see "Music notation")
 /ms/scene/<id> notation <fmt> <src_or_data> | notationData | notationSource | notationFormat | render | reload
-/ms/scene/<id> page <n> | nextPage | prevPage | pages | notationInfo
+/ms/scene/<id> paginate <0|1> [h] | page <n> | nextPage | prevPage | pages | background <col> | notationInfo
 /ms/scene/<id> addressable <0|1> | measures | elements   # MuseScore measures / LilyPond notes
 /ms/scene/<id>/cursor show|pos|color|width|map|measure|beat|time|follow
 /ms/scene/<id>/region <rid> rect|measure|on|highlight|color
@@ -991,14 +997,14 @@ addons/musicscene/
   events/    MSEvents  MSEventBinding  MSSignalBinding  MSInputEvents
   transport/ MSTransport  MSTimeMapper
   script/    MSScriptRunner
+  tools/     verovio_render.py  ly_to_score.py  mscore_to_score.py   # bundled engraver wrappers
   nodes/     MSRoot  OscExposable
   examples/  ExampleMain.tscn / .gd          (2D)   example_score.ms
              ExampleMain3D.tscn / .gd        (3D)   example_score_3d.ms
              ExamplePhysicalNote.tscn  ExampleNotationScore.tscn / .gd
 osc_spawnable/PhysicalNote.tscn  PhysicalNote3D.tscn   # whitelisted spawnables
 scores/page1.png                       # placeholder engraved page
-tools/  osc_test.py  gen_assets.gd  test_internals.gd
-        ly_to_score.py  mscore_to_score.py  verovio_render.py   # engraver wrappers
+tools/  osc_test.py  gosc.py  stub_engraver.py  gen_assets.gd  test_*.gd   # OSC client + self-test scripts
 ```
 
 ## Requirements

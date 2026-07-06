@@ -32,7 +32,7 @@ func dispatch(address: String, args: Array) -> void:
 		"ping":
 			ctx.server.send("/ms/pong", [])
 		"version":
-			ctx.reply("version", ["0.12.0"])
+			ctx.reply("version", ["0.14.0"])
 		"info":
 			_handle_info()
 		"app":
@@ -85,7 +85,7 @@ func dispatch(address: String, args: Array) -> void:
 func _handle_root(args: Array) -> void:
 	match _s(args, 0):
 		"ping": ctx.server.send("/ms/pong", [])
-		"version": ctx.reply("version", ["0.12.0"])
+		"version": ctx.reply("version", ["0.14.0"])
 		"info": _handle_info()
 		_: ctx.error("bad_arguments", "/ms", "Expected ping|version|info")
 
@@ -96,7 +96,7 @@ func _handle_info() -> void:
 
 func _info_payload() -> Array:
 	var out := [
-		"musicscene", "0.12.0",
+		"musicscene", "0.14.0",
 		"listen", ctx.server.get_listen_port(),
 		"coord", ctx.mapper.app_mode,
 		"objects", ctx.registry.list_ids().size(),
