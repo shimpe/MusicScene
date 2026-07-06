@@ -50,3 +50,38 @@ def test_validation_errors():
     r = _run(VALIDATION_SCRIPT)
     assert "needs a midiOut" in r.stdout, r.stdout[-1500:]
     assert "must have one entry per voice" in r.stdout, r.stdout[-1500:]
+
+
+ROUTING_SCRIPT = r'''(
+var s, pats, e0, e1;
+s = MSScore(
+    voices: ["c4_4 d4 e4 f4", "c3_4 e3 g3 c4"],
+    clefs: [\treble, \bass],
+    backends: [\internal, \midi],
+    midiOut: \dummyMidi,
+    channels: [0, 1],
+    wrap: [nil, { |pat, i| Pbindf(pat, \wrapMarker, 42) }]
+);
+pats = s.pr_voicePatterns;
+e0 = pats[0].asStream.next(());
+e1 = pats[1].asStream.next(());
+("E0_TYPE_MIDI:" ++ (e0[\type] == \midi).asString).postln;
+("E0_HAS_INSTRUMENT:" ++ e0[\instrument].notNil.asString).postln;
+("E1_TYPE:" ++ e1[\type].asString).postln;
+("E1_CHAN:" ++ e1[\chan].asString).postln;
+("E1_MIDIOUT_OK:" ++ (e1[\midiout] === \dummyMidi).asString).postln;
+("E1_WRAP:" ++ e1[\wrapMarker].asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_routing():
+    r = _run(ROUTING_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "E0_TYPE_MIDI:false" in r.stdout, r.stdout[-1500:]
+    assert "E0_HAS_INSTRUMENT:true" in r.stdout, r.stdout[-1500:]
+    assert "E1_TYPE:midi" in r.stdout, r.stdout[-1500:]
+    assert "E1_CHAN:1" in r.stdout, r.stdout[-1500:]
+    assert "E1_MIDIOUT_OK:true" in r.stdout, r.stdout[-1500:]
+    assert "E1_WRAP:42" in r.stdout, r.stdout[-1500:]
