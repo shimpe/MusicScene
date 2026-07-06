@@ -85,3 +85,29 @@ def test_routing():
     assert "E1_CHAN:1" in r.stdout, r.stdout[-1500:]
     assert "E1_MIDIOUT_OK:true" in r.stdout, r.stdout[-1500:]
     assert "E1_WRAP:42" in r.stdout, r.stdout[-1500:]
+
+
+ROUTING_ARRAY_SCRIPT = r'''(
+var s, pats, e0, e1;
+s = MSScore(
+    voices: ["c4_4 d4", "c3_4 e3"],
+    clefs: [\treble, \bass],
+    backends: [\midi, \midi],
+    midiOut: [\mZero, \mOne],
+    channels: [0, 1]
+);
+pats = s.pr_voicePatterns;
+e0 = pats[0].asStream.next(());
+e1 = pats[1].asStream.next(());
+("E0_MIDIOUT:" ++ (e0[\midiout] === \mZero).asString).postln;
+("E1_MIDIOUT:" ++ (e1[\midiout] === \mOne).asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_routing_midiout_array():
+    r = _run(ROUTING_ARRAY_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "E0_MIDIOUT:true" in r.stdout, r.stdout[-1500:]
+    assert "E1_MIDIOUT:true" in r.stdout, r.stdout[-1500:]
