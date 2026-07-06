@@ -464,17 +464,9 @@ turns a teletype::@ped:: property into a sustain-pedal controller. You create an
 the same over MIDI.
 ```
 
-- [ ] **Step 2: Document the new `*new` args**
+- [ ] **Step 2: Confirm the new `*new`/`init` arg docs are present**
 
-In the `[classmethod.new.args]` block, replace the `instruments = …` line with the clarified line plus the four new arg docs:
-
-```
-	instruments = "an Array of SynthDef names, one per staff, for \\internal voices (default: all \\default)"
-	backends = "an Array of \\internal (SuperCollider synth) or \\midi (external/hardware synth), one per voice (default: all \\internal)"
-	midiOut = "a MIDIOut shared by all \\midi voices, or an Array of MIDIOut (one per voice); required if any voice is \\midi"
-	channels = "an Array of MIDI channels (0..15), one per voice, used only by \\midi voices (default: each voice's index)"
-	wrap = "an Array whose entries are nil or a Function { |pattern, i| newPattern } applied to a voice's built pattern - use it to add per-note MIDI control (CC / sustain pedal / program change); default: all nil"
-```
+The four `[classmethod.new.args]` docs (`backends`/`midiOut`/`channels`/`wrap`, plus the clarified `instruments` line) and the four `[method.init.args]` docs (`bk`/`mo`/`ch`/`wr`) were added in Task 1 (to keep the whelk docs current with the arg addition). Verify they are present in `MSScore.sc`; if for some reason they are missing, add them now with the wording from Task 1. No other change needed in this step.
 
 - [ ] **Step 3: Regenerate the schelp via gendoc**
 
@@ -605,7 +597,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ## Final verification
 
-- [ ] Run the whole MSScore test file once more: `cd /d/Projects/MusicScene && py -m pytest tools/msscore/test_midi_routing.py -q` → **5 passed** (defaults, validation, routing, all-notes-off, example).
+- [ ] Run the whole MSScore test file once more: `cd /d/Projects/MusicScene && py -m pytest tools/msscore/test_midi_routing.py -q` → **7 passed** (defaults, validation, routing, routing-midiout-array, all-notes-off, all-notes-off-dedupe, example). *(The routing-midiout-array and all-notes-off-dedupe tests were added during code review to cover the per-voice-Array and de-dup branches.)*
 - [ ] Run the existing suite to confirm no regression: `cd /d/Projects/MusicScene && py -m pytest tools/panola_mei -q` → all pass (unchanged; MSScore playback isn't exercised there).
 - [ ] Sanity-check an `\internal`-only score still plays (manual): in SuperCollider boot the server, `MSScore(voices: ["c5_4 e5 g5 c6"]).play` shows and plays exactly as before.
 
