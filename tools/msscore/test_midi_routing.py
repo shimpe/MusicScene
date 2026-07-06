@@ -169,3 +169,45 @@ def test_example_constructs():
     r = _run(EXAMPLE_SCRIPT)
     assert "ERROR" not in r.stdout, r.stdout[-1500:]
     assert "EXAMPLE_OK:true" in r.stdout, r.stdout[-1500:]
+
+
+BAD_BACKEND_SCRIPT = r'''(
+var e = "none";
+try { MSScore(voices: ["c4_4"], backends: [\bogus]) } { |err| e = err.errorString };
+("BAD_BACKEND:" ++ e).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_validation_bad_backend():
+    r = _run(BAD_BACKEND_SCRIPT)
+    assert "backends[0] must be" in r.stdout, r.stdout[-1500:]
+    assert "got bogus" in r.stdout, r.stdout[-1500:]
+
+
+MIDIOUT_NIL_SCRIPT = r'''(
+var e = "none";
+try { MSScore(voices: ["c4_4", "c3_4"], backends: [\internal, \midi], midiOut: [\devA, nil]) } { |err| e = err.errorString };
+("MIDIOUT_NIL:" ++ e).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_validation_midiout_array_nil():
+    r = _run(MIDIOUT_NIL_SCRIPT)
+    assert "midiOut[1] is nil" in r.stdout, r.stdout[-1500:]
+
+
+CLAMP_SCRIPT = r'''(
+var s = MSScore(voices: ["c4_4"], backends: [\midi], midiOut: \dev, channels: [99]);
+("CLAMP:" ++ s.channels.asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_channel_clamp():
+    r = _run(CLAMP_SCRIPT)
+    assert "CLAMP:[15]" in r.stdout, r.stdout[-1500:]
