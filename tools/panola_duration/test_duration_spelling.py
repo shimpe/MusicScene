@@ -100,6 +100,7 @@ var fmt = { |sp|
 ("T3:" ++ fmt.(PanolaDurationSpeller.spell(1/3))).postln;   // eighth triplet 3:2
 ("T6:" ++ fmt.(PanolaDurationSpeller.spell(1/6))).postln;   // 16th triplet 3:2
 ("T5:" ++ fmt.(PanolaDurationSpeller.spell(1/5))).postln;   // 16th quintuplet 5:4 (1/4*4/5=1/5)
+("T11:" ++ fmt.(PanolaDurationSpeller.spell(1/11))).postln; // 11-tuplet under a 32nd (11:8, power-of-two normal)
 0.exit;
 )'''
 
@@ -111,3 +112,4 @@ def test_tuplets():
     assert "T3:eighth[3:2]" in r.stdout, r.stdout[-1500:]
     assert "T6:16th[3:2]" in r.stdout, r.stdout[-1500:]
     assert "T5:16th[5:4]" in r.stdout, r.stdout[-1500:]
+    assert "T11:32nd[11:8]" in r.stdout, r.stdout[-1500:]
