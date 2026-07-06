@@ -128,3 +128,25 @@ def test_all_notes_off():
     r = _run(ALLNOTESOFF_SCRIPT)
     assert "ERROR" not in r.stdout, r.stdout[-1500:]
     assert "CALLS:[[5, 123, 0]]" in r.stdout, r.stdout[-1500:]
+
+
+ALLNOTESOFF_DEDUPE_SCRIPT = r'''(
+var same, diff, callsSame = List.new, callsDiff = List.new, stubSame, stubDiff;
+stubSame = ( control: { |self, ch, cc, val| callsSame.add([ch, cc, val]) } );
+stubDiff = ( control: { |self, ch, cc, val| callsDiff.add([ch, cc, val]) } );
+same = MSScore(voices: ["c4_4 d4", "c3_4 e3"], backends: [\midi, \midi], midiOut: stubSame, channels: [7, 7]);
+same.pr_allNotesOff;
+diff = MSScore(voices: ["c4_4 d4", "c3_4 e3"], backends: [\midi, \midi], midiOut: stubDiff, channels: [3, 9]);
+diff.pr_allNotesOff;
+("SAME_COUNT:" ++ callsSame.size.asString).postln;
+("DIFF_COUNT:" ++ callsDiff.size.asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_all_notes_off_dedupe():
+    r = _run(ALLNOTESOFF_DEDUPE_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "SAME_COUNT:1" in r.stdout, r.stdout[-1500:]   # same device+channel -> one send
+    assert "DIFF_COUNT:2" in r.stdout, r.stdout[-1500:]   # same device, two channels -> two sends
