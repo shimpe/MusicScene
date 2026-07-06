@@ -113,3 +113,25 @@ def test_tuplets():
     assert "T6:16th[3:2]" in r.stdout, r.stdout[-1500:]
     assert "T5:16th[5:4]" in r.stdout, r.stdout[-1500:]
     assert "T11:32nd[11:8]" in r.stdout, r.stdout[-1500:]
+
+
+SPLIT_SCRIPT = r'''(
+var fmt = { |sp|
+    sp[\inexpressible].if({ "INEXPR" }, {
+        sp[\components].collect({ |c| c[\type].asString ++ "." ++ c[\dots] }).join("+");
+    });
+};
+("S125:" ++ fmt.(PanolaDurationSpeller.spell(1.25))).postln;   // quarter + 16th
+("S0625:" ++ fmt.(PanolaDurationSpeller.spell(0.625))).postln; // eighth + 32nd
+("SUM:" ++ (PanolaDurationSpeller.spell(1.25)[\components].inject(PanolaRational(0,1), { |a, c| a + c[\ql] }) == PanolaRational(5,4)).asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_split():
+    r = _run(SPLIT_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "S125:quarter.0+16th.0" in r.stdout, r.stdout[-1500:]
+    assert "S0625:eighth.0+32nd.0" in r.stdout, r.stdout[-1500:]
+    assert "SUM:true" in r.stdout, r.stdout[-1500:]   # components sum exactly to the input
