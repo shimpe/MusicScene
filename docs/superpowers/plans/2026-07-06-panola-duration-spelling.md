@@ -127,7 +127,8 @@ PanolaRational {
 	// exact dyadic fraction of a finite double, then limit the denominator
 	*fromFloat { | x, maxDenom = 65536 |
 		var n, d = 1.0, r;
-		if (x.isKindOf(Float) and: { x.isNaN or: { x.isInfinite } }) {
+		// SC 3.14.1's Float has no isInf/isInfinite (only isNaN); test infinity directly.
+		if (x.isKindOf(Float) and: { x.isNaN or: { (x == inf) or: { x == inf.neg } } }) {
 			Error("PanolaRational.fromFloat: non-finite").throw;
 		};
 		n = x.asFloat;
@@ -169,7 +170,8 @@ PanolaRational {
 	* { | o | o = PanolaRational.pr_coerce(o); ^PanolaRational.new(num * o.num, den * o.den); }
 	/ { | o | o = PanolaRational.pr_coerce(o); ^PanolaRational.new(num * o.den, den * o.num); }
 
-	== { | o | o = PanolaRational.pr_coerce(o); ^(num == o.num) and: { den == o.den }; }
+	== { | o | (o.isKindOf(PanolaRational) or: { o.isNumber }).if(
+		{ o = PanolaRational.pr_coerce(o); ^(num == o.num) and: { den == o.den } }, { ^false }); }
 	hash { ^num.asInteger.hash bitXor: den.asInteger.hash; }
 	< { | o | o = PanolaRational.pr_coerce(o); ^((num * o.den) < (o.num * den)); }
 	<= { | o | ^(this < o) or: { this == o }; }
@@ -177,6 +179,7 @@ PanolaRational {
 	>= { | o | ^(this < o).not; }
 
 	negate { ^PanolaRational.new(num.neg, den); }
+	neg { ^this.negate; }
 	reciprocal { ^PanolaRational.new(den, num); }
 	abs { ^PanolaRational.new(num.abs, den); }
 	isNegative { ^num < 0; }
