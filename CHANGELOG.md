@@ -3,17 +3,7 @@
 All notable changes to **MusicScene** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
-## [Unreleased]
-
-### Fixed
-- **Playback cursor across multiple staff-systems.** When Verovio wraps a wide score onto several lines,
-  the follow cursor now stays within the system of the note being played (instead of a full-page line at a
-  page-relative x that matched neither line). Addressable note data records each note's system plus a
-  per-system vertical band (`MSNotationVerovioPositions`); the 2D and 3D cursors draw only within their
-  system's band. New `cursor at <when>` command positions the cursor at a whole-note time, interpolating
-  `u` only within a system (never sweeping backwards at a wrap). `MSScore` now drives the cursor with
-  `cursor at` on its own audio clock — one clock for audio and cursor, and no reply round-trip — so the
-  note-accurate cursor is reliable and in sync.
+## [0.14.0] — 2026-07-06
 
 ### Added
 - **Slurs in Panola notation.** `Panola.scoreAsMEI` / `MSScore` now render slurs: `@slur^start^` opens a
@@ -63,8 +53,31 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   Accepts a named colour (`white`), hex (`#faf6e9`), or `r g b [a]` floats, plus `none` to clear. The
   colour is composited behind the page (cursor/regions stay on top), applies immediately without a
   re-render, and works identically in 2D and 3D.
+- **Zero-config Verovio.** MEI and ABC now fall back to the bundled
+  `res://addons/musicscene/tools/verovio_render.py` when no engraver is configured (launched via `py`
+  on Windows, `python3` elsewhere, writing SVG), so they engrave after `pip install verovio` with no
+  project settings. Override `musicscene/notation/engraver/mei` (or `/abc`) only to name a specific
+  interpreter — e.g. a virtualenv's `python.exe`.
+- **Better engraver diagnostics.** When an async engraver produces no output, the failure now reports
+  the process exit code (`[engraver process exited with code N …]`) instead of only "no recognizable
+  page", making a missing interpreter/script or an uninstalled dependency obvious.
+
+### Changed
+- **Self-contained engravers.** The engraver helper scripts MusicScene shells out to
+  (`verovio_render.py`, `ly_to_score.py`, `mscore_to_score.py`) now live **inside the addon** under
+  `addons/musicscene/tools/`, so installing the addon alone is enough — no separate `tools/` copy.
+  (Client-side and test scripts such as `gosc.py`, `osc_test.py`, and `stub_engraver.py` stay at the
+  repo root.)
 
 ### Fixed
+- **Playback cursor across multiple staff-systems.** When Verovio wraps a wide score onto several lines,
+  the follow cursor now stays within the system of the note being played (instead of a full-page line at a
+  page-relative x that matched neither line). Addressable note data records each note's system plus a
+  per-system vertical band (`MSNotationVerovioPositions`); the 2D and 3D cursors draw only within their
+  system's band. New `cursor at <when>` command positions the cursor at a whole-note time, interpolating
+  `u` only within a system (never sweeping backwards at a wrap). `MSScore` now drives the cursor with
+  `cursor at` on its own audio clock — one clock for audio and cursor, and no reply round-trip — so the
+  note-accurate cursor is reliable and in sync.
 - **Flicker on incremental 3D notation updates.** Re-rendering a 3D score (e.g. streaming notes one at
   a time) briefly tinted the current page yellow while the new one engraved. The "engraving" tint now
   appears only for the first render (when the page is empty); subsequent renders keep the previous page
@@ -86,22 +99,18 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   stroked line disappeared. The SVG adapter now re-declares `stroke="currentColor"` on the container
   when an SVG uses that idiom, so ThorVG draws the lines (glyphs are unaffected).
 
-### Changed
-- **Self-contained engravers.** The engraver helper scripts MusicScene shells out to
-  (`verovio_render.py`, `ly_to_score.py`, `mscore_to_score.py`) now live **inside the addon** under
-  `addons/musicscene/tools/`, so installing the addon alone is enough — no separate `tools/` copy.
-  (Client-side and test scripts such as `gosc.py`, `osc_test.py`, and `stub_engraver.py` stay at the
-  repo root.)
+## [0.13.0] — 2026-07-04
 
-### Added
-- **Zero-config Verovio.** MEI and ABC now fall back to the bundled
-  `res://addons/musicscene/tools/verovio_render.py` when no engraver is configured (launched via `py`
-  on Windows, `python3` elsewhere, writing SVG), so they engrave after `pip install verovio` with no
-  project settings. Override `musicscene/notation/engraver/mei` (or `/abc`) only to name a specific
-  interpreter — e.g. a virtualenv's `python.exe`.
-- **Better engraver diagnostics.** When an async engraver produces no output, the failure now reports
-  the process exit code (`[engraver process exited with code N …]`) instead of only "no recognizable
-  page", making a missing interpreter/script or an uninstalled dependency obvious.
+### Changed
+- **Rebrand: `gscore_osc` → MusicScene.** The addon and its OSC client tooling were renamed from the
+  old `gscore_osc` / `gscore` scheme to **MusicScene**. The OSC message prefix is `/ms`, the
+  script-runner file extension is now `.ms` (was `.gscore`), and the Godot **Project Settings**
+  namespace moved to `musicscene/` (e.g. `musicscene/space`, `musicscene/network/send_port`) — the
+  editor-facing settings read better under the fuller category name while the runtime OSC prefix stays
+  terse.
+- **Pinball / reactor refinements.** The portal re-entry cooldown is now scoped to the arrival portal
+  (was global), the bouncer `strength`/`minSpeed` units are documented against the collider-radius
+  scale, and `example_pinball.scd`'s bumpers were tamed so balls stay on the table.
 
 ## [0.12.0] — 2026-07-04
 
