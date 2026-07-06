@@ -356,7 +356,9 @@ PanolaDurationSpeller {
 
 	spell { | x |
 		var ql, r;
-		if (x.isKindOf(Float) and: { x.isNaN or: { x.isInfinite } }) {
+		// NOTE: SuperCollider 3.14.1's Float has no isInf/isInfinite (only isNaN), so test infinity
+		// against inf / inf.neg directly (calling x.isInfinite throws doesNotUnderstand).
+		if (x.isKindOf(Float) and: { x.isNaN or: { (x == inf) or: { x == inf.neg } } }) {
 			^this.pr_inexpressible(PanolaRational(0, 1), "NaN or infinite duration");
 		};
 		ql = this.normalizeToRational(x);
@@ -708,16 +710,23 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Whelk docs + regenerate HelpSource
+### Task 6: Whelk docs (every member) + regenerate HelpSource with gendoc.bat
+
+Document **every** member of both new classes in the project's whelk style — the same format used in `Classes/PanolaMEI.sc` / `Classes/Panola.sc`: a `/* … */` block immediately above each `var`, classmethod, and method. Then regenerate all Panola schelp with the quark's `gendoc.bat`.
+
+The whelk block format (read `Classes/PanolaMEI.sc` for live examples):
+- above a `var x;`: `[method.x]` + `description = "…"` + `[method.x.returns]` + `what = "…"`.
+- above a `*classMethod { … }`: `[classmethod.name]` + `description` + `[classmethod.name.args]` (one `arg = "…"` line per argument) + `[classmethod.name.returns]` + `what`.
+- above an instance `method { … }`: `[method.name]` + `description` + `[method.name.args]` (if any) + `[method.name.returns]` + `what`.
+- Prose is plain `strong::`/`teletype::`/`link::` markup — **never** `## … || …` definition-list lines (whelk silently eats those).
 
 **Files:**
-- Modify: `…/panola/Classes/PanolaRational.sc` and `…/panola/Classes/PanolaDurationSpeller.sc` (add whelk `[general]` + method doc comments)
-- Regenerate: `…/panola/HelpSource/Classes/PanolaRational.schelp`, `…/panola/HelpSource/Classes/PanolaDurationSpeller.schelp`
+- Modify: `…/panola/Classes/PanolaRational.sc`, `…/panola/Classes/PanolaDurationSpeller.sc` (add `[general]` + per-member whelk blocks)
+- Regenerate (via gendoc.bat): all `…/panola/HelpSource/Classes/*.schelp`
 
-- [ ] **Step 1: Add whelk `[general]` doc comments** to the top of each class (above the class line), in the project's whelk style (plain `strong::`/`teletype::` prose, no `## … || …` definition-list lines which whelk eats).
+- [ ] **Step 1: Document `PanolaRational.sc`.** Insert the `[general]` block before `PanolaRational {`, and a whelk block above every member below.
 
-For `PanolaRational.sc`, insert before `PanolaRational {`:
-
+`[general]` block:
 ```supercollider
 /*
 [general]
@@ -729,16 +738,56 @@ description = '''
 PanolaRational is a minimal exact rational (teletype::num/den::, always reduced, sign in the numerator,
 denominator positive). It exists because SuperCollider has no rational type and because notation must not
 be treated as floating point. Numerator and denominator are stored as Float-valued integers so the
-arithmetic stays exact without overflowing SuperCollider's 32-bit Integer. It supports strong::+ - * /::,
-comparisons, teletype::reciprocal::/teletype::abs::/teletype::negate::, and construction from an Integer,
-a decimal String (teletype::*fromDecimalString::), or a Float via a limit-denominator continued fraction
+arithmetic stays exact without overflowing SuperCollider's 32-bit Integer. It supports the strong::+ - * /::
+operators and the comparison operators, plus construction from an Integer, a decimal String
+(teletype::*fromDecimalString::), or a Float via a limit-denominator continued fraction
 (teletype::*fromFloat::), e.g. teletype::0.3333333:: becomes teletype::1/3::.
 '''
 */
 ```
 
-For `PanolaDurationSpeller.sc`, insert before `PanolaDurationSpeller {`:
+Two representative member blocks (write the rest in the same shape):
+```supercollider
+	/*
+	[classmethod.fromFloat]
+	description = "the exact rational of a finite Float, with the denominator limited so common values snap to their intended fraction (e.g. 0.3333333 -> 1/3, 0.4 -> 2/5)"
+	[classmethod.fromFloat.args]
+	x = "a finite Float"
+	maxDenom = "the largest allowed denominator (default 65536)"
+	[classmethod.fromFloat.returns]
+	what = "a PanolaRational"
+	*/
+	*fromFloat { | x, maxDenom = 65536 | ... }
 
+	/*
+	[method.limitDenominator]
+	description = "the closest rational to this value whose denominator is at most maxDenom (CPython Fraction.limit_denominator)"
+	[method.limitDenominator.args]
+	maxDenom = "the largest allowed denominator (default 65536)"
+	[method.limitDenominator.returns]
+	what = "a PanolaRational"
+	*/
+	limitDenominator { | maxDenom = 65536 | ... }
+```
+
+Document these members with these descriptions (expand each into the block format above):
+- `var num` — "the numerator (a Float holding an exact integer)".
+- `var den` — "the denominator (a Float holding an exact positive integer)".
+- `*new(num, den)` — "create a reduced rational num/den"; args `num`="the numerator", `den`="the denominator (default 1)"; returns "a PanolaRational".
+- `*fromInteger(n)` — "an Integer as n/1"; args `n`="an Integer"; returns "a PanolaRational".
+- `*fromFloat`, `limitDenominator` — as shown above.
+- `*fromDecimalString(s)` — "parse a decimal String such as \"0.625\" as an exact rational (5/8)"; args `s`="a decimal String"; returns "a PanolaRational".
+- `numerator` — returns "the numerator as an Integer". `denominator` — returns "the denominator as an Integer".
+- `asFloat` — returns "the value as a Float". `asInteger` — returns "the value truncated toward zero as an Integer".
+- `asString` — returns "the value as \"num/den\"".
+- `reciprocal` — returns "den/num as a PanolaRational". `abs` — "the absolute value". `negate` — "the negation".
+- `isNegative` — returns "true if the value is < 0". `isZero` — returns "true if the value is 0".
+
+(The binary operators `+ - * / == < <= > >=` and `hash`/`printOn` are described in `[general]`; leave them undocumented — the sibling panola classes likewise don't add per-operator blocks.)
+
+- [ ] **Step 2: Document `PanolaDurationSpeller.sc`.** Insert the `[general]` block before `PanolaDurationSpeller {`, and a whelk block above every member below.
+
+`[general]` block:
 ```supercollider
 /*
 [general]
@@ -750,7 +799,7 @@ description = '''
 PanolaDurationSpeller maps a single duration in strong::quarterLength:: units (teletype::1.0:: = quarter,
 teletype::0.5:: = eighth, teletype::0.25:: = 16th) to a notation spelling: one or more components, each a
 note value plus dots plus an optional tuplet. It tries, in order, an exact ordinary value, a dotted value,
-a tuplet, a decomposition into several tied components, and (optionally) a large-tuplet fallback, otherwise
+a decomposition into several tied components, a tuplet, and (optionally) a large-tuplet fallback, otherwise
 it reports the duration teletype::inexpressible::. All arithmetic is exact (link::Classes/PanolaRational::).
 
 code::
@@ -769,30 +818,43 @@ range, dots, tuplet limits, and float handling.
 */
 ```
 
-- [ ] **Step 2: Regenerate the schelp for both classes**
+Document these members (expand each into the block format; args as noted):
+- `var options` — "the effective options Event (defaults merged with any overrides)".
+- `*new(options)` — "a speller whose options are defaultOptions merged with the given overrides"; args `options`="an Event overriding any defaultOptions keys, or nil"; returns "a PanolaDurationSpeller".
+- `*spell(ql, options)` — "convenience: spell ql with a speller built from options"; args `ql`="a quarterLength", `options`="an options Event or nil"; returns "a spelling Event".
+- `*defaultOptions` — "the default options Event (mode, grid, tolerance, maxDots, maxComponents, tuplet limits, float policy)"; returns "an Event".
+- `spell(x)` — "spell a quarterLength x (a PanolaRational, Integer, decimal String, or Float) as a notation spelling"; args `x`="the quarterLength"; returns "a spelling Event: on success (inexpressible: false, ql:, inferred: true, components: [ … ]); otherwise (inexpressible: true, ql:, reason:)".
+- `normalizeToRational(x)` — "convert x to a PanolaRational (Floats via the floatPolicy)"; args `x`; returns "a PanolaRational".
+- `quantizeToGrid(ql)` — "snap ql to the nearest grid multiple when within tolerance (quantize mode)"; args `ql`; returns "a PanolaRational".
+- `trySimpleDuration(ql)` — "a single ordinary-note-value component equal to ql, or nil"; args `ql`; returns "a component Event or nil".
+- `tryDottedDuration(ql)` — "a single dotted-note component equal to ql, or nil"; args `ql`; returns "a component Event or nil".
+- `tryTupletDuration(ql)` — "a single note-under-a-tuplet component equal to ql (best-ranked candidate), or nil"; args `ql`; returns "a component Event or nil".
+- `splitIntoComponents(ql)` — "decompose ql into tied ordinary/dotted components, or nil if it cannot be split exactly"; args `ql`; returns "an Array of component Events, or nil".
+- `tryLargeTupletFallback(ql)` — "spell the whole ql as one large tuplet when allowLargeTuplets is set, or nil"; args `ql`; returns "a component Event or nil".
+- The private helpers (`pr_entry`, `pr_qlOf`, `pr_meidurOf`, `pr_dottedValue`, `pr_component`, `pr_componentTuplet`, `pr_spelled`, `pr_inexpressible`, `pr_inexpressibleReason`, `pr_tupletRank`, `pr_tupletBefore`, `pr_findLargestAssignableAtMost`) — give each a one-line `[method.pr_x]` description of what it returns (e.g. `pr_qlOf` — "the quarterLength of a note type as a PanolaRational"). The classvar `noteTypes` is described in `[general]`; no separate block needed.
 
-Run:
+- [ ] **Step 3: Regenerate all Panola schelp with gendoc.bat**
+
+`gendoc.bat` (in the quark root) deletes every `HelpSource/Classes/*.schelp` and regenerates them from all `Classes/*.sc`, so unchanged classes reproduce byte-for-byte and the two new classes get fresh schelp. Run it (it's a Windows batch file):
 ```bash
-cd "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola" && \
-"/d/Projects/python/whelk/.venv/Scripts/python.exe" "/d/Projects/python/whelk/whelk.py" -i Classes/PanolaRational.sc -o HelpSource/Classes && \
-"/d/Projects/python/whelk/.venv/Scripts/python.exe" "/d/Projects/python/whelk/whelk.py" -i Classes/PanolaDurationSpeller.sc -o HelpSource/Classes
+cd "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola" && cmd //c gendoc.bat
 ```
-Expected: two schelp files written, no error.
+Expected: prints `Removing old help files...` / `Generating help files...` / `Done.` with no `ERROR`.
 
-- [ ] **Step 3: Verify the schelp and that the class still compiles**
+- [ ] **Step 4: Verify the new schelp exist and the classes still compile**
 
-Run:
 ```bash
-grep -l quarterLength "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola/HelpSource/Classes/PanolaDurationSpeller.schelp"
+ls "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola/HelpSource/Classes/PanolaRational.schelp" "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola/HelpSource/Classes/PanolaDurationSpeller.schelp"
+grep -c quarterLength "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola/HelpSource/Classes/PanolaDurationSpeller.schelp"
 cd /d/Projects/MusicScene && py -m pytest tools/panola_duration/test_duration_spelling.py -q
 ```
-Expected: the grep prints the schelp path; pytest shows **7 passed** (a doc-comment edit must not break compilation).
+Expected: both schelp files listed; grep count non-zero; pytest **7 passed** (doc-comment edits must not break compilation).
 
-- [ ] **Step 4: Commit** (Panola quark)
+- [ ] **Step 5: Commit** (Panola quark — includes any incidentally-regenerated sibling schelp)
 
 ```bash
-git -C "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola" add Classes/PanolaRational.sc Classes/PanolaDurationSpeller.sc HelpSource/Classes/PanolaRational.schelp HelpSource/Classes/PanolaDurationSpeller.schelp
-git -C "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola" commit -m "docs(panola): whelk docs for PanolaRational + PanolaDurationSpeller; regen schelp
+git -C "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola" add -A Classes HelpSource
+git -C "/c/Users/Stefaan Himpe/AppData/Local/SuperCollider/Extensions/panola" commit -m "docs(panola): whelk docs for PanolaRational + PanolaDurationSpeller; regen schelp (gendoc)
 
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
