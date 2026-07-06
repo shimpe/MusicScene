@@ -45,10 +45,6 @@ def test_rational():
         assert expect in r.stdout, f"missing {expect}\n{r.stdout[-1500:]}"
 
 
-def _comp_line(name):
-    # helper marker builder used by several tests
-    return name
-
 SIMPLE_DOTTED_SCRIPT = r'''(
 var fmt = { |sp|
     sp[\inexpressible].if({ "INEXPR:" ++ sp[\reason] }, {

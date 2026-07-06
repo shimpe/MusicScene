@@ -223,10 +223,6 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 1: Add the failing tests** (append to `test_duration_spelling.py`)
 
 ```python
-def _comp_line(name):
-    # helper marker builder used by several tests
-    return name
-
 SIMPLE_DOTTED_SCRIPT = r'''(
 var fmt = { |sp|
     sp[\inexpressible].if({ "INEXPR:" ++ sp[\reason] }, {
