@@ -86,3 +86,28 @@ def test_guards_zero():
     assert "NEG:INEXPR:negative duration" in r.stdout, r.stdout[-1500:]
     assert "NAN:INEXPR:NaN or infinite duration" in r.stdout, r.stdout[-1500:]
     assert "ZERO:OK:0" in r.stdout, r.stdout[-1500:]   # zero duration -> empty components
+
+
+TUPLET_SCRIPT = r'''(
+var fmt = { |sp|
+    sp[\inexpressible].if({ "INEXPR" }, {
+        sp[\components].collect({ |c|
+            var t = c[\tuplets];
+            c[\type].asString ++ (t.isEmpty.if({ "" }, { "[" ++ t[0][\actual] ++ ":" ++ t[0][\normal] ++ "]" }));
+        }).join("+");
+    });
+};
+("T3:" ++ fmt.(PanolaDurationSpeller.spell(1/3))).postln;   // eighth triplet 3:2
+("T6:" ++ fmt.(PanolaDurationSpeller.spell(1/6))).postln;   // 16th triplet 3:2
+("T5:" ++ fmt.(PanolaDurationSpeller.spell(1/5))).postln;   // 16th quintuplet 5:4 (1/4*4/5=1/5)
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_tuplets():
+    r = _run(TUPLET_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "T3:eighth[3:2]" in r.stdout, r.stdout[-1500:]
+    assert "T6:16th[3:2]" in r.stdout, r.stdout[-1500:]
+    assert "T5:16th[5:4]" in r.stdout, r.stdout[-1500:]
