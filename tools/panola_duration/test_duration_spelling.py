@@ -135,3 +135,45 @@ def test_split():
     assert "S125:quarter.0+16th.0" in r.stdout, r.stdout[-1500:]
     assert "S0625:eighth.0+32nd.0" in r.stdout, r.stdout[-1500:]
     assert "SUM:true" in r.stdout, r.stdout[-1500:]   # components sum exactly to the input
+
+
+LTQI_SCRIPT = r'''(
+var fmt = { |sp|
+    sp[\inexpressible].if({ "INEXPR:" ++ sp[\reason] }, {
+        sp[\components].collect({ |c| c[\type].asString }).join("+");
+    });
+};
+var msgy = 0.6249852340957234;
+("EXACT:" ++ fmt.(PanolaDurationSpeller.spell(msgy))).postln;
+("QUANT:" ++ fmt.(PanolaDurationSpeller.spell(msgy, (mode: \quantize, grid: PanolaRational(1,512), tolerance: 2e-5)))).postln;
+("SUBMIN:" ++ fmt.(PanolaDurationSpeller.spell(PanolaRational(1, 8192)))).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_quantize_and_inexpressible():
+    r = _run(LTQI_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "QUANT:eighth+32nd" in r.stdout, r.stdout[-1500:]          # snapped to 0.625, then split
+    assert "EXACT:eighth+32nd" not in r.stdout, r.stdout[-1500:]      # exact mode did NOT silently snap to 0.625
+    assert "SUBMIN:INEXPR:smaller than minimum supported note value" in r.stdout, r.stdout[-1500:]
+
+
+# The large-tuplet fallback (allowLargeTuplets) is what makes an otherwise-inexpressible value expressible.
+# 1/17 needs a 17:1 tuplet, which exceeds maxTupletActual (13), so it is inexpressible by default; with
+# allowLargeTuplets (maxLargeTupletActual 1024) it becomes an exact quarter in a 17:1 tuplet.
+LARGETUPLET_SCRIPT = r'''(
+var v = PanolaRational(1, 17);
+("OFF:" ++ PanolaDurationSpeller.spell(v)[\inexpressible].asString).postln;
+("ON:" ++ PanolaDurationSpeller.spell(v, (allowLargeTuplets: true))[\inexpressible].asString).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_largetuplet_toggle():
+    r = _run(LARGETUPLET_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "OFF:true" in r.stdout, r.stdout[-1500:]    # 1/17 not expressible with tuplets <= 13
+    assert "ON:false" in r.stdout, r.stdout[-1500:]    # allowLargeTuplets -> exact 17:1 tuplet, not inexpressible
