@@ -123,3 +123,30 @@ def test_aspbind_materializes_with_expression():
         os.unlink(path)
     assert "ASPBIND-OK" in r.stdout, r.stdout[-1500:]
     assert "not understood" not in r.stdout, r.stdout[-1500:]
+
+
+# Regression: a custom property used ONLY in the one-shot ^v^ form must still become a readable
+# Pbind key. pr_extractCustomProperties used to skip \oneshotproperty, so an @art^stacc^-only voice
+# registered no \art property and ev[\art] was nil (which also silently killed a wrap that returned
+# ev[\art], since nil terminates a Pbind).
+ONESHOT_SCRIPT = r'''(
+var st, e0, e1, e2;
+st = Panola("c5_4@art^stacc^ d5 e5").asPbind(\default, include_tempo:false).asStream;
+e0 = st.next(()); e1 = st.next(()); e2 = st.next(());
+((e0[\art] == 'stacc') and: { e1[\art] == 'none' } and: { e2[\art] == 'none' }).if(
+    { "ONESHOT-OK".postln },
+    { ("ONESHOT-BAD e0=" ++ e0[\art].asString ++ " e1=" ++ e1[\art].asString).postln });
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_oneshot_property_readable():
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write(ONESHOT_SCRIPT)
+        path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "ONESHOT-OK" in r.stdout, r.stdout[-1500:]
