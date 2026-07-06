@@ -446,6 +446,7 @@ var fmt = { |sp|
 ("T3:" ++ fmt.(PanolaDurationSpeller.spell(1/3))).postln;   // eighth triplet 3:2
 ("T6:" ++ fmt.(PanolaDurationSpeller.spell(1/6))).postln;   // 16th triplet 3:2
 ("T5:" ++ fmt.(PanolaDurationSpeller.spell(1/5))).postln;   // 16th quintuplet 5:4 (1/4*4/5=1/5)
+("T11:" ++ fmt.(PanolaDurationSpeller.spell(1/11))).postln; // 32nd 11:8 (power-of-two normal), not 11:1
 0.exit;
 )'''
 
@@ -457,6 +458,7 @@ def test_tuplets():
     assert "T3:eighth[3:2]" in r.stdout, r.stdout[-1500:]
     assert "T6:16th[3:2]" in r.stdout, r.stdout[-1500:]
     assert "T5:16th[5:4]" in r.stdout, r.stdout[-1500:]
+    assert "T11:32nd[11:8]" in r.stdout, r.stdout[-1500:]
 ```
 
 - [ ] **Step 2: Run to verify failure**
@@ -489,7 +491,9 @@ In `PanolaDurationSpeller.sc`, replace the line `	tryTupletDuration { | ql | ^ni
 	pr_tupletRank { | c |
 		var common = [[3,2],[5,4],[6,4],[7,4],[7,8],[5,2],[9,8],[3,4],[2,3]];
 		var ci = common.indexOfEqual([c[\actual], c[\normal]]);
-		^[ ci ? 999, c[\actual], c[\normal], this.pr_qlOf(c[\name]).asFloat.neg ];
+		// c[\normal].neg: for non-common tuplets, prefer the LARGEST normal (the power-of-two-normal
+		// convention), so 1/11 spells as 32nd[11:8], not the degenerate quarter[11:1].
+		^[ ci ? 999, c[\actual], c[\normal].neg, this.pr_qlOf(c[\name]).asFloat.neg ];
 	}
 	pr_tupletBefore { | a, b |
 		var ra = this.pr_tupletRank(a), rb = this.pr_tupletRank(b);
