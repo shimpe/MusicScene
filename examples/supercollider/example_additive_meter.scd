@@ -93,7 +93,7 @@ s.waitForBoot({
 ~dumpMEI = {
 	var path = Platform.defaultTempDir +/+ "panola_additive_meter.mei";
 	File.use(path, "w", { |f| f.write(Panola.scoreAsMEI([Panola(~treble), Panola(~bass)],
-		"2+3+2/8", \Cmajor, [\treble, \bass], [[1, 2]])) });
+		[( measure: 1, meter: "2+3+2/8", key: \Cmajor )], [\treble, \bass], [[1, 2]])) });
 	("Wrote " ++ path).postln;
 };
 ~dumpMEI.value;

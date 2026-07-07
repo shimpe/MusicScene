@@ -11,7 +11,7 @@ def _mei(panola):
     d = tempfile.mkdtemp(prefix="panola_dm_")
     try:
         path = d.replace("\\", "/") + "/s.mei"
-        expr = 'Panola.scoreAsMEI([Panola("%s")], "4/4", \\Cmajor, [\\treble], nil)' % panola
+        expr = 'Panola.scoreAsMEI([Panola("%s")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)' % panola
         scd = '( File.use("%s", "w", { |f| f.write(%s) }); "DONE".postln; 0.exit; )' % (path, expr)
         p = os.path.join(d, "s.scd"); open(p, "w", encoding="utf-8").write(scd)
         r = subprocess.run([SCLANG, p], capture_output=True, text=True, timeout=120)

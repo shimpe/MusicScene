@@ -28,7 +28,7 @@ def test_split_fragments_render_inside_a_tuplet():
     # WRAPPED in <tuplet> brackets rather than emitted as bare mis-valued notes. Before Piece 1-2 there
     # is exactly one <tuplet> (the partial triplet) and bare dur="8"/dur="4" tuplet-value notes after it;
     # after, the cascade fragments are bracketed too.
-    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_2")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert mei.count("<tuplet ") >= 2, mei                 # partial triplet + at least one cascade bracket
     # no tuplet-valued note sits directly outside a bracket (every <note> after a </tuplet> that is a
     # triplet fragment is itself inside a <tuplet>); sanity: it renders
@@ -39,9 +39,9 @@ def test_split_fragments_render_inside_a_tuplet():
 def test_plain_and_complete_tuplets_unchanged():
     # a plain-note score and a complete triplet must be byte-identical to before (nil-tuplet fragments
     # render exactly as today; complete *m/d keeps its atomic path).
-    plain = _mei('Panola.scoreAsMEI([Panola("c5_4 e5 g5 c5_4")], "4/4", \\Cmajor, [\\treble], nil)')
+    plain = _mei('Panola.scoreAsMEI([Panola("c5_4 e5 g5 c5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert plain.count("<tuplet ") == 0 and plain.count("<note") == 4, plain
-    trip = _mei('Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], "4/4", \\Cmajor, [\\treble], nil)')
+    trip = _mei('Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert '<tuplet num="3" numbase="2">' in trip and trip.count('<note dur="4"') == 3, trip
 
 
@@ -51,7 +51,7 @@ def test_trailing_incomplete_triplet_stays_partial():
     # splitElementsToCompleteTuplets only SPLITS an existing following element to complete a tuplet; it
     # never fabricates a rest. So a trailing incomplete tuplet stays PARTIAL: a single 2-note bracket
     # (+ "incomplete tuplet" warning), no fabricated pad, short bar left underfull.
-    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert mei.count("<tuplet ") == 1, mei                       # the single partial bracket
     body = mei.split("</tuplet>")[0]
     assert body.count("<note") == 2 and body.count("<rest") == 0, mei   # 2 notes, NO fabricated rest
@@ -64,7 +64,7 @@ def test_rest_follower_completes_by_splitting_the_rest():
     # music21 splits the following rest to complete the tuplet (it exceeds the 1/3-beat remainder). So the
     # first bracket gets 2 notes + 1 tuplet REST (the completing member split off the half-rest); the
     # rest's remainder plays after the bracket. This is the music21-faithful "split a following rest" case.
-    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 r_2")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 r_2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     first = mei.split("</tuplet>")[0]
     assert first.count("<note") == 2 and first.count("<rest") == 1, mei   # 2 notes + 1 completing rest
     assert render_props(mei)["ok"], mei
@@ -74,7 +74,7 @@ def test_rest_follower_completes_by_splitting_the_rest():
 def test_incomplete_triplet_then_note_ties_into_the_bracket():
     # c5_8*2/3 d5 c5_4 : the quarter's leading third completes the triplet as a tied triplet-eighth INSIDE
     # the bracket; the remainder (2/3 beat, non-dyadic) becomes its own triplet-quarter bracket, tied.
-    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_4")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     first = mei.split("</tuplet>")[0]
     assert first.count("<note") == 3, mei                        # c5, d5, + tied completing e-note
     assert 'tie="i"' in first, mei                               # the completing member ties out
@@ -87,7 +87,7 @@ def test_too_short_note_follower_stays_incomplete():
     # 1/3 beat). music21's splitElementsToCompleteTuplets needs the follower to EXCEED the remainder, so a
     # too-short note cannot complete: the run stays a partial 2-note bracket (+ warning) and the short note
     # plays after unshifted. Fill-with-rest is only for silence followers, which would move no note.
-    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5_32")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5_32")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     first = mei.split("</tuplet>")[0]
     assert first.count("<note") == 2 and first.count("<rest") == 0, mei   # still partial: 2 notes, no pad
     assert '</tuplet><note dur="32"' in mei, mei                          # the 32nd stays outside, unshifted

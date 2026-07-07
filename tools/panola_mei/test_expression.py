@@ -42,9 +42,9 @@ def _dump(outdir, cases):
 
 
 ART = {
-  "oneshot":  r'Panola.scoreAsMEI([Panola("c5_4@art^staccato^ d5 e5 c5_4")], "4/4", \Cmajor, [\treble], nil)',
-  "passage":  r'Panola.scoreAsMEI([Panola("c5_4@art[stacc:on] d5 e5 f5 g5@art[stacc:off] a5 b5 c6")], "4/4", \Cmajor, [\treble], nil)',
-  "layered":  r'Panola.scoreAsMEI([Panola("c5_4@art[acc:on] d5@art[stacc:on] e5@art[acc:off] f5")], "4/4", \Cmajor, [\treble], nil)',
+  "oneshot":  r'Panola.scoreAsMEI([Panola("c5_4@art^staccato^ d5 e5 c5_4")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "passage":  r'Panola.scoreAsMEI([Panola("c5_4@art[stacc:on] d5 e5 f5 g5@art[stacc:off] a5 b5 c6")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "layered":  r'Panola.scoreAsMEI([Panola("c5_4@art[acc:on] d5@art[stacc:on] e5@art[acc:off] f5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
 }
 
 
@@ -65,8 +65,8 @@ def test_articulation():
 
 
 DYN = {
-  "oneshot": r'Panola.scoreAsMEI([Panola("c5_4@dyn^p^ d5 e5@dyn^f^ g5")], "4/4", \Cmajor, [\treble], nil)',
-  "norepeat": r'Panola.scoreAsMEI([Panola("c5_4@dyn^mf^ d5 e5 g5")], "4/4", \Cmajor, [\treble], nil)',
+  "oneshot": r'Panola.scoreAsMEI([Panola("c5_4@dyn^p^ d5 e5@dyn^f^ g5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "norepeat": r'Panola.scoreAsMEI([Panola("c5_4@dyn^mf^ d5 e5 g5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
 }
 
 
