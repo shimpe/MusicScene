@@ -44,6 +44,10 @@ splitComp = ( startQL: <PanolaRational>, durationQL: <PanolaRational>, spelling:
               tieFromPrevious: false, tieToNext: true, isRest: false )
 ```
 
+A `noteEvent` is a single note **within one measure** (`onsetQL + durationQL <= measureLengthQL`); a note
+that is longer than a measure or crosses a barline is expected to be pre-split at barlines by the caller
+(SP2b's `PanolaMEI` integration already does this). `PanolaMeter`'s boundary list spans exactly one measure.
+
 `spelling` is exactly a `PanolaDurationSpeller` result Event. All offsets/durations are `PanolaRational`.
 Ties use `tieFromPrevious`/`tieToNext` (clearer than tieStart/tieStop): first piece
 `tieToNext:true`; middle pieces both true; last `tieFromPrevious:true`; rests are split rhythmically but

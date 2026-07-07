@@ -667,7 +667,10 @@ In `PanolaMeterSplitter.sc`, update `split` to call the optimizer, and add the m
 			if ((i + 1) < comps.size) {
 				var nxt = comps[i + 1];
 				var mStart = cur[\startQL], mEnd = nxt[\startQL] + nxt[\durationQL], mDur = mEnd - mStart;
-				var mOnsetStr = this.pr_onsetStrength(mStart, meter.boundaries);
+				// reference the NOTE's true onset (not mStart): merge must be the exact inverse of split,
+				// so it never recombines across a boundary the split forced. Using mStart would let a
+				// middle fragment (starting on a strong boundary) legalize a merge that hides that boundary.
+				var mOnsetStr = this.pr_onsetStrength(ev[\onsetQL], meter.boundaries);
 				var hidesStrong = meter.boundaries.any({ | b |
 					(mStart < b[\offsetQL]) and: { b[\offsetQL] < mEnd } and: { b[\strength] > mOnsetStr } });
 				var sp = speller.spell(mDur);
