@@ -64,11 +64,11 @@ s.waitForBoot({
 		"c5_16 d5_2 e5_4 f5_8 g5_16",                       // M5  a half on a 16th off-beat splits at each beat
 		"c5_4*2/3 d5_8*2/3 e5_2 f5_4",                      // M6  mixed 3:2 triplet (quarter+eighth) + syncopated half
 		"c5_4 d5 e5 f5_8 g5_16*4/7 a5 b5 c6 d6 e6 f6 e6_8 d6_4 c6 b5",  // M7-8 septuplet 7:4 across the barline
-		"c5_1"                                              // M9  cadence: whole note on the downbeat, kept whole
+		"c5_2*3 r_2"                                        // M9  cadence: whole note on the downbeat, spilling over to next bar.
 	].join(" ");
 
 	~bass = [
-		"c3_1", "a2", "f2", "g2", "c3", "g2", "e2", "f2", "c3"   // one sustained root per measure (M7-8 span two)
+		"c3_1", "a2", "f2", "g2", "c3", "g2", "e2", "f2", "c3_1*2",   // one sustained root per measure (M7-8 span two)
 	].join(" ");
 
 	~score = MSScore(
