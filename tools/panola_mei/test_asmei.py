@@ -65,19 +65,27 @@ def test_panola_asmei_renders_all_cases():
 
 
 def test_written_values_correct_for_all_plain_durations():
-    """After the parseDur rewrite, written value + dots must be correct for plain notes."""
+    """Each plain duration, placed on a downbeat (onset 0) so the meter rule never splits it,
+    must still write the correct value + dots. (A syncopated duration is split by design — see
+    tools/panola_mei/test_meter_notation.py.)"""
     import re
     if not os.path.exists(SCLANG):
         pytest.skip("sclang not installed")
+    # one bar per duration, each note first-in-bar (onset 0). 16/4 so a whole note is well within a bar.
+    cases = [("c5_1", "1", "0"), ("c5_2", "2", "0"), ("c5_4", "4", "0"),
+             ("c5_8", "8", "0"), ("c5_16", "16", "0"), ("c5_4.", "4", "1")]
     outdir = tempfile.mkdtemp(prefix="panola_dur_")
-    scd = ('( File.use("%s/d.mei","w",{|f| f.write('
-           'Panola("c5_1 c5_2 c5_4 c5_8 c5_16 c5_4.").asMEI("16/4", \\Cmajor, \\treble)) });'
-           ' "DONE".postln; 0.exit; )' % outdir.replace("\\", "/"))
-    p = os.path.join(outdir, "s.scd")
-    open(p, "w").write(scd)
-    subprocess.run([SCLANG, p], capture_output=True, text=True, timeout=120)
-    mei = open(os.path.join(outdir, "d.mei"), encoding="utf-8").read()
-    shutil.rmtree(outdir, ignore_errors=True)
-    durs = re.findall(r'<note dur="(\d+)"( dots="(\d+)")?', mei)
-    got = [(d, (dots or "0")) for d, _, dots in durs]
-    assert got == [("1", "0"), ("2", "0"), ("4", "0"), ("8", "0"), ("16", "0"), ("4", "1")]
+    try:
+        got = []
+        for src, _, _ in cases:
+            scd = ('( File.use("%s/d.mei","w",{|f| f.write('
+                   'Panola("%s").asMEI("16/4", \\Cmajor, \\treble)) }); "DONE".postln; 0.exit; )'
+                   % (outdir.replace("\\", "/"), src))
+            p = os.path.join(outdir, "s.scd"); open(p, "w").write(scd)
+            subprocess.run([SCLANG, p], capture_output=True, text=True, timeout=120)
+            mei = open(os.path.join(outdir, "d.mei"), encoding="utf-8").read()
+            m = re.search(r'<note dur="(\w+)"( dots="(\d+)")?', mei)
+            got.append((m.group(1), (m.group(3) or "0")))
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    assert got == [("1", "0"), ("2", "0"), ("4", "0"), ("8", "0"), ("16", "0"), ("4", "1")], got
