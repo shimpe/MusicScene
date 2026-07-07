@@ -107,3 +107,25 @@ def test_tuplet_split():
     r = _run(TUPLET_SPLIT_SCRIPT)
     assert "ERROR" not in r.stdout, r.stdout[-1500:]
     assert "T4:eighth.0[3:2]/N+eighth.0[3:2]/F" in r.stdout, r.stdout[-1500:]  # two tied triplet eighths
+
+
+FALLBACK_SCRIPT = r'''(''' + SPLIT_FMT + r'''
+var sumOK = { |comps, dn, dd|
+    comps.inject(PanolaRational(0,1), { |a, c| a + c[\durationQL] }) == PanolaRational(dn, dd);
+};
+// sum-exactness across the earlier examples
+("SUM1:" ++ sumOK.(PanolaMeterSplitter.split(ev.(3,2, 1,1), PanolaMeter(4,4)), 1, 1).asString).postln;
+("SUM3:" ++ sumOK.(PanolaMeterSplitter.split(ev.(1,2, 2,1), PanolaMeter(7,8,[2,2,3])), 2, 1).asString).postln;
+// an inexpressible tail piece must not crash: quantize off, an off-grid tail
+("OFFGRID:" ++ fmt.(PanolaMeterSplitter.split(ev.(0,1, 5,7), PanolaMeter(4,4)))).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_fallback_and_sum():
+    r = _run(FALLBACK_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "SUM1:true" in r.stdout, r.stdout[-1500:]     # components sum exactly to the input
+    assert "SUM3:true" in r.stdout, r.stdout[-1500:]
+    assert "OFFGRID:" in r.stdout, r.stdout[-1500:]      # produced a result, did not crash/hang
