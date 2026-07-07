@@ -105,7 +105,10 @@ local grid (`buildTupletBoundaries`: `numberNotesActual+1` boundaries across `to
 strength 90, interior 50), **merge** with the meter boundaries, choose split points on the merged set, and
 spell each piece *inside the tuplet* (each fragment is a tuplet member, spelled with its tuplet, not
 rewritten as a non-tuplet duration). This is what makes a triplet crossing a beat come out as two tied
-triplet-eighths (Example 4) rather than an odd binary value.
+triplet-eighths (Example 4) rather than an odd binary value. **Onset strength for a tuplet-contained note
+is measured against the *meter* boundaries only** (not the merged tuplet+meter set): a mid-tuplet onset is
+metrically weak (0), so every tuplet grid line it crosses splits it; measuring against the merged set
+would read the onset's own grid strength (50) and block the split at the equally-strong next grid line.
 
 ## Part 8 — fallbacks
 

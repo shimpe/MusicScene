@@ -312,8 +312,12 @@ PanolaMeterSplitter {
 	}
 
 	// split points for the span, using the onset-strength rule
-	pr_splitPoints { | start, end, boundaries |
-		var onsetStr = this.pr_onsetStrength(start, boundaries), pts = [start];
+	// onsetBoundaries (default boundaries): the set the onset strength is measured against. For a
+	// tuplet-contained note this is the METER only, so a mid-tuplet onset reads strength 0 and the
+	// tuplet grid lines (50 > 0) split it; passing the merged set would make the onset read 50 and
+	// block the split (50 > 50 is false).
+	pr_splitPoints { | start, end, boundaries, onsetBoundaries |
+		var onsetStr = this.pr_onsetStrength(start, onsetBoundaries ? boundaries), pts = [start];
 		boundaries.do({ | b |
 			if ((start < b[\offsetQL]) and: { b[\offsetQL] < end }) {
 				var mandatory = (b[\strength] > onsetStr) and: { this.pr_policyAllows(b[\label]) };
@@ -434,7 +438,9 @@ and add these methods:
 	pr_splitTupletContained { | ev, meter |
 		var start = ev[\onsetQL], end = ev[\onsetQL] + ev[\durationQL];
 		var merged = meter.boundaries ++ this.pr_tupletBoundaries(ev[\tupletContext]);
-		^this.pr_spellAndTie(this.pr_splitPoints(start, end, merged), ev);
+		// split on the merged grid, but measure onset strength against the METER only (a mid-tuplet
+		// onset is metrically weak = 0, so the tuplet grid lines split it -> tied triplet members).
+		^this.pr_spellAndTie(this.pr_splitPoints(start, end, merged, meter.boundaries), ev);
 	}
 ```
 
