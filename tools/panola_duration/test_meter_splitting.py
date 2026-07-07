@@ -135,3 +135,23 @@ def test_fallback_and_sum():
     assert "OFFGRID:" in r.stdout, r.stdout[-1500:]      # produced a result, did not crash/hang
     assert "ONE17SUM:true" in r.stdout, r.stdout[-1500:]    # fallback result sums exactly to 1/17
     assert "ONE17MANY:true" in r.stdout, r.stdout[-1500:]   # smallest-grid fallback -> many tied pieces
+
+
+OPT_SCRIPT = r'''(''' + SPLIT_FMT + r'''
+// a dotted quarter that hides a strong boundary (>= dotBoundaryThreshold 80) is re-split; one that
+// hides only a weak boundary is kept. onset 1.0 dur 1.5 in 4/4: dotted quarter spans beat-3 midpoint?
+// span 1.0-2.5 crosses 2.0 (strength 80) -> the mandatory rule already splits at 2.0, so this yields
+// quarter+eighth; assert that (no dotted value hiding the 80-boundary survives).
+("NODOT:" ++ fmt.(PanolaMeterSplitter.split(ev.(1,1, 3,2), PanolaMeter(4,4)))).postln;   // -> quarter+eighth
+// onset 0.0 dur 1.5: dotted quarter hides only beat-1 (60 < 80) -> kept as a single dotted quarter
+("KEEPDOT:" ++ fmt.(PanolaMeterSplitter.split(ev.(0,1, 3,2), PanolaMeter(4,4)))).postln; // -> dotted quarter
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_optimize():
+    r = _run(OPT_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "NODOT:quarter.0/N+eighth.0/F" in r.stdout, r.stdout[-1500:]  # dot across the 80-boundary avoided
+    assert "KEEPDOT:quarter.1/-" in r.stdout, r.stdout[-1500:]           # dot over a weak boundary kept
