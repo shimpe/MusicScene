@@ -70,7 +70,7 @@ s.waitForBoot({
 
 	~bass = [
 		"c3_2 g3_2",                    // M1  half-note roots, bass clef
-		"c3_2 b2_2",                    // M2
+		"d3_2 b2_2",                    // M2
 		"g2_2 d3_2",                    // M3  (key change is score-level, nothing to write here)
 		"g2_4 g4_4@clef^treble^ b4 d5", // M4  beat 1 low (bass clef); beat 2 switches to TREBLE clef mid-bar
 		"g2_4@clef^bass^ b2 d3",        // M5  back to BASS clef; three beats (3/4)
@@ -85,7 +85,7 @@ s.waitForBoot({
 		               ( measure: 5, meter: "3/4" ) ],                // meter change; key carries over (G major)
 		braces:      [[1, 2]],           // brace the two staves into a piano grand staff
 		tempo:       92,
-		scale:       2.6,                // score size in the scene — raise/lower to fit your view
+		scale:       1.0,                // score size in the scene — raise/lower to fit your view
 		instruments: [\pnote, \pnote],
 		space:       "3d"                // set "3d" to match your project's musicscene/space
 	);
