@@ -88,3 +88,22 @@ def test_basic_split():
     assert "E2:eighth.0/N+eighth.0/F" in r.stdout, r.stdout[-1500:]      # crosses 1.5 compound beat
     assert "E3:eighth.0/N+quarter.0/B+eighth.0/F" in r.stdout, r.stdout[-1500:]  # crosses 1.0 and 2.0 groups
     assert "REST:eighth.0/-+eighth.0/-" in r.stdout, r.stdout[-1500:]    # rest split, NO ties
+
+
+TUPLET_SPLIT_SCRIPT = r'''(''' + SPLIT_FMT + r'''
+var tev = { |onN, onD, durN, durD, tcStartN, tcStartD, tcTotN, tcTotD, act, nrm|
+    ( onsetQL: PanolaRational(onN, onD), durationQL: PanolaRational(durN, durD), isRest: false,
+      tupletContext: ( startQL: PanolaRational(tcStartN, tcStartD), totalDurationQL: PanolaRational(tcTotN, tcTotD),
+                       numberNotesActual: act, numberNotesNormal: nrm ) );
+};
+// triplet-eighth grid over 1.0..2.0 (3:2). note onset 4/3, dur 2/3 -> two tied triplet eighths.
+("T4:" ++ fmt.(PanolaMeterSplitter.split(tev.(4,3, 2,3, 1,1, 1,1, 3,2), PanolaMeter(4,4)))).postln;
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_tuplet_split():
+    r = _run(TUPLET_SPLIT_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "T4:eighth.0[3:2]/N+eighth.0[3:2]/F" in r.stdout, r.stdout[-1500:]  # two tied triplet eighths
