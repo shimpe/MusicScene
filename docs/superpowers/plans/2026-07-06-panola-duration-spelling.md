@@ -306,7 +306,7 @@ PanolaDurationSpeller {
 		^(mode: \exact, grid: PanolaRational(1, 512), tolerance: 1e-5, maxDots: 4,
 			maxComponents: 16, maxTupletActual: 13, maxTupletNormal: 13, allowLargeTuplets: false,
 			maxLargeTupletActual: 1024, maxLargeTupletNormal: 1024, minNoteType: '2048th',
-			floatPolicy: \limitDenominator, maxDenominator: 65536);
+			maxDenominator: 65536);
 	}
 
 	*new { | options | ^super.new.pr_init(options); }
@@ -341,9 +341,7 @@ PanolaDurationSpeller {
 		if (x.isKindOf(PanolaRational)) { ^x };
 		if (x.isKindOf(String)) { ^PanolaRational.fromDecimalString(x) };
 		if (x.isInteger) { ^PanolaRational(x, 1) };
-		^(options[\floatPolicy] == \limitDenominator).if(
-			{ PanolaRational.fromFloat(x, options[\maxDenominator]) },
-			{ PanolaRational.fromFloat(x, 1.15e18) });
+		^PanolaRational.fromFloat(x, options[\maxDenominator]);
 	}
 
 	quantizeToGrid { | ql |
@@ -827,7 +825,7 @@ Document these members (expand each into the block format; args as noted):
 - `*spell(ql, options)` — "convenience: spell ql with a speller built from options"; args `ql`="a quarterLength", `options`="an options Event or nil"; returns "a spelling Event".
 - `*defaultOptions` — "the default options Event (mode, grid, tolerance, maxDots, maxComponents, tuplet limits, float policy)"; returns "an Event".
 - `spell(x)` — "spell a quarterLength x (a PanolaRational, Integer, decimal String, or Float) as a notation spelling"; args `x`="the quarterLength"; returns "a spelling Event: on success (inexpressible: false, ql:, inferred: true, components: [ … ]); otherwise (inexpressible: true, ql:, reason:)".
-- `normalizeToRational(x)` — "convert x to a PanolaRational (Floats via the floatPolicy)"; args `x`; returns "a PanolaRational".
+- `normalizeToRational(x)` — "convert x to a PanolaRational (a Float via a limit-denominator continued fraction, capped at maxDenominator)"; args `x`; returns "a PanolaRational".
 - `quantizeToGrid(ql)` — "snap ql to the nearest grid multiple when within tolerance (quantize mode)"; args `ql`; returns "a PanolaRational".
 - `trySimpleDuration(ql)` — "a single ordinary-note-value component equal to ql, or nil"; args `ql`; returns "a component Event or nil".
 - `tryDottedDuration(ql)` — "a single dotted-note component equal to ql, or nil"; args `ql`; returns "a component Event or nil".

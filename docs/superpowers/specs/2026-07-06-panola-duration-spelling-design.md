@@ -44,7 +44,8 @@ introduces a minimal exact rational.
 
 - Constructed with an **options** Event (defaults below): `PanolaDurationSpeller.new(options)`.
 - **`spell(ql)`** — `ql` may be a `PanolaRational`, an Integer, a decimal String (parsed as an exact
-  decimal fraction), or a Float (normalized via the `floatPolicy`). Returns a **spelling Event** (below).
+  decimal fraction), or a Float (normalized to a rational via a limit-denominator continued fraction,
+  capped at `maxDenominator`). Returns a **spelling Event** (below).
 - Class-method convenience **`*spell(ql, options)`** builds a speller with defaults (merged with any given
   options) and calls `spell`.
 
@@ -93,7 +94,6 @@ is `maxima`); its `meidur` is `nil` and SP2 would tie two maximas if ever needed
   maxLargeTupletActual: 1024,
   maxLargeTupletNormal: 1024,
   minNoteType: \2048th,
-  floatPolicy: \limitDenominator,   // \limitDenominator | \exactBinary
   maxDenominator: 65536 )
 ```
 
@@ -102,8 +102,8 @@ is `maxima`); its `meidur` is `nil` and SP2 would tie two maximas if ever needed
 `spell(ql)`:
 
 1. **Normalize** `ql` to a `PanolaRational` (`normalizeToRational`): Rational→as-is; Integer→n/1; decimal
-   String→exact decimal fraction; Float→`PanolaRational.fromFloat(x, maxDenominator)` when
-   `floatPolicy == \limitDenominator`, else the exact binary-float fraction.
+   String→exact decimal fraction; Float→`PanolaRational.fromFloat(x, maxDenominator)` (the exact dyadic
+   fraction with its denominator limited to `maxDenominator`, so e.g. `0.3333333`→`1/3`).
 2. **Guards:** `ql` NaN/∞/negative → `inexpressible` with the matching reason. `ql == 0` → empty spelling
    (`components: []`), used for grace/zero durations.
 3. **Quantize** (only if `mode == \quantize`): `ql = quantizeToGrid(ql, grid, tolerance)` — snap to the
