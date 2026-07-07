@@ -242,10 +242,15 @@ Keep the existing `\tuplet`-complete and `\normal` bodies exactly as they are (o
 						var container = containers.detect({ |cc| cc >= (unit[\beats] - eps) }),
 							remainder = container - unit[\beats],
 							donor = ((ui + 1) < units.size).if({ units[ui + 1] }, { nil }),
-							canComplete = container.notNil and: { donor.notNil }
-								and: { donor[\kind] == \normal } and: { (donor[\ev][\beats] + eps) >= remainder }
-								and: { (pos + container) <= (bb + eps) };   // completion stays in this bar
-						if (canComplete) {
+							inBar = container.notNil and: { (pos + container) <= (bb + eps) },  // stays in this bar
+							// canDonor: split a long-enough note/rest follower into the bracket (music21's rule
+							// — the follower must EXCEED the remainder). canRest: fill with a tuplet rest for
+							// SILENCE followers only (bar-end or a rest of any length; never a too-short note,
+							// which must stay warned so a note is never silently shifted).
+							canDonor = inBar and: { donor.notNil } and: { donor[\kind] == \normal }
+								and: { (donor[\ev][\beats] + eps) >= remainder },
+							canRest = inBar and: { canDonor.not } and: { donor.isNil or: { donor[\ev][\rest] == true } };
+						if (canDonor or: { canRest }) {
 							var frecs = [], compSp = PanolaDurationSpeller.spell(PanolaRational.fromFloat(remainder)),
 								dev = donor[\ev], donorRest = dev[\rest],
 								hasRemainder = (donor[\ev][\beats] - remainder) > eps, sub = pos;
@@ -375,5 +380,6 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - **The hard invariant is byte-identity for complete tuplets.** They never enter the completion branch (Task 2 gates on `unit[\complete].not`) and don't go through `meterPieces` (they use `tupletMEI`), so the only risk is Task 1's `\normal`-path refactor changing `nil`-tuplet output — verify a plain score is unchanged first (Task 1 Step 4).
 - **`tup` equality** must be compared field-wise (`[\num]`/`[\numbase]`), not `==` on the Event (`wrapTuplets`).
 - **Ties chain through brackets** — a tie attribute is on the `<note>`, independent of the `<tuplet>` wrapper; `wrapTuplets` only regroups records, it never touches their `str`/tie.
-- **Fallback stays warned.** Donor-too-short / no-donor / would-cross-barline keeps the existing partial-bracket + warning — do not delete that code.
+- **Fallback stays warned.** A too-short NOTE donor / would-cross-barline keeps the existing partial-bracket + warning — do not delete that code. (`canRest` completes only SILENCE followers: bar-end or a rest.)
+- **Two completion sub-paths.** The body below is the `canDonor` path (split the donor, tie a note out). The `canRest` path (bar-end / rest follower) is the same shape but the completing members are RESTS (`donorRest` treated as `true`, no tie), and no donor is reduced (bar-end) — for a too-short *rest* follower the rest simply continues after the container boundary. See the shipped `PanolaMEI.sc` completion branch for the exact rest-fill code.
 - **Whelk docs (Task 3)** must be whelk-safe or the class library won't compile and the whole suite fails.
