@@ -106,7 +106,7 @@ s.waitForBoot({
 ~dumpMEI = {
 	var path = Platform.defaultTempDir +/+ "panola_rhythms.mei";
 	File.use(path, "w", { |f| f.write(Panola.scoreAsMEI([Panola(~treble), Panola(~bass)],
-		"4/4", \Cmajor, [\treble, \bass], [[1, 2]])) });
+		[( measure: 1, meter: "4/4", key: \Cmajor )], [\treble, \bass], [[1, 2]])) });
 	("Wrote " ++ path).postln;
 };
 ~dumpMEI.value;

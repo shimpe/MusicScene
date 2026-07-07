@@ -24,14 +24,14 @@ def test_render_props_counts_slur():
 from tools.panola_mei.test_expression import _dump, SCLANG
 
 CASES = {
-  "within":    r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5 f5@slur^end^ g5")], "4/4", \Cmajor, [\treble], nil)',
-  "crossbar":  r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5 f5 g5@slur^end^ a5 b5 c6")], "4/4", \Cmajor, [\treble], nil)',
-  "chained":   r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5@slur^endstart^ f5 g5@slur^end^ a5")], "4/4", \Cmajor, [\treble], nil)',
-  "unmatched": r'Panola.scoreAsMEI([Panola("c5_4 d5@slur^end^ e5 f5")], "4/4", \Cmajor, [\treble], nil)',
-  "twovoice":  r'Panola.scoreAsMEI([Panola("c5_4 d5 e5 f5"), Panola("c3_4@slur^start^ e3 g3 c4@slur^end^")], "4/4", \Cmajor, [\treble, \bass], nil)',
+  "within":    r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5 f5@slur^end^ g5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "crossbar":  r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5 f5 g5@slur^end^ a5 b5 c6")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "chained":   r'Panola.scoreAsMEI([Panola("c5_4@slur^start^ d5 e5@slur^endstart^ f5 g5@slur^end^ a5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "unmatched": r'Panola.scoreAsMEI([Panola("c5_4 d5@slur^end^ e5 f5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  "twovoice":  r'Panola.scoreAsMEI([Panola("c5_4 d5 e5 f5"), Panola("c3_4@slur^start^ e3 g3 c4@slur^end^")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble, \bass], nil)',
   # slur that both starts and ends inside the same triplet -> endpoints must get distinct sub-tuplet
   # tstamps, else it collapses to a zero-length (invisible) slur
-  "intuplet":  r'Panola.scoreAsMEI([Panola("a5_8*2/3@slur^start^ c6 a5@slur^end^ c6_4 d6_4 e6_4")], "4/4", \Cmajor, [\treble], nil)',
+  "intuplet":  r'Panola.scoreAsMEI([Panola("a5_8*2/3@slur^start^ c6 a5@slur^end^ c6_4 d6_4 e6_4")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
 }
 
 

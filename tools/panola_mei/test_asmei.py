@@ -16,13 +16,13 @@ SCLANG = os.environ.get("SCLANG", r"C:\Program Files\SuperCollider-3.14.1\sclang
 # name -> Panola scoreAsMEI call. Each generated file is rendered and checked below.
 CASES = {
     "single":  'Panola("c5_4 e g a").asMEI("4/4", \\Cmajor, \\treble)',
-    "grand":   'Panola.scoreAsMEI([Panola("c5_4 e g a"), Panola("c3_2 g2")], "4/4", \\Cmajor, [\\treble,\\bass], [[1,2]])',
-    "chords":  'Panola.scoreAsMEI([Panola("<c4_4 e4 g4> <d4_4 f4 a4> <e4_2 g4 c5>")], "4/4", \\Cmajor, [\\treble], nil)',
-    "rests":   'Panola.scoreAsMEI([Panola("c5_4 r_4 e5_4 r_4")], "4/4", \\Cmajor, [\\treble], nil)',
-    "ties":    'Panola.scoreAsMEI([Panola("c5_2 c5_1 c5_4")], "4/4", \\Cmajor, [\\treble], nil)',
-    "gmajor":  'Panola.scoreAsMEI([Panola("f#5_4 g a b")], "4/4", \\Gmajor, [\\treble], nil)',
-    "waltz":   'Panola.scoreAsMEI([Panola("c5_4 e g c5_4 e g")], "3/4", \\Cmajor, [\\treble], nil)',
-    "beams":   'Panola.scoreAsMEI([Panola("c5_8 d5 e5 f5 g5 a5 b5 c6")], "4/4", \\Cmajor, [\\treble], nil)',
+    "grand":   'Panola.scoreAsMEI([Panola("c5_4 e g a"), Panola("c3_2 g2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble,\\bass], [[1,2]])',
+    "chords":  'Panola.scoreAsMEI([Panola("<c4_4 e4 g4> <d4_4 f4 a4> <e4_2 g4 c5>")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "rests":   'Panola.scoreAsMEI([Panola("c5_4 r_4 e5_4 r_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "ties":    'Panola.scoreAsMEI([Panola("c5_2 c5_1 c5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "gmajor":  'Panola.scoreAsMEI([Panola("f#5_4 g a b")], [( measure: 1, meter: "4/4", key: \\Gmajor )], [\\treble], nil)',
+    "waltz":   'Panola.scoreAsMEI([Panola("c5_4 e g c5_4 e g")], [( measure: 1, meter: "3/4", key: \\Cmajor )], [\\treble], nil)',
+    "beams":   'Panola.scoreAsMEI([Panola("c5_8 d5 e5 f5 g5 a5 b5 c6")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
 }
 
 

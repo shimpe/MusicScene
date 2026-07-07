@@ -27,7 +27,7 @@ def _mei(expr):
 def test_half_times_three_ties_whole_to_half_over_the_barline():
     # c5_2*3 : a half note with mult=3/div=1 -> 6 beats (a degenerate 1:3 ratio, NOT a tuplet). In 4/4 from
     # the downbeat this is a whole note (bar 1) tied to a half note (bar 2), never a <tuplet num="1"> bracket.
-    mei, out = _mei('Panola.scoreAsMEI([Panola("c5_2*3 r_2")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei, out = _mei('Panola.scoreAsMEI([Panola("c5_2*3 r_2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert '<tuplet num="1"' not in mei, mei                        # no degenerate 1-tuplet bracket
     assert "1-tuplet" not in out, out[-1500:]
     assert "crosses a barline" not in out, out[-1500:]              # not treated as a tuplet at all
@@ -43,7 +43,7 @@ def test_half_times_three_ties_whole_to_half_over_the_barline():
 def test_whole_times_two_ties_whole_to_whole_over_the_barline():
     # c3_1*2 : a whole note with mult=2/div=1 -> 8 beats (a degenerate 1:2 ratio). In 4/4 it is a whole note
     # (bar 1) tied to a whole note (bar 2), exactly like a plain long note split at the barline.
-    mei, out = _mei('Panola.scoreAsMEI([Panola("c3_1*2")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei, out = _mei('Panola.scoreAsMEI([Panola("c3_1*2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert '<tuplet num="1"' not in mei, mei
     assert "1-tuplet" not in out, out[-1500:]
     assert "crosses a barline" not in out, out[-1500:]
@@ -59,6 +59,6 @@ def test_whole_times_two_ties_whole_to_whole_over_the_barline():
 def test_genuine_duplet_stays_bracketed():
     # c5_4*3/2 : a 2:3 duplet (num=2, numbase=3) is a GENUINE tuplet (both sides > 1, not degenerate). It
     # must STILL emit a <tuplet num="2" numbase="3"> bracket and NOT be routed to the plain-note path.
-    mei, out = _mei('Panola.scoreAsMEI([Panola("c5_4*3/2")], "4/4", \\Cmajor, [\\treble], nil)')
+    mei, out = _mei('Panola.scoreAsMEI([Panola("c5_4*3/2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
     assert '<tuplet num="2" numbase="3">' in mei, mei              # genuine duplet stays a tuplet
     assert '<tuplet num="1"' not in mei, mei

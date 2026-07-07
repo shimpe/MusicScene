@@ -25,14 +25,14 @@ def test_render_props_counts_tuplets():
 
 
 CASES = {   # name -> Panola.scoreAsMEI expression
-    "triplet":    'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 c5_2 r_4")], "4/4", \\Cmajor, [\\treble], nil)',
-    "sixeighths": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 f5 g5 a5")], "4/4", \\Cmajor, [\\treble], nil)',
-    "mixed":      'Panola.scoreAsMEI([Panola("c5_4*2/3 d5_8*2/3 c5_2")], "4/4", \\Cmajor, [\\treble], nil)',
-    "quintuplet": 'Panola.scoreAsMEI([Panola("c5_16*4/5 d5 e5 f5 g5")], "4/4", \\Cmajor, [\\treble], nil)',
-    "quarter3":   'Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], "4/4", \\Cmajor, [\\treble], nil)',
-    "then_plain": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 c5_4 d5_4 e5_2")], "4/4", \\Cmajor, [\\treble], nil)',
-    "with_rest":  'Panola.scoreAsMEI([Panola("c5_8*2/3 r d5 c5_2 r_4")], "4/4", \\Cmajor, [\\treble], nil)',
-    "incomplete": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_4 d5 e5 f5")], "4/4", \\Cmajor, [\\treble], nil)',
+    "triplet":    'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 c5_2 r_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "sixeighths": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 f5 g5 a5")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "mixed":      'Panola.scoreAsMEI([Panola("c5_4*2/3 d5_8*2/3 c5_2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "quintuplet": 'Panola.scoreAsMEI([Panola("c5_16*4/5 d5 e5 f5 g5")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "quarter3":   'Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "then_plain": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5 c5_4 d5_4 e5_2")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "with_rest":  'Panola.scoreAsMEI([Panola("c5_8*2/3 r d5 c5_2 r_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
+    "incomplete": 'Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_4 d5 e5 f5")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)',
 }
 
 
