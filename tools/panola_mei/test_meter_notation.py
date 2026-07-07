@@ -35,3 +35,43 @@ def test_mid_measure_half_note_splits_at_the_4_4_midpoint():
     assert _notes(mei) == 4, mei              # q + (q~q) + q  (was 3: q + half + q)
     assert 'tie="i"' in mei and 'tie="t"' in mei, mei
     assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_offbeat_quarter_splits_into_tied_eighths():
+    # c5_8 c5_4 c5_8 in 2/4: the quarter starts on the off-beat (0.5) and spans beat 1.0, so it
+    # splits into two tied eighths -> eighth + (eighth~eighth) + eighth = 4 notes.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8 c5_4 c5_8")], "2/4", \\Cmajor, [\\treble], nil)')
+    assert _notes(mei) == 4, mei
+    assert 'tie="i"' in mei and 'tie="t"' in mei, mei
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_half_notes_on_strong_beats_are_not_over_split():
+    # c5_2 c5_2 in 4/4: each half note starts on a boundary at least as strong as any it spans
+    # (onset 0 -> 100, onset 2 -> 80), so neither is split -> 2 plain half notes, no ties.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_2 c5_2")], "4/4", \\Cmajor, [\\treble], nil)')
+    assert _notes(mei) == 2, mei
+    assert 'tie="i"' not in mei and 'tie="t"' not in mei, mei
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_dotted_quarter_on_downbeat_stays_whole():
+    # c5_4. c5_8 in 4/4: the dotted quarter is on beat 1 (onset 0) and spans only the weaker beat-1
+    # boundary, so it stays a single dotted quarter (dur="4" dots="1"), not split.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_4. c5_8")], "4/4", \\Cmajor, [\\treble], nil)')
+    assert re.search(r'<note dur="4" dots="1"', mei), mei
+    assert 'tie="i"' not in mei, mei
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_explicit_tuplet_path_unchanged():
+    # a triplet (c5_4*2/3 = 3 quarters in the space of 2) still renders through the unchanged atomic
+    # tuplet path -> one <tuplet num="3" numbase="2"> with three written quarters.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], "4/4", \\Cmajor, [\\treble], nil)')
+    assert '<tuplet num="3" numbase="2">' in mei, mei
+    assert mei.count('<note dur="4"') == 3, mei
+    assert render_props(mei)["ok"], mei
