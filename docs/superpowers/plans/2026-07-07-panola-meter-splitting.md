@@ -478,14 +478,14 @@ FALLBACK_SCRIPT = r'''(''' + SPLIT_FMT + r'''
 var sumOK = { |comps, dn, dd|
     comps.inject(PanolaRational(0,1), { |a, c| a + c[\durationQL] }) == PanolaRational(dn, dd);
 };
+// (SC requires all `var` before any statement) 1/17 is inexpressible in 4/4 -> drives the fallback
+var one17 = PanolaMeterSplitter.split(ev.(0,1, 1,17), PanolaMeter(4,4));
 // sum-exactness across the earlier examples
 ("SUM1:" ++ sumOK.(PanolaMeterSplitter.split(ev.(3,2, 1,1), PanolaMeter(4,4)), 1, 1).asString).postln;
 ("SUM3:" ++ sumOK.(PanolaMeterSplitter.split(ev.(1,2, 2,1), PanolaMeter(7,8,[2,2,3])), 2, 1).asString).postln;
 // an off-grid duration must not crash (5/7 actually spells as a 7:10 septuplet, so it stays on the
 // basic path; kept as a no-crash smoke check)
 ("OFFGRID:" ++ fmt.(PanolaMeterSplitter.split(ev.(0,1, 5,7), PanolaMeter(4,4)))).postln;
-// 1/17 IS inexpressible in 4/4 (needs a 17:1 tuplet > maxTupletActual) -> drives the fallback
-var one17 = PanolaMeterSplitter.split(ev.(0,1, 1,17), PanolaMeter(4,4));
 ("ONE17SUM:" ++ (one17.inject(PanolaRational(0,1), { |a, c| a + c[\durationQL] }) == PanolaRational(1,17)).asString).postln;
 ("ONE17MANY:" ++ (one17.size > 1).asString).postln;
 0.exit;
