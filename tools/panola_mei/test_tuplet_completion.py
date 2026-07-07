@@ -46,14 +46,27 @@ def test_plain_and_complete_tuplets_unchanged():
 
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
-def test_incomplete_triplet_before_barend_completes_with_a_rest(capfd=None):
-    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then bar-end silence. Completes the triplet (2 eighths +
-    # a tuplet REST) inside one bracket; the short trailing bar is not padded (left underfull, as a plain
-    # short voice would be). No "incomplete tuplet" warning.
+def test_trailing_incomplete_triplet_stays_partial():
+    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then voice-end silence — NOTHING follows. music21's
+    # splitElementsToCompleteTuplets only SPLITS an existing following element to complete a tuplet; it
+    # never fabricates a rest. So a trailing incomplete tuplet stays PARTIAL: a single 2-note bracket
+    # (+ "incomplete tuplet" warning), no fabricated pad, short bar left underfull.
     mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5")], "4/4", \\Cmajor, [\\treble], nil)')
-    assert mei.count("<tuplet ") == 1, mei                       # one complete bracket
+    assert mei.count("<tuplet ") == 1, mei                       # the single partial bracket
     body = mei.split("</tuplet>")[0]
-    assert body.count("<note") == 2 and body.count("<rest") == 1, mei   # 2 notes + 1 rest inside it
+    assert body.count("<note") == 2 and body.count("<rest") == 0, mei   # 2 notes, NO fabricated rest
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_rest_follower_completes_by_splitting_the_rest():
+    # c5_8*2/3 d5 r_2 : an explicit half-rest FOLLOWS the 2 triplet-eighths. A rest CAN be a donor —
+    # music21 splits the following rest to complete the tuplet (it exceeds the 1/3-beat remainder). So the
+    # first bracket gets 2 notes + 1 tuplet REST (the completing member split off the half-rest); the
+    # rest's remainder plays after the bracket. This is the music21-faithful "split a following rest" case.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 r_2")], "4/4", \\Cmajor, [\\treble], nil)')
+    first = mei.split("</tuplet>")[0]
+    assert first.count("<note") == 2 and first.count("<rest") == 1, mei   # 2 notes + 1 completing rest
     assert render_props(mei)["ok"], mei
 
 
