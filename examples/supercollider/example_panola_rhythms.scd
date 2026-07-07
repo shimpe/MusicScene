@@ -11,17 +11,20 @@
 //
 // Under the hood (not shown as a clean measure): an INCOMPLETE explicit *m/d tuplet is completed
 // music21-style by splitting the FOLLOWING note/rest into the bracket, tied (a trailing incomplete tuplet
-// with nothing after it is left partial + warned, matching music21). Still to come: tuplets that CROSS a
-// barline (today PanolaMEI warns and cannot split the bracket) — that's the next feature.
+// with nothing after it is left partial + warned, matching music21). Next still to come: consolidating
+// over-tupleted tied runs, and nested tuplets.
 //
 // WHAT EACH MEASURE THROWS AT THE ENGINE (watch the engraved notation):
-//   M1  Septuplet 7:4   — seven 16ths in the space of four, filling beat 1, then three quarters.
-//   M2  Nonuplet 9:8    — nine 16ths in the space of eight, spanning two beats, then a half note.
-//   M3  Quintuplets 5:4 — two five-in-four 16th runs (one per beat), then a half note.
-//   M4  Syncopation     — off-beat quarters, each split into two tied eighths across the beat.
-//   M5  Off-beat hold   — a half note starting on a 16th off-beat splits at every beat it crosses.
-//   M6  Mixed tuplet    — a 3:2 triplet mixing a quarter + an eighth, then a syncopated half note.
-//   M7  Cadence         — a whole note on the downbeat, kept whole.
+//   M1   Septuplet 7:4   — seven 16ths in the space of four, filling beat 1, then three quarters.
+//   M2   Nonuplet 9:8    — nine 16ths in the space of eight, spanning two beats, then a half note.
+//   M3   Quintuplets 5:4 — two five-in-four 16th runs (one per beat), then a half note.
+//   M4   Syncopation     — off-beat quarters, each split into two tied eighths across the beat.
+//   M5   Off-beat hold   — a half note starting on a 16th off-beat splits at every beat it crosses.
+//   M6   Mixed tuplet    — a 3:2 triplet mixing a quarter + an eighth, then a syncopated half note.
+//   M7-8 Tuplet OVER a barline — a 7:4 septuplet on the "and" of beat 4 spans the barline: it splits into
+//                          TWO tied <tuplet> brackets (one per bar), the straddling 16th cut into two
+//                          tied 32nds across the barline.
+//   M9   Cadence         — a whole note on the downbeat, kept whole.
 //
 // REQUIRES:
 //   * The MSScore quark:  Quarks.install("https://github.com/shimpe/msscore")
@@ -60,11 +63,12 @@ s.waitForBoot({
 		"c5_8 d5_4 e5 f5 g5_8",                             // M4  off-beat quarters -> tied eighths (syncopation)
 		"c5_16 d5_2 e5_4 f5_8 g5_16",                       // M5  a half on a 16th off-beat splits at each beat
 		"c5_4*2/3 d5_8*2/3 e5_2 f5_4",                      // M6  mixed 3:2 triplet (quarter+eighth) + syncopated half
-		"c5_1"                                              // M7  cadence: whole note on the downbeat, kept whole
+		"c5_4 d5 e5 f5_8 g5_16*4/7 a5 b5 c6 d6 e6 f6 e6_8 d6_4 c6 b5",  // M7-8 septuplet 7:4 across the barline
+		"c5_1"                                              // M9  cadence: whole note on the downbeat, kept whole
 	].join(" ");
 
 	~bass = [
-		"c3_1", "a2", "f2", "g2", "c3", "g2", "c3"   // one sustained root per measure (keeps the treble the focus)
+		"c3_1", "a2", "f2", "g2", "c3", "g2", "e2", "f2", "c3"   // one sustained root per measure (M7-8 span two)
 	].join(" ");
 
 	~score = MSScore(
