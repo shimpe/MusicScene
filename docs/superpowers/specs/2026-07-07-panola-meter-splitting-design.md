@@ -77,19 +77,19 @@ examples — a pure hidden-boundary penalty would wrongly split the `0→2` half
 
 The splitter therefore:
 
-1. **Onset strength** = the strength of the boundary at `onsetQL` (or, if the onset is between boundaries,
-   the strongest boundary at-or-before it). **Mandatory** split points = interior boundaries with
+1. **Onset strength** = the strength of the boundary **exactly at** `onsetQL` (a note at 1.5 in 4/4 is a
+   subdivision → 30), or `0` if the onset falls between boundaries (then every stronger interior boundary
+   splits). **Mandatory** split points = interior boundaries with
    `strength > onsetStrength` that are permitted by the `splitAt*` policy flag for their level, plus any
    `strength >= 90` (measure / tuplet-container edges). Splitting at these is required and already yields
    a correct, meter-respecting split.
-2. A **candidate + cost model** (Parts 5–6) then chooses among the *remaining optional* freedoms — whether
-   to further subdivide a still-syncopated piece, and dot-vs-tie choices — by scoring `tieCost`,
-   `durationSpellingCost` (dots·`dotCost`, tuplets·`tupletCost` + `tupletComplexityCost`, internal ties),
-   `syncopationPenalty`, and a `hiddenBoundaryCostFactor` penalty applied **only to boundaries stronger
-   than the piece's own onset** (the same relative rule as step 1, so the cost model never contradicts
-   it). Candidates whose pieces don't all spell are discarded; the lowest-cost survivor wins. To bound
-   cost, if the optional-boundary count exceeds 12 the greedy fallback (Part 8) is used instead of all
-   subsets.
+2. The onset-strength rule already fixes every mandatory split, and every remaining *optional* boundary is
+   **weaker** than the note's onset (a policy-allowed boundary stronger than the onset is already
+   mandatory) — so a candidate/cost search over the optional boundaries would never choose to split there
+   (it only adds ties with no readability gain). SP2a therefore **omits** the full candidate+cost model;
+   dot-vs-tie readability is handled by the spelling engine plus the optimization pass (Part 11). *(The
+   source pseudo code's Parts 5–6 cost model is deferred as an optional future refinement — it would
+   matter only under advanced options that make sub-beat boundaries mandatory-eligible.)*
 3. If no candidate is fully spellable, `fallbackSplitAggressively` then `splitAtSmallestGrid` (Part 8).
 
 Defaults (Part 12): `splitAtMeasureBoundaries/BeatBoundaries/TupletBoundaries = true`,
@@ -160,12 +160,12 @@ New classes only. `PanolaMeter` (`*new(num, den, groups)`, `measureLengthQL`, `b
 ## Scope
 
 - **In (SP2a):** `PanolaMeter` boundary hierarchy (simple/compound/additive); `PanolaMeterSplitter` with
-  candidate-based split + cost scoring, tuplet-contained splitting, greedy/smallest-grid fallbacks, the
+  the onset-strength split rule, tuplet-contained splitting, greedy/smallest-grid fallbacks, the
   optimization pass, exact/quantize; whelk docs + regenerated schelp (gendoc.bat); the full test suite.
-- **Phasing (the plan, not the spec):** build a **correct** splitter first — boundaries → basic
-  split at mandatory+policy boundaries → spell → tie → tuplet-containers → fallback (Parts 1–4, 7, 8) —
-  green against the Examples, then layer the **candidate + cost scoring** (Parts 5–6) and the
-  **optimization pass** (Part 11). One spec, phased plan.
+- **Phasing (the plan, not the spec):** build a **correct** splitter first — boundaries → onset-strength
+  split → spell → tie → tuplet-containers → fallback (Parts 1–4, 7, 8) — green against the Examples, then
+  layer the **optimization pass** (Part 11). One spec, phased plan.
 - **Out (SP2b / later):** `PanolaMEI` integration (replacing `decompose`, emitting tied MEI + `<tuplet>`
-  from `SplitComponent`s, reconciling with the explicit-`*m/d` tuplet path and beaming); nested tuplets;
+  from `SplitComponent`s, reconciling with the explicit-`*m/d` tuplet path and beaming); the full Parts
+  5–6 candidate/cost model (subsumed here by the onset-strength rule + optimization pass); nested tuplets;
   cross-voice/context boundaries; any change to playback.
