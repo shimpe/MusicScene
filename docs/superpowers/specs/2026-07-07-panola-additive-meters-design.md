@@ -67,11 +67,32 @@ Via the `tools/panola_mei/` sclang → MEI → Verovio harness. New assertions f
 - **Regression (the hard invariant):** `4/4`, `3/4`, `6/8`, and bare `7/8` render byte-for-identically to
   before; the full `panola_mei` suite is green.
 
+## Forward compatibility — do not foreclose mid-piece meter changes
+
+Mid-piece meter changes are out of scope for v1, but the implementation **must not preclude them**. The
+binding constraint: `parseMeter` returns a **self-contained meter descriptor** — `( count, num, den, groups,
+bb, groupStarts, pmeter )` — and every meter-dependent step consumes *that descriptor*, not loose globals
+derived from a single "the meter". Concretely:
+
+- The per-measure render loop (`nm.do { |i| … }`) and the note-layout / `beamMeasure` calls take a meter
+  descriptor **as a parameter**, so today they all receive the one score-wide descriptor, but a future
+  change is just: parse a **list** of descriptors and pick `descriptorForMeasure(i)` — no rewrite of
+  `barBeats`, splitting, or beaming.
+- Do not assume `bb` / `groupStarts` / `pmeter` are constant for the whole piece; hold them inside the
+  descriptor.
+- Do not assume the meter signature is emitted **only** in the top `<scoreDef>`; keep the signature string a
+  property of the descriptor, so a later meter change can emit a mid-`<section>` `<scoreDef>`/`<meterSig>`
+  without restructuring.
+
+This is good encapsulation regardless, and it reduces a future mid-piece-meter feature to a localized
+addition.
+
 ## Scope
 
 - **In (SP2e v1):** parse an additive `"a+b+…/d"` meter; thread the sum into `barBeats` and the groups into
   `PanolaMeter` (splitting); beam per group (`groupStarts`); emit the additive `meter.count`; whelk docs +
-  regenerated schelp; new + regression tests.
-- **Out (later):** a meter change **mid-piece** (one meter per score); nested / hierarchical groupings; a
-  bare `5/8`/`7/8` **inferring** a default grouping (must be written explicitly); denominators other than a
-  power of two; any playback change (playback uses the raw beats).
+  regenerated schelp; new + regression tests. **One meter per score, but structured per the Forward-
+  compatibility section so mid-piece changes remain a clean future addition.**
+- **Out (later):** a meter change **mid-piece** (deferred, but must not be precluded — see above); nested /
+  hierarchical groupings; a bare `5/8`/`7/8` **inferring** a default grouping (must be written explicitly);
+  denominators other than a power of two; any playback change (playback uses the raw beats).
