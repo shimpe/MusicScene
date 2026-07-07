@@ -113,11 +113,15 @@ FALLBACK_SCRIPT = r'''(''' + SPLIT_FMT + r'''
 var sumOK = { |comps, dn, dd|
     comps.inject(PanolaRational(0,1), { |a, c| a + c[\durationQL] }) == PanolaRational(dn, dd);
 };
+// 1/17 QL at onset 0 in 4/4 is NOT spellable (needs a >13 tuplet) -> drives greedy -> smallest-grid
+var one17 = PanolaMeterSplitter.split(ev.(0,1, 1,17), PanolaMeter(4,4));
 // sum-exactness across the earlier examples
 ("SUM1:" ++ sumOK.(PanolaMeterSplitter.split(ev.(3,2, 1,1), PanolaMeter(4,4)), 1, 1).asString).postln;
 ("SUM3:" ++ sumOK.(PanolaMeterSplitter.split(ev.(1,2, 2,1), PanolaMeter(7,8,[2,2,3])), 2, 1).asString).postln;
 // an inexpressible tail piece must not crash: quantize off, an off-grid tail
 ("OFFGRID:" ++ fmt.(PanolaMeterSplitter.split(ev.(0,1, 5,7), PanolaMeter(4,4)))).postln;
+("ONE17SUM:" ++ (one17.inject(PanolaRational(0,1), { |a, c| a + c[\durationQL] }) == PanolaRational(1,17)).asString).postln;
+("ONE17MANY:" ++ (one17.size > 1).asString).postln;
 0.exit;
 )'''
 
@@ -129,3 +133,5 @@ def test_fallback_and_sum():
     assert "SUM1:true" in r.stdout, r.stdout[-1500:]     # components sum exactly to the input
     assert "SUM3:true" in r.stdout, r.stdout[-1500:]
     assert "OFFGRID:" in r.stdout, r.stdout[-1500:]      # produced a result, did not crash/hang
+    assert "ONE17SUM:true" in r.stdout, r.stdout[-1500:]    # fallback result sums exactly to 1/17
+    assert "ONE17MANY:true" in r.stdout, r.stdout[-1500:]   # smallest-grid fallback -> many tied pieces
