@@ -1,26 +1,27 @@
 // =============================================================================
-// Meter-aware rhythm notation showcase (Panola -> MSScore -> MusicScene).
+// CHALLENGING complex-rhythm notation showcase (Panola -> MSScore -> MusicScene).
 //
-// Panola gives each note an exact duration; the Panola quark's MEI export now spells and SPLITS those
-// durations meter-aware (PanolaDurationSpeller + PanolaMeter + PanolaMeterSplitter) instead of the old
-// greedy decomposition. The rule: a note may span metrical boundaries no stronger than the beat it
-// starts on, but must break (and tie) at any stronger interior boundary. So syncopations and
-// barline-crossings engrave correctly, while notes that legitimately sit on strong beats stay whole.
+// A deliberately hard rhythmic étude that exercises the Panola quark's rhythm engine: exotic tuplets
+// (7:4, 9:8, 5:4), dense syncopation, and long off-beat notes that must be split and tied per the meter.
+// Panola gives each note an exact duration; the MEI export spells + SPLITS it meter-aware
+// (PanolaDurationSpeller + PanolaMeter + PanolaMeterSplitter) and brackets tuplet fragments
+// (music21-style). A note may span metrical boundaries no stronger than the beat it starts on, but must
+// break (and tie) at any stronger interior boundary — so syncopations and off-beat holds engrave
+// correctly, while explicit *m/d tuplets render as real <tuplet> brackets.
 //
-// This file is a LIVING showcase — new measures/sections get appended as the rhythm features grow.
-// Also under the hood (not a clean measure to show): an INCOMPLETE explicit *m/d tuplet is completed
+// Under the hood (not shown as a clean measure): an INCOMPLETE explicit *m/d tuplet is completed
 // music21-style by splitting the FOLLOWING note/rest into the bracket, tied (a trailing incomplete tuplet
-// with nothing after it is left partial + warned — matching music21). The faithful completion ties and
-// cascades to preserve exact timing rather than making a clean single bracket. Next up: tuplets crossing
-// barlines, and consolidating over-tupleted tied runs.
+// with nothing after it is left partial + warned, matching music21). Still to come: tuplets that CROSS a
+// barline (today PanolaMEI warns and cannot split the bracket) — that's the next feature.
 //
-// WHAT EACH MEASURE DEMONSTRATES (watch the engraved notation, not just listen):
-//   M1  Syncopation      — off-beat quarters each split into two tied eighths across the beat.
-//   M2  Anti-over-split  — a dotted quarter on the downbeat stays a single dotted quarter.
-//   M3  Mid-measure      — a half note starting on beat 2 splits at the 4/4 midpoint (two tied quarters).
-//   M4-5 Barline tie     — a whole note crossing the barline becomes two tied half notes.
-//   M6  Tuplet (intact)  — an explicit *m/d triplet still renders atomically via the unchanged path.
-//   M7  Cadence          — a whole note on the downbeat stays whole.
+// WHAT EACH MEASURE THROWS AT THE ENGINE (watch the engraved notation):
+//   M1  Septuplet 7:4   — seven 16ths in the space of four, filling beat 1, then three quarters.
+//   M2  Nonuplet 9:8    — nine 16ths in the space of eight, spanning two beats, then a half note.
+//   M3  Quintuplets 5:4 — two five-in-four 16th runs (one per beat), then a half note.
+//   M4  Syncopation     — off-beat quarters, each split into two tied eighths across the beat.
+//   M5  Off-beat hold   — a half note starting on a 16th off-beat splits at every beat it crosses.
+//   M6  Mixed tuplet    — a 3:2 triplet mixing a quarter + an eighth, then a syncopated half note.
+//   M7  Cadence         — a whole note on the downbeat, kept whole.
 //
 // REQUIRES:
 //   * The MSScore quark:  Quarks.install("https://github.com/shimpe/msscore")
@@ -50,19 +51,20 @@ s.waitForBoot({
 	}).add;
 	s.sync;
 
-	// One line per measure so each demonstration is easy to read and extend. Duration carries over
-	// until changed, so each measure's first note sets its value explicitly.
+	// One line per measure so each challenge is easy to read and extend. Duration carries over until
+	// changed, so each measure's first note sets its value (and any *m/d tuplet ratio) explicitly.
 	~treble = [
-		"c5_8@dyn^mf^ d5_4 e5 f5 g5_8",   // M1  syncopation: e8 (q~) (q~) (q~) e8 -> tied eighths at each beat
-		"c5_4. d5_8 e5_4 f5",             // M2  anti-over-split: dotted quarter on beat 1 stays whole
-		"g5_4 a5_2 g5_4",                 // M3  half note on beat 2 splits at the 2.0 midpoint (quarter~quarter)
-		"f5_2 e5_1 d5_2",                 // M4-5 whole note across the barline -> two tied half notes
-		"c5_4*2/3 d5 e5 f5_4 g5",         // M6  explicit triplet (3-in-2) stays one <tuplet>, then two quarters
-		"c5_1"                            // M7  cadence: whole note on the downbeat, kept whole
+		"c5_16*4/7@dyn^mf^ d5 e5 f5 g5 a5 b5 c6_4 d6 e6",   // M1  septuplet 7:4 (beat 1) + three quarters
+		"c6_16*8/9 b5 a5 g5 f5 e5 d5 c5 b4 a4_2",           // M2  nonuplet 9:8 (beats 1-2) + a half note
+		"c5_16*4/5 d5 e5 f5 g5 a5_16*4/5 b5 c6 d6 e6 f6_2", // M3  two quintuplets 5:4 (beat 1, beat 2) + half
+		"c5_8 d5_4 e5 f5 g5_8",                             // M4  off-beat quarters -> tied eighths (syncopation)
+		"c5_16 d5_2 e5_4 f5_8 g5_16",                       // M5  a half on a 16th off-beat splits at each beat
+		"c5_4*2/3 d5_8*2/3 e5_2 f5_4",                      // M6  mixed 3:2 triplet (quarter+eighth) + syncopated half
+		"c5_1"                                              // M7  cadence: whole note on the downbeat, kept whole
 	].join(" ");
 
 	~bass = [
-		"c3_1", "c3", "e3", "f3", "f3", "c3", "c3"   // one sustained whole-note root per measure
+		"c3_1", "a2", "f2", "g2", "c3", "g2", "c3"   // one sustained root per measure (keeps the treble the focus)
 	].join(" ");
 
 	~score = MSScore(
@@ -71,14 +73,14 @@ s.waitForBoot({
 		meter:       "4/4",
 		key:         \Cmajor,
 		braces:      [[1, 2]],            // brace the two staves into a piano grand staff
-		tempo:       84,
-		scale:       2.5,                 // score size in the scene — raise/lower to fit your view
+		tempo:       72,                  // moderate, so the fast tuplets stay audible/visible
+		scale:       2.3,                 // score size in the scene — raise/lower to fit your view
 		instruments: [\pnote, \pnote],
 		space:       "3d"                 // set "3d" to match your project's musicscene/space
 	);
 
 	~score.play;
-	"Meter-aware rhythm showcase playing — watch the ties/splits in the notation.".postln;
+	"Challenging rhythm showcase playing — watch the tuplets, ties, and off-beat splits in the notation.".postln;
 	"Evaluate the CLEANUP block to stop; evaluate ~dumpMEI to write the raw .mei.".postln;
 });
 )
@@ -89,7 +91,7 @@ s.waitForBoot({
 // =============================================================================
 (
 ~score.stop;
-"Meter-aware rhythm showcase stopped.".postln;
+"Challenging rhythm showcase stopped.".postln;
 )
 
 
