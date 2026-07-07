@@ -481,8 +481,13 @@ var sumOK = { |comps, dn, dd|
 // sum-exactness across the earlier examples
 ("SUM1:" ++ sumOK.(PanolaMeterSplitter.split(ev.(3,2, 1,1), PanolaMeter(4,4)), 1, 1).asString).postln;
 ("SUM3:" ++ sumOK.(PanolaMeterSplitter.split(ev.(1,2, 2,1), PanolaMeter(7,8,[2,2,3])), 2, 1).asString).postln;
-// an inexpressible tail piece must not crash: quantize off, an off-grid tail
+// an off-grid duration must not crash (5/7 actually spells as a 7:10 septuplet, so it stays on the
+// basic path; kept as a no-crash smoke check)
 ("OFFGRID:" ++ fmt.(PanolaMeterSplitter.split(ev.(0,1, 5,7), PanolaMeter(4,4)))).postln;
+// 1/17 IS inexpressible in 4/4 (needs a 17:1 tuplet > maxTupletActual) -> drives the fallback
+var one17 = PanolaMeterSplitter.split(ev.(0,1, 1,17), PanolaMeter(4,4));
+("ONE17SUM:" ++ (one17.inject(PanolaRational(0,1), { |a, c| a + c[\durationQL] }) == PanolaRational(1,17)).asString).postln;
+("ONE17MANY:" ++ (one17.size > 1).asString).postln;
 0.exit;
 )'''
 
@@ -494,12 +499,14 @@ def test_fallback_and_sum():
     assert "SUM1:true" in r.stdout, r.stdout[-1500:]     # components sum exactly to the input
     assert "SUM3:true" in r.stdout, r.stdout[-1500:]
     assert "OFFGRID:" in r.stdout, r.stdout[-1500:]      # produced a result, did not crash/hang
+    assert "ONE17SUM:true" in r.stdout, r.stdout[-1500:]  # fallback result sums exactly to 1/17
+    assert "ONE17MANY:true" in r.stdout, r.stdout[-1500:] # smallest-grid fallback -> many tied pieces
 ```
 
 - [ ] **Step 2: Run to verify failure**
 
 Run: `cd /d/Projects/MusicScene && py -m pytest tools/panola_duration/test_meter_splitting.py::test_fallback_and_sum -q`
-Expected: likely FAIL only on `OFFGRID` behavior (a `5/7`-QL note at onset 0 spells inexpressibly and the current `pr_splitBasic` emits an inexpressible component). If `SUM*` already pass, still implement Step 3 (the fallback is required and pins the no-crash behavior).
+Expected: FAIL on the `ONE17*` assertions — a `1/17`-QL note is inexpressible in 4/4 (needs a 17:1 tuplet beyond `maxTupletActual`), and the current `pr_splitBasic` emits a single inexpressible component (`ONE17MANY:false`) rather than falling back to the smallest grid. (`SUM1`/`SUM3`/`OFFGRID` already pass — `5/7` spells as a 7:10 septuplet on the basic path and does not exercise the fallback.)
 
 - [ ] **Step 3: Add greedy + smallest-grid fallbacks, and use them when a basic split has an inexpressible piece**
 
