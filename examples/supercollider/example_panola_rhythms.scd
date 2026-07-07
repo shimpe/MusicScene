@@ -7,8 +7,12 @@
 // starts on, but must break (and tie) at any stronger interior boundary. So syncopations and
 // barline-crossings engrave correctly, while notes that legitimately sit on strong beats stay whole.
 //
-// This file is a LIVING showcase — new measures/sections get appended as the rhythm features grow
-// (next up: tuplets that cross barlines, and consolidating over-tupleted tied runs).
+// This file is a LIVING showcase — new measures/sections get appended as the rhythm features grow.
+// Also under the hood (not a clean measure to show): an INCOMPLETE explicit *m/d tuplet is completed
+// music21-style by splitting the FOLLOWING note/rest into the bracket, tied (a trailing incomplete tuplet
+// with nothing after it is left partial + warned — matching music21). The faithful completion ties and
+// cascades to preserve exact timing rather than making a clean single bracket. Next up: tuplets crossing
+// barlines, and consolidating over-tupleted tied runs.
 //
 // WHAT EACH MEASURE DEMONSTRATES (watch the engraved notation, not just listen):
 //   M1  Syncopation      — off-beat quarters each split into two tied eighths across the beat.
@@ -16,8 +20,7 @@
 //   M3  Mid-measure      — a half note starting on beat 2 splits at the 4/4 midpoint (two tied quarters).
 //   M4-5 Barline tie     — a whole note crossing the barline becomes two tied half notes.
 //   M6  Tuplet (intact)  — an explicit *m/d triplet still renders atomically via the unchanged path.
-//   M7  Tuplet completed — an incomplete triplet (2 of 3) at the voice-end auto-completes with a tuplet
-//                          rest (music21-style: the unwritten third slot is filled inside the bracket).
+//   M7  Cadence          — a whole note on the downbeat stays whole.
 //
 // REQUIRES:
 //   * The MSScore quark:  Quarks.install("https://github.com/shimpe/msscore")
@@ -55,8 +58,7 @@ s.waitForBoot({
 		"g5_4 a5_2 g5_4",                 // M3  half note on beat 2 splits at the 2.0 midpoint (quarter~quarter)
 		"f5_2 e5_1 d5_2",                 // M4-5 whole note across the barline -> two tied half notes
 		"c5_4*2/3 d5 e5 f5_4 g5",         // M6  explicit triplet (3-in-2) stays one <tuplet>, then two quarters
-		"c5_4 d5 e5 f5_8*2/3 g5"          // M7  3 quarters + an incomplete triplet (2 of 3), voice ends ->
-		                                  //     the triplet auto-completes with a tuplet rest at the bar-end
+		"c5_1"                            // M7  cadence: whole note on the downbeat, kept whole
 	].join(" ");
 
 	~bass = [

@@ -54,8 +54,11 @@ When `groupEvents` yields an **incomplete** `*m/d` unit (`complete: false`, `acc
 
 1. `remainder = container − acc` (the beats needed to reach the nearest power-of-two container; the
    container choice is unchanged from `groupEvents`).
-2. Take the **donor** = the next unit (a `\normal` note or rest). Require `donor.beats ≥ remainder`
-   (music21's precondition); if not, fall back to the current warning.
+2. Take the **donor** = the next unit (a `\normal` note or rest). It must **exist** and its `beats` must
+   **exceed** `remainder` (music21's `splitElementsToCompleteTuplets` precondition — completion only ever
+   *splits an existing following element*; it never fabricates a rest). If there is no follower (a
+   **trailing** incomplete tuplet), the follower is too short, or completion would cross a barline, fall
+   back to the current warned partial bracket — exactly as music21 leaves a trailing incomplete tuplet.
 3. Build a tuplet context `( startQL: unitStart, totalDurationQL: container, numberNotesActual: num,
    numberNotesNormal: numbase )` and split the donor against it with `PanolaMeterSplitter`: the fragments
    **inside** the container come back as tuplet-ratio fragments (matching the bracket), the fragments
@@ -68,9 +71,11 @@ When `groupEvents` yields an **incomplete** `*m/d` unit (`complete: false`, `acc
    bracket, exactly music21's behavior).
 5. Advance position and consume the donor (reduced by `remainder`; removed if fully consumed).
 
-The common case — a triplet at a bar-end or before rests (`c5_8*2/3 d5`) — completes with a tuplet **rest**
-and a dyadic bar-fill, with no note-position shift (cursor-safe). The harder case (`c5_8*2/3 d5 c5_4`)
-completes with a tied triplet-eighth and lets the non-dyadic remainder form its own bracket.
+When a **following rest** is the donor (`c5_8*2/3 d5 r_2`), splitting it puts a tuplet **rest** inside the
+bracket (music21-faithful — an existing element is split). When a **following note** is the donor
+(`c5_8*2/3 d5 c5_4`), its leading part becomes a tied triplet member and the non-dyadic remainder forms its
+own bracket. A **trailing** incomplete tuplet with nothing after it (`c5_8*2/3 d5`) is **left partial +
+warned** — SP2c never invents a rest to pad it.
 
 ## Phasing (the plan, not the spec)
 
@@ -96,8 +101,10 @@ Via the `tools/panola_mei/` sclang → MEI → Verovio harness. New assertions:
 
 - **Phase A:** a construct that pushes a plain note onto a tuplet-grid onset renders the fragment inside a
   `<tuplet>` (num/numbase correct), not as a bare mis-valued note.
-- **`c5_8*2/3 d5`** (incomplete triplet, bar-end) → one complete `<tuplet num="3" numbase="2">` containing
-  two eighths + an eighth **rest**, then the bar filled with rests; **no incomplete-tuplet warning**.
+- **`c5_8*2/3 d5`** (incomplete triplet, **nothing follows**) → left a **partial** 2-note `<tuplet>` + the
+  incomplete-tuplet warning (music21 leaves a trailing incomplete tuplet as-is — no fabricated rest).
+- **`c5_8*2/3 d5 r_2`** (a rest follows) → completes by **splitting the rest**: the bracket gains a tuplet
+  **rest** member, the remainder continues (its own bracket if non-dyadic).
 - **`c5_8*2/3 d5 c5_4`** (incomplete triplet then a note) → the quarter's leading third becomes a tied
   triplet-eighth inside the bracket; the remainder ties out (its own bracket if non-dyadic).
 - **Regression:** all `test_tuplets` cases identical; `test_asmei` / `test_meter_notation` / SP1 / SP2a

@@ -193,13 +193,22 @@ This is the intricate task; **let the tests define the exact output** and iterat
 
 ```python
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
-def test_incomplete_triplet_before_barend_completes_with_a_rest(capfd=None):
-    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then bar-end silence. Completes to a full triplet (2 eighths +
-    # an eighth REST) inside one bracket, then fills the bar with rests. No "incomplete tuplet" warning.
+def test_trailing_incomplete_triplet_stays_partial():
+    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then NOTHING follows. music21 leaves a trailing incomplete
+    # tuplet partial (it never fabricates a rest), so this stays a 2-note bracket + the warning.
     mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5")], "4/4", \\Cmajor, [\\treble], nil)')
-    assert mei.count("<tuplet ") == 1, mei                       # one complete bracket
     body = mei.split("</tuplet>")[0]
-    assert body.count("<note") == 2 and body.count("<rest") == 1, mei   # 2 notes + 1 rest inside it
+    assert body.count("<note") == 2 and body.count("<rest") == 0, mei   # partial: 2 notes, no fabricated rest
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_rest_follower_completes_by_splitting_the_rest():
+    # c5_8*2/3 d5 r_2 : a rest follows, so completion SPLITS the existing rest (music21-faithful) -> the
+    # first bracket gains a tuplet rest member (2 notes + 1 rest); the remainder continues.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 r_2")], "4/4", \\Cmajor, [\\treble], nil)')
+    body = mei.split("</tuplet>")[0]
+    assert body.count("<note") == 2 and body.count("<rest") == 1, mei
     assert render_props(mei)["ok"], mei
 
 
@@ -244,13 +253,13 @@ Keep the existing `\tuplet`-complete and `\normal` bodies exactly as they are (o
 							donor = ((ui + 1) < units.size).if({ units[ui + 1] }, { nil }),
 							inBar = container.notNil and: { (pos + container) <= (bb + eps) },  // stays in this bar
 							// canDonor: split a long-enough note/rest follower into the bracket (music21's rule
-							// — the follower must EXCEED the remainder). canRest: fill with a tuplet rest for
-							// SILENCE followers only (bar-end or a rest of any length; never a too-short note,
-							// which must stay warned so a note is never silently shifted).
+							// — the follower must EXCEED the remainder). Completion NEVER fabricates a rest; a
+							// trailing / no-donor / too-short-follower incomplete tuplet stays warned + partial,
+							// exactly as music21 leaves it. (The canRest line below is dead — remove it in code.)
 							canDonor = inBar and: { donor.notNil } and: { donor[\kind] == \normal }
 								and: { (donor[\ev][\beats] + eps) >= remainder },
 							canRest = inBar and: { canDonor.not } and: { donor.isNil or: { donor[\ev][\rest] == true } };
-						if (canDonor or: { canRest }) {
+						if (canDonor) {   // NOTE: canRest removed — completion never fabricates a rest (music21)
 							var frecs = [], compSp = PanolaDurationSpeller.spell(PanolaRational.fromFloat(remainder)),
 								dev = donor[\ev], donorRest = dev[\rest],
 								hasRemainder = (donor[\ev][\beats] - remainder) > eps, sub = pos;
@@ -380,6 +389,6 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - **The hard invariant is byte-identity for complete tuplets.** They never enter the completion branch (Task 2 gates on `unit[\complete].not`) and don't go through `meterPieces` (they use `tupletMEI`), so the only risk is Task 1's `\normal`-path refactor changing `nil`-tuplet output — verify a plain score is unchanged first (Task 1 Step 4).
 - **`tup` equality** must be compared field-wise (`[\num]`/`[\numbase]`), not `==` on the Event (`wrapTuplets`).
 - **Ties chain through brackets** — a tie attribute is on the `<note>`, independent of the `<tuplet>` wrapper; `wrapTuplets` only regroups records, it never touches their `str`/tie.
-- **Fallback stays warned.** A too-short NOTE donor / would-cross-barline keeps the existing partial-bracket + warning — do not delete that code. (`canRest` completes only SILENCE followers: bar-end or a rest.)
-- **Two completion sub-paths.** The body below is the `canDonor` path (split the donor, tie a note out). The `canRest` path (bar-end / rest follower) is the same shape but the completing members are RESTS (`donorRest` treated as `true`, no tie), and no donor is reduced (bar-end) — for a too-short *rest* follower the rest simply continues after the container boundary. See the shipped `PanolaMEI.sc` completion branch for the exact rest-fill code.
+- **Fallback stays warned; never fabricate a rest.** No follower (a trailing incomplete tuplet), a too-short follower, or would-cross-barline keeps the existing partial-bracket + warning — do not delete that code. music21 leaves a trailing incomplete tuplet partial; SP2c does NOT invent a rest to pad it.
+- **One completion path (`canDonor`).** Completion fires only when there is an adjacent following note/rest to split. A donor **note** ties out; a donor **rest** contributes rest member(s) by splitting the existing rest (`donorRest` true, no tie). There is no rest-fabrication path.
 - **Whelk docs (Task 3)** must be whelk-safe or the class library won't compile and the whole suite fails.
