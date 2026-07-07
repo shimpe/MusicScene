@@ -51,3 +51,15 @@ def test_meter_change_4_4_to_3_4():
     assert mei.count("<measure ") == 3, mei
     assert '<scoreDef meter.count="3" meter.unit="4"/>' in mei, mei   # mid-section meter change
     assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_inline_clef_change_mid_measure():
+    # @clef^bass^ on the third note switches to bass clef mid-bar -> an inline <clef shape="F" line="4"/>
+    # appears before that note, inside the measure.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_4 e5 g4_4@clef^bass^ c4")], '
+               '[( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble], nil)')
+    assert '<clef shape="F" line="4"/>' in mei, mei
+    layer = mei.split('<layer n="1">')[1].split("</layer>")[0]
+    assert layer.index('<clef shape="F"') < layer.index('pname="g"'), mei   # clef precedes the g note
+    assert render_props(mei)["ok"], mei
