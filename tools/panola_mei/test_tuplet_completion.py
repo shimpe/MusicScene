@@ -47,8 +47,9 @@ def test_plain_and_complete_tuplets_unchanged():
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
 def test_incomplete_triplet_before_barend_completes_with_a_rest(capfd=None):
-    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then bar-end silence. Completes to a full triplet (2 eighths +
-    # an eighth REST) inside one bracket, then fills the bar with rests. No "incomplete tuplet" warning.
+    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then bar-end silence. Completes the triplet (2 eighths +
+    # a tuplet REST) inside one bracket; the short trailing bar is not padded (left underfull, as a plain
+    # short voice would be). No "incomplete tuplet" warning.
     mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5")], "4/4", \\Cmajor, [\\treble], nil)')
     assert mei.count("<tuplet ") == 1, mei                       # one complete bracket
     body = mei.split("</tuplet>")[0]
@@ -64,4 +65,17 @@ def test_incomplete_triplet_then_note_ties_into_the_bracket():
     first = mei.split("</tuplet>")[0]
     assert first.count("<note") == 3, mei                        # c5, d5, + tied completing e-note
     assert 'tie="i"' in first, mei                               # the completing member ties out
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_too_short_note_follower_stays_incomplete():
+    # c5_8*2/3 d5 e5_32 : the follower is a NOTE shorter than the triplet's remainder (a 32nd, 1/8 beat <
+    # 1/3 beat). music21's splitElementsToCompleteTuplets needs the follower to EXCEED the remainder, so a
+    # too-short note cannot complete: the run stays a partial 2-note bracket (+ warning) and the short note
+    # plays after unshifted. Fill-with-rest is only for silence followers, which would move no note.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 e5_32")], "4/4", \\Cmajor, [\\treble], nil)')
+    first = mei.split("</tuplet>")[0]
+    assert first.count("<note") == 2 and first.count("<rest") == 0, mei   # still partial: 2 notes, no pad
+    assert '</tuplet><note dur="32"' in mei, mei                          # the 32nd stays outside, unshifted
     assert render_props(mei)["ok"], mei

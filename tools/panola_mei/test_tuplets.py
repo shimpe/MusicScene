@@ -103,5 +103,6 @@ def test_tuplet_edge_cases():
     assert '</tuplet><note dur="4"' in meis["then_plain"]
     # a rest can be a tuplet member
     assert "<tuplet" in meis["with_rest"] and "<rest" in meis["with_rest"].split("</tuplet>")[0]
-    # renders despite an incomplete run (partial bracket + warning)
+    # the once-incomplete run now completes music21-style into a tied tuplet cascade (the quarter donor's
+    # leading third joins the bracket, tied); still renders and still has at least one tuplet
     assert props["incomplete"]["tuplets"] >= 1
