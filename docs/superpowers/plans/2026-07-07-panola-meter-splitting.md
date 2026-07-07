@@ -770,8 +770,8 @@ PanolaMeterSplitter.split(( onsetQL: PanolaRational(3,2), durationQL: PanolaRati
 Members to document: `options` (var); `*new(options)`, `*defaultOptions`, `*split(noteEvent, meter, options)`,
 `split(noteEvent, meter)` — the public API (document the `noteEvent`/`options`/return `SplitComponent`
 shapes in the prose); and the private helpers `pr_init`, `pr_prepareInput`, `pr_onsetStrength`,
-`pr_policyAllows`, `pr_splitPoints`, `pr_sortUniqueRationals`, `pr_spellAndTie`, `pr_splitBasic`,
-`pr_bestCandidate`, `pr_subsets`, `pr_scoreCandidate`, `pr_hidesStrongerThan`, `pr_tupletComplexity`,
+`pr_policyAllows`, `pr_splitPoints` (incl. its `onsetBoundaries` param), `pr_sortUniqueRationals`,
+`pr_spellAndTie`, `pr_splitBasic`,
 `pr_tupletBoundaries`, `pr_splitTupletContained`, `pr_allSpellable`, `pr_fallback`, `pr_fallbackAggressive`,
 `pr_splitAtSmallestGrid`, `pr_minNoteTypeQL`, `pr_optimize`, `pr_avoidDotsAcrossStrong`, `pr_mergeIfSafe` —
 one line each describing what it returns/does.
