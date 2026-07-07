@@ -41,3 +41,13 @@ def test_key_change_at_a_measure():
     assert '<scoreDef key.sig="1s"/>' in body, mei          # mid-section key change before bar 2
     assert body.index('<scoreDef key.sig="1s"') < body.index('<measure n="2"'), mei
     assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_meter_change_4_4_to_3_4():
+    # 4/4 for bar 1 (4 quarters), 3/4 from bar 2 (3 quarters/bar). 4 + 3 + 3 = 10 quarters -> 3 measures.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_4 e5 g5 c6 c5_4 e5 g5 c5_4 e5 g5")], '
+               '[( measure: 1, meter: "4/4" ), ( measure: 2, meter: "3/4" )], [\\treble], nil)')
+    assert mei.count("<measure ") == 3, mei
+    assert '<scoreDef meter.count="3" meter.unit="4"/>' in mei, mei   # mid-section meter change
+    assert render_props(mei)["ok"], mei
