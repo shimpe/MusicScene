@@ -304,9 +304,9 @@ PanolaMeterSplitter {
 
 	pr_policyAllows { | label |
 		^case
-			{ #["measure-start", "measure-end"].includes(label) } { options[\splitAtMeasureBoundaries] }
-			{ #["beat", "compound-beat", "additive-group"].includes(label) } { options[\splitAtBeatBoundaries] }
-			{ #["subdivision", "eighth-subbeat"].includes(label) } { options[\splitAtStrongSubBeatBoundaries] }
+			{ #["measure-start", "measure-end"].includesEqual(label) } { options[\splitAtMeasureBoundaries] }
+			{ #["beat", "compound-beat", "additive-group"].includesEqual(label) } { options[\splitAtBeatBoundaries] }
+			{ #["subdivision", "eighth-subbeat"].includesEqual(label) } { options[\splitAtStrongSubBeatBoundaries] }
 			{ label == "tuplet-boundary" } { options[\splitAtTupletBoundaries] }
 			{ true } { false };
 	}
