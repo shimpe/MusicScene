@@ -43,3 +43,25 @@ def test_plain_and_complete_tuplets_unchanged():
     assert plain.count("<tuplet ") == 0 and plain.count("<note") == 4, plain
     trip = _mei('Panola.scoreAsMEI([Panola("c5_4*2/3 d5 e5")], "4/4", \\Cmajor, [\\treble], nil)')
     assert '<tuplet num="3" numbase="2">' in trip and trip.count('<note dur="4"') == 3, trip
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_incomplete_triplet_before_barend_completes_with_a_rest(capfd=None):
+    # c5_8*2/3 d5 : 2 of 3 triplet-eighths, then bar-end silence. Completes to a full triplet (2 eighths +
+    # an eighth REST) inside one bracket, then fills the bar with rests. No "incomplete tuplet" warning.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5")], "4/4", \\Cmajor, [\\treble], nil)')
+    assert mei.count("<tuplet ") == 1, mei                       # one complete bracket
+    body = mei.split("</tuplet>")[0]
+    assert body.count("<note") == 2 and body.count("<rest") == 1, mei   # 2 notes + 1 rest inside it
+    assert render_props(mei)["ok"], mei
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_incomplete_triplet_then_note_ties_into_the_bracket():
+    # c5_8*2/3 d5 c5_4 : the quarter's leading third completes the triplet as a tied triplet-eighth INSIDE
+    # the bracket; the remainder (2/3 beat, non-dyadic) becomes its own triplet-quarter bracket, tied.
+    mei = _mei('Panola.scoreAsMEI([Panola("c5_8*2/3 d5 c5_4")], "4/4", \\Cmajor, [\\treble], nil)')
+    first = mei.split("</tuplet>")[0]
+    assert first.count("<note") == 3, mei                        # c5, d5, + tied completing e-note
+    assert 'tie="i"' in first, mei                               # the completing member ties out
+    assert render_props(mei)["ok"], mei
