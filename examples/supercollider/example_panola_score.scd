@@ -11,6 +11,9 @@
 // A single note can carry SEVERAL articulations at once by combining them with "+", e.g.
 // "@art^staccato+accent^" prints both a staccato dot and an accent. See the right-hand opening below.
 //
+// A crescendo/decrescendo is a spanning "hairpin": `@hairpin^cresc^` (or `dim`) opens it and
+// `@hairpin^end^` closes it; `@hairpin^endcresc^` / `@hairpin^enddim^` chain a messa di voce (< >).
+//
 // REQUIRES:
 //   * The MSScore quark:  Quarks.install("https://github.com/shimpe/msscore")
 //     (this also installs the Panola quark it depends on), then recompile the class library.
@@ -40,7 +43,7 @@ s.waitForBoot({
 		voices: [
 			// The opening two notes carry TWO articulations at once (@art^staccato+accent^ -> both a
 			// staccato dot and an accent). Combine any articulations with '+'; the list is sorted/de-duped.
-			"(c5_4@dyn^mf^@art^staccato+accent^ e5@art^staccato+accent^ g5_4. c6_8@slur^start^ g5_4 e5 c5_8@slur^endstart^ d5 e5_8*2/3@art[stacc:on] f@slur^end^ g5_16*2/3 g-5 f5_4@art[stacc:off] a5_8*2/3@slur^start^ c6 a5 c6_4@slur^end^ a5 g5_2 c5_2)*4",   // right hand (treble)
+			"(c5_4@dyn^mf^@art^staccato+accent^ e5@art^staccato+accent^ g5_4.@hairpin^cresc^ c6_8@slur^start^ g5_4@hairpin^enddim^ e5@hairpin^end^ c5_8@slur^endstart^ d5 e5_8*2/3@art[stacc:on] f@slur^end^ g5_16*2/3 g-5 f5_4@art[stacc:off] a5_8*2/3@slur^start^ c6 a5 c6_4@slur^end^ a5 g5_2 c5_2)*4",   // right hand (treble)
 			"(c3_2 g3 c3_2 e3 f3_2 g3 c3_1)*4"                            // left hand (bass)
 		],
 		clefs:  [\treble, \bass],
