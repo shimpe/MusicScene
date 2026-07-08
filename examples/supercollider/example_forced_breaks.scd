@@ -24,8 +24,8 @@
 	meter:        "4/4", key: \Cmajor, tempo: 92,
 	scale:        1.0,
 	paginate:     true, pageHeight: 900,
+	systemBreaks: [4],   // new LINE at bar 3 (page 1)
 	pageBreaks:   [5],   // new PAGE at bar 5
-	systemBreaks: [3],   // new LINE at bar 3 (page 1)
 	space:        "3d"   // set "3d" to match your project's musicscene/space
 );
 
@@ -34,5 +34,5 @@
 )
 
 
-// ~score.showPage(2);   // the second page (bars 5-9)
-// ~score.stop;          // clear the scene
+~score.showPage(2);   // the second page (bars 5-9)
+~score.stop;          // clear the scene
