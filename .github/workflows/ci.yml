@@ -13,6 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python (Verovio engraver for the notation self-tests)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Verovio
+        run: python3 -m pip install verovio
+
       - name: Download Godot 4.7
         run: |
           set -e
