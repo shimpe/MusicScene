@@ -8,6 +8,9 @@
 // note crossing a barline is auto-tied), a key, and a clef per staff. So the Panola strings below are
 // just streams of notes (no "|"). Duration carries over until changed: "c5_4 e5 g5" = three quarters.
 //
+// A single note can carry SEVERAL articulations at once by combining them with "+", e.g.
+// "@art^staccato+accent^" prints both a staccato dot and an accent. See the right-hand opening below.
+//
 // REQUIRES:
 //   * The MSScore quark:  Quarks.install("https://github.com/shimpe/msscore")
 //     (this also installs the Panola quark it depends on), then recompile the class library.
@@ -35,7 +38,9 @@ s.waitForBoot({
 
 	~score = MSScore(
 		voices: [
-			"(c5_4@dyn^mf^ e5 g5_4. c6_8@slur^start^ g5_4 e5 c5_8@slur^endstart^ d5 e5_8*2/3@art[stacc:on] f@slur^end^ g5_16*2/3 g-5 f5_4@art[stacc:off] a5_8*2/3@slur^start^ c6 a5 c6_4@slur^end^ a5 g5_2 c5_2)*4",   // right hand (treble)
+			// The opening two notes carry TWO articulations at once (@art^staccato+accent^ -> both a
+			// staccato dot and an accent). Combine any articulations with '+'; the list is sorted/de-duped.
+			"(c5_4@dyn^mf^@art^staccato+accent^ e5@art^staccato+accent^ g5_4. c6_8@slur^start^ g5_4 e5 c5_8@slur^endstart^ d5 e5_8*2/3@art[stacc:on] f@slur^end^ g5_16*2/3 g-5 f5_4@art[stacc:off] a5_8*2/3@slur^start^ c6 a5 c6_4@slur^end^ a5 g5_2 c5_2)*4",   // right hand (treble)
 			"(c3_2 g3 c3_2 e3 f3_2 g3 c3_1)*4"                            // left hand (bass)
 		],
 		clefs:  [\treble, \bass],
