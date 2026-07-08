@@ -28,6 +28,7 @@ def render_props(mei_or_path: str) -> dict:
         "tuplets": mei.count("<tuplet "),
         "dynam": mei.count("<dynam "), "artics": mei.count(' artic="'),
         "slurs": mei.count("<slur "),
+        "hairpins": mei.count("<hairpin "),
         # slur paths that render as a real curve (a degenerate zero-length slur draws a straight line
         # with no cubic-Bezier "C" command)
         "slur_arcs": sum("C" in d for d in re.findall(r'class="slur".*?<path[^>]*\bd="([^"]*)"', svg, re.S)),
