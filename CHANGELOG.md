@@ -3,6 +3,43 @@
 All notable changes to **MusicScene** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.16.0] — 2026-07-08
+
+### Added
+- **Multiple articulations per note in Panola notation.** A single `@art` value may now combine several
+  articulations with `+` — `@art^staccato+accent^` renders both marks (MEI `artic="acc stacc"`, sorted and
+  de-duplicated). Each `+`-part may itself be a sticky toggle, so `@art^staccato:on+accent^` starts a
+  staccato passage *and* accents just that one note. Notation only — playback is unchanged. Shown in
+  `examples/supercollider/example_panola_score.scd`. Requires Panola 0.6.0 / MSScore 0.3.0. (PanolaParser
+  gains `+` as a legal property-value character; PanolaMEI splits `@art` on `+`, both in the Panola quark.)
+
+## [0.15.0] — 2026-07-08
+
+### Added
+- **Mid-piece meter / key / clef changes in Panola notation.** `Panola.scoreAsMEI` / `MSScore` take a
+  `changes:` list of `( measure:, meter:, key: )` events applied at the start of their (1-based) measure,
+  each field carried forward; a meter or key change emits a mid-`<section>` `<scoreDef>` (and a meter
+  change varies the bar length from there on). Clef changes are per-note and inline — `@clef^bass^` (also
+  `treble`/`alto`/`tenor`) switches that staff's clef at that note, mid-measure allowed. A key change never
+  transposes; accidentals are respelled for the new signature. Example:
+  `examples/supercollider/example_midpiece_changes.scd`. (PanolaMEI in the Panola quark; new `changes:`
+  argument on `MSScore`.)
+- **Additive meters in Panola notation.** A meter numerator may be additive — `"2+2+3/8"` groups the bar so
+  the meter-aware splitting, per-group beaming, and the printed meter signature all follow the grouping,
+  while a plain `"7/8"` stays ungrouped. Example: `example_additive_meter.scd`. (PanolaMeter / PanolaMEI.)
+- **Barline-crossing tuplets in Panola notation.** A complete tuplet whose span crosses a barline is split
+  into tied per-measure `<tuplet>` brackets (a member straddling the barline is cut there into tied
+  sub-tuplet notes, each spelled at the tuplet ratio), falling back to a single-bar bracket plus a warning
+  when a fragment is inexpressible at that ratio. (PanolaMEI in the Panola quark.)
+- **music21-style tuplet completion.** An incomplete `*m/d` run spells its remainder as tuplet member(s)
+  that join the bracket by splitting the following note (which ties out) or rest; a trailing / no-donor /
+  too-short-follower run stays a warned partial bracket (a rest is never fabricated). (PanolaMEI.)
+
+### Changed
+- **`Panola.scoreAsMEI` migrated to a `changes:` list.** The former per-call `meter` / `key` scalars are
+  replaced by the `changes:` list — a `( measure: 1, meter:, key: )` entry sets the initial values, `nil`
+  defaults to `4/4` / `Cmajor`. `MSScore` gains a pass-through `changes:` argument.
+
 ## [0.14.0] — 2026-07-06
 
 ### Added

@@ -6,6 +6,8 @@ extends RefCounted
 ##   /ms/scene/<id> <verb> ...            verb arrives as the first OSC argument
 ##   /ms/scene/<id>/<subsystem> ...       subsystem is part of the address
 
+const MS_VERSION := "0.16.0"  # reported by /ms/version and /ms/info — keep in sync with plugin.cfg
+
 const NOTATION_VERBS := [
 	"notation", "notationsource", "notationdata", "notationformat", "render", "reload",
 	"page", "nextpage", "prevpage", "pages", "system", "staff", "measure",
@@ -32,7 +34,7 @@ func dispatch(address: String, args: Array) -> void:
 		"ping":
 			ctx.server.send("/ms/pong", [])
 		"version":
-			ctx.reply("version", ["0.14.0"])
+			ctx.reply("version", [MS_VERSION])
 		"info":
 			_handle_info()
 		"app":
@@ -85,7 +87,7 @@ func dispatch(address: String, args: Array) -> void:
 func _handle_root(args: Array) -> void:
 	match _s(args, 0):
 		"ping": ctx.server.send("/ms/pong", [])
-		"version": ctx.reply("version", ["0.14.0"])
+		"version": ctx.reply("version", [MS_VERSION])
 		"info": _handle_info()
 		_: ctx.error("bad_arguments", "/ms", "Expected ping|version|info")
 
@@ -96,7 +98,7 @@ func _handle_info() -> void:
 
 func _info_payload() -> Array:
 	var out := [
-		"musicscene", "0.14.0",
+		"musicscene", MS_VERSION,
 		"listen", ctx.server.get_listen_port(),
 		"coord", ctx.mapper.app_mode,
 		"objects", ctx.registry.list_ids().size(),

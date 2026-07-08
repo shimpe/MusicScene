@@ -883,7 +883,7 @@ Replies use `/ms/reply <topic> ...`. Compact map:
 ```
 # system
 /ms ping                         -> /ms/pong
-/ms/version | /ms version    -> /ms/reply version "0.14.0"
+/ms/version | /ms version    -> /ms/reply version "0.16.0"
 /ms/info    | /ms info       -> /ms/reply info ...
 /ms/app coord <mode>
 /ms/app root "<path>"
