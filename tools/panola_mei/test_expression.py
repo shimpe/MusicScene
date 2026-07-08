@@ -150,3 +150,60 @@ def test_oneshot_property_readable():
     finally:
         os.unlink(path)
     assert "ONESHOT-OK" in r.stdout, r.stdout[-1500:]
+
+
+# A '+'-combined @art value must PARSE as one property value and reach the Pbind intact
+# (ev[\art] == 'staccato+accent'). This exercises the PanolaParser value-regex change alone;
+# the MEI split-on-'+' is a later task.
+PLUS_PARSE_SCRIPT = r'''(
+var st, e0;
+st = Panola("c5_4@art^staccato+accent^ d5").asPbind(\default, include_tempo:false).asStream;
+e0 = st.next(());
+(e0[\art] == 'staccato+accent').if(
+    { "PLUS-OK".postln },
+    { ("PLUS-BAD e0=" ++ e0[\art].asString).postln });
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_plus_value_parses():
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write(PLUS_PARSE_SCRIPT)
+        path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "PLUS-OK" in r.stdout, r.stdout[-1500:]
+
+
+COMBINED = {
+  # one-shot combo: both codes on the first note only
+  "combo":       r'Panola.scoreAsMEI([Panola("c5_4@art^staccato+accent^ d5 e5 f5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  # combo where one part is a sticky :on -> staccato passage, accent this-note-only
+  "combosticky": r'Panola.scoreAsMEI([Panola("c5_4@art^staccato:on+accent^ d5 e5 f5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+  # order independence: output is sorted regardless of input order
+  "order":       r'Panola.scoreAsMEI([Panola("c5_4@art^accent+staccato^ d5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil)',
+}
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_combined_articulation():
+    outdir = tempfile.mkdtemp(prefix="panola_expr_")
+    try:
+        _dump(outdir, COMBINED)
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in COMBINED}
+        props = {k: render_props(v) for k, v in meis.items()}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    for k, p in props.items():
+        assert p["ok"], f"{k}: {p['stderr'][:200]}"
+    # one-shot combo: exactly one note carries both codes; the other three carry no artic
+    assert meis["combo"].count('artic="acc stacc"') == 1
+    assert meis["combo"].count(' artic="') == 1
+    # combo + sticky: first note has both; the staccato passage persists on notes 2-4 (accent does not)
+    assert meis["combosticky"].count('artic="acc stacc"') == 1
+    assert meis["combosticky"].count(' artic="stacc"') == 3
+    # order independence: sorted output ("acc stacc") regardless of "accent+staccato" input
+    assert 'artic="acc stacc"' in meis["order"]
