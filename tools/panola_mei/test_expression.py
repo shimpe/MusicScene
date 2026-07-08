@@ -150,3 +150,29 @@ def test_oneshot_property_readable():
     finally:
         os.unlink(path)
     assert "ONESHOT-OK" in r.stdout, r.stdout[-1500:]
+
+
+# A '+'-combined @art value must PARSE as one property value and reach the Pbind intact
+# (ev[\art] == 'staccato+accent'). This exercises the PanolaParser value-regex change alone;
+# the MEI split-on-'+' is a later task.
+PLUS_PARSE_SCRIPT = r'''(
+var st, e0;
+st = Panola("c5_4@art^staccato+accent^ d5").asPbind(\default, include_tempo:false).asStream;
+e0 = st.next(());
+(e0[\art] == 'staccato+accent').if(
+    { "PLUS-OK".postln },
+    { ("PLUS-BAD e0=" ++ e0[\art].asString).postln });
+0.exit;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_plus_value_parses():
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write(PLUS_PARSE_SCRIPT)
+        path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "PLUS-OK" in r.stdout, r.stdout[-1500:]
