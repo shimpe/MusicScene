@@ -11,6 +11,10 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   / `@hairpin^enddim^` close the open one and open the opposite at that note (messa di voce, `< >`). One
   hairpin at a time, tracked like slurs (crosses barlines/systems). Notation only. Shown in
   `examples/supercollider/example_panola_score.scd`. (PanolaMEI in the Panola quark.)
+- **MSScore display-only page view.** `MSScore.showPage(n)` engraves the score and shows page `n`
+  (1-based) with no cursor and no playback; `page(n)` / `nextPage` / `prevPage` flip between pages.
+  Uses the existing MusicScene page verbs (no Godot change). Example:
+  `examples/supercollider/example_show_page.scd`. (MSScore quark.)
 
 ## [0.16.0] — 2026-07-08
 
