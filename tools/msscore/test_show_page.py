@@ -31,3 +31,34 @@ def test_page_navigation():
     assert "PAGE:4" in r.stdout, r.stdout[-1500:]
     assert "NEXT" in r.stdout, r.stdout[-1500:]
     assert "PREV" in r.stdout, r.stdout[-1500:]
+
+
+# showPage: display-only. Emits the same setup as show() but cursor forced OFF, then (after
+# showDelay) a `page n`. Starts NO playback (player/clock stay nil). showDelay=0.1 keeps it quick.
+SHOWPAGE_SCRIPT = r'''(
+var s, got = List.new, cur = List.new;
+OSCdef(\capP, { |msg| got.add(msg) }, '/ms/scene/scorePage');
+OSCdef(\capPc, { |msg| cur.add(msg) }, '/ms/scene/scorePage/cursor');
+Routine({
+    s = MSScore(voices: ["c5_4 e5 g5 c6 d5 f5 a5 c6"], id: "scorePage", showDelay: 0.1,
+                host: "127.0.0.1", listenPort: NetAddr.langPort);
+    s.showPage(2);
+    0.6.wait;
+    got.do({ |m| if (m[1] == \page) { ("PAGE:" ++ m[2].asString).postln } });
+    cur.do({ |m| if (m[1] == \show) { ("CURSOR:" ++ m[2].asString).postln } });
+    ("PLAYER_NIL:" ++ s.player.isNil.asString).postln;
+    ("CLOCK_NIL:" ++ s.clock.isNil.asString).postln;
+    OSCdef(\capP).free; OSCdef(\capPc).free;
+    0.exit;
+}).play;
+)'''
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_show_page_display_only():
+    r = _run(SHOWPAGE_SCRIPT)
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "PAGE:2" in r.stdout, r.stdout[-1500:]
+    assert "CURSOR:0" in r.stdout, r.stdout[-1500:]
+    assert "PLAYER_NIL:true" in r.stdout, r.stdout[-1500:]
+    assert "CLOCK_NIL:true" in r.stdout, r.stdout[-1500:]
