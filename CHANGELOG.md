@@ -3,6 +3,15 @@
 All notable changes to **MusicScene** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.17.0] — 2026-07-08
+
+### Added
+- **Hairpins (crescendo / decrescendo) in Panola notation.** A `@hairpin` property renders a spanning
+  MEI `<hairpin>`: `@hairpin^cresc^` (or `dim`) opens and `@hairpin^end^` closes it; `@hairpin^endcresc^`
+  / `@hairpin^enddim^` close the open one and open the opposite at that note (messa di voce, `< >`). One
+  hairpin at a time, tracked like slurs (crosses barlines/systems). Notation only. Shown in
+  `examples/supercollider/example_panola_score.scd`. (PanolaMEI in the Panola quark.)
+
 ## [0.16.0] — 2026-07-08
 
 ### Added
