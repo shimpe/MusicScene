@@ -6,7 +6,7 @@ extends RefCounted
 ##   /ms/scene/<id> <verb> ...            verb arrives as the first OSC argument
 ##   /ms/scene/<id>/<subsystem> ...       subsystem is part of the address
 
-const MS_VERSION := "0.16.0"  # reported by /ms/version and /ms/info — keep in sync with plugin.cfg
+const MS_VERSION := "0.17.0"  # reported by /ms/version and /ms/info — keep in sync with plugin.cfg
 
 const NOTATION_VERBS := [
 	"notation", "notationsource", "notationdata", "notationformat", "render", "reload",

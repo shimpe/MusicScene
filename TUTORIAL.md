@@ -140,8 +140,8 @@ With your Godot project **running**, in the `gosc.py` prompt:
 
 ```python
 s("/ms/ping")          # ->  <- /ms/pong []
-s("/ms/version")       # ->  <- /ms/reply ['version', '0.16.0']
-s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.16.0', ...]
+s("/ms/version")       # ->  <- /ms/reply ['version', '0.17.0']
+s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.17.0', ...]
 ```
 
 If you see `<- /ms/pong`, you're connected. If not, jump to [Troubleshooting](#13-troubleshooting).
@@ -1228,8 +1228,10 @@ s("/ms/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
   — write a score as [Panola](https://github.com/shimpe/panola) string(s) and `MSScore` renders it to
   MEI (via the Panola quark's `Panola.scoreAsMEI`), shows it, plays the voices, and follows with a
   note-accurate cursor. Multi-staff, keys, meters (additive and mid-piece meter/key/clef changes), chords,
-  tuplets, auto-tied barline crossings, plus per-note dynamics, articulations (combine several on one note
-  with `+`, e.g. `@art^staccato+accent^`), and slurs — no hand-built MEI. `MSScore` is a separate quark:
+  tuplets, auto-tied barline crossings, forced page/system breaks (`pageBreaks:` / `systemBreaks:`), plus
+  per-note dynamics, articulations (combine several on one note with `+`, e.g. `@art^staccato+accent^`),
+  slurs, and hairpins (`@hairpin^cresc^`) — no hand-built MEI. `MSScore` can also display a chosen page
+  without playing (`showPage(n)` / `page(n)` / `nextPage` / `prevPage`). It is a separate quark:
   `Quarks.install("https://github.com/shimpe/msscore")` (it pulls in Panola).
 - Full command list and reply/error reference: **[README.md](README.md)** (API reference section).
 - **Advanced mechanics & edge cases: [ADVANCED.md](ADVANCED.md)** — deep dives on notation overlays,

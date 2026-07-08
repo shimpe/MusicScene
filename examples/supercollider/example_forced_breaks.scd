@@ -24,13 +24,13 @@
 	meter:        "4/4", key: \Cmajor, tempo: 92,
 	scale:        1.0,
 	paginate:     true, pageHeight: 900,
-	systemBreaks: [4],   // new LINE at bar 3 (page 1)
+	systemBreaks: [4],   // new LINE at bar 4 (page 1)
 	pageBreaks:   [5],   // new PAGE at bar 5
 	space:        "3d"   // set "3d" to match your project's musicscene/space
 );
 
-~score.showPage(1);   // page 1 = bars 1-4 (two lines: 1-2 | 3-4); page 2 = bars 5-9
-"Forced breaks: page break at bar 5, line break at bar 3. Try ~score.showPage(2) / nextPage.".postln;
+~score.showPage(1);   // page 1 = bars 1-4 (two lines: 1-3 | 4); page 2 = bars 5-9
+"Forced breaks: page break at bar 5, line break at bar 4. Try ~score.showPage(2) / nextPage.".postln;
 )
 
 

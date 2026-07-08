@@ -5,7 +5,7 @@ memory, and code TODOs. Items scoped out **on purpose** (v1 boundaries) are list
 from features actually intended for future work. When an item is picked up, brainstorm → spec →
 plan under `docs/superpowers/` as usual, and move it to the relevant CHANGELOG once shipped.
 
-Last reviewed: 2026-07-08 (after Panola 0.6.0 / MSScore 0.3.0 / MusicScene v0.16.0).
+Last reviewed: 2026-07-08 (after Panola 0.7.0 / MSScore 0.4.0 / MusicScene v0.17.0).
 
 ## Panola notation (active area — most likely next)
 
