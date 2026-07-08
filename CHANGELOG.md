@@ -15,6 +15,12 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   (1-based) with no cursor and no playback; `page(n)` / `nextPage` / `prevPage` flip between pages.
   Uses the existing MusicScene page verbs (no Godot change). Example:
   `examples/supercollider/example_show_page.scd`. (MSScore quark.)
+- **Forced page & system breaks in Panola notation.** `MSScore(pageBreaks: [5, 9], systemBreaks: [3])`
+  (and `Panola.scoreAsMEI`'s new `pageBreaks`/`systemBreaks` args) emit MEI `<pb/>`/`<sb/>`. A page
+  break switches to manual pagination (auto page-fill off — a Verovio constraint); a system break
+  forces a line while keeping auto pagination. The bundled `verovio_render.py` auto-selects its
+  breaks mode from the encoded breaks (encoded / line / auto). Example:
+  `examples/supercollider/example_forced_breaks.scd`. (PanolaMEI + MSScore quarks; verovio wrapper.)
 
 ## [0.16.0] — 2026-07-08
 

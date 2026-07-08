@@ -44,13 +44,21 @@ def main() -> int:
     ap.add_argument("--page", type=int, default=1)
     ap.add_argument("--timemap", default="")
     ap.add_argument("--scale", type=int, default=40)
-    ap.add_argument("--breaks", default="auto")  # "none" = single system strip
+    ap.add_argument("--breaks", default="detect")  # detect: encoded if <pb>, line if <sb>, else auto
     ap.add_argument("--no-crop", action="store_true", help="keep the full page width (default: crop to content)")
     ap.add_argument("--paginate", action="store_true",
                     help="lay the score out on several fixed-size pages; write <output_stem>-<n>.svg per page")
     ap.add_argument("--page-height", type=int, default=1200)   # Verovio units; ~a few systems per page
     ap.add_argument("--page-width", type=int, default=2100)
     a = ap.parse_args()
+
+    breaks = a.breaks
+    if breaks == "detect":
+        try:
+            _src = open(a.input, encoding="utf-8", errors="ignore").read()
+        except OSError:
+            _src = ""
+        breaks = "encoded" if "<pb" in _src else ("line" if "<sb" in _src else "auto")
 
     tk = verovio.toolkit()
     if a.paginate:
@@ -59,13 +67,13 @@ def main() -> int:
         tk.setOptions({
             "adjustPageHeight": False, "adjustPageWidth": False,
             "pageHeight": a.page_height, "pageWidth": a.page_width,
-            "breaks": a.breaks, "scale": a.scale, "header": "none", "footer": "none",
+            "breaks": breaks, "scale": a.scale, "header": "none", "footer": "none",
         })
     else:
         tk.setOptions({
             # Crop the page to the music so a short excerpt isn't padded to a full page of white.
             "adjustPageHeight": True, "adjustPageWidth": not a.no_crop,
-            "breaks": a.breaks, "scale": a.scale, "header": "none", "footer": "none",
+            "breaks": breaks, "scale": a.scale, "header": "none", "footer": "none",
         })
     if not tk.loadFile(a.input):
         sys.stderr.write("verovio: could not load " + a.input + "\n")
@@ -78,14 +86,14 @@ def main() -> int:
             with open("%s-%d.svg" % (stem, pg), "w", encoding="utf-8") as f:
                 f.write(tk.renderToSVG(pg))
         _write_timemap(tk, a.timemap)
-        print("verovio: wrote %d page(s) %s-N.svg%s" % (n, stem, " + timemap" if a.timemap else ""))
+        print("verovio: wrote %d page(s) %s-N.svg%s (breaks=%s)" % (n, stem, " + timemap" if a.timemap else "", breaks))
         return 0
 
     page = max(1, min(a.page, tk.getPageCount()))
     with open(a.output, "w", encoding="utf-8") as f:
         f.write(tk.renderToSVG(page))
     _write_timemap(tk, a.timemap)
-    print("verovio: wrote " + a.output + (" + timemap" if a.timemap else ""))
+    print("verovio: wrote " + a.output + (" + timemap" if a.timemap else "") + (" (breaks=%s)" % breaks))
     return 0
 
 
