@@ -145,6 +145,7 @@ func _apply_page_texture() -> void:
 
 
 func _set_content(value, force_data: bool) -> void:
+	pages = []   # new content invalidates any pre-rendered pages (a later page nav must not act on them)
 	source_content = value
 	_force_data = force_data
 	if value is PackedByteArray:
@@ -276,10 +277,15 @@ func _show_page(p: int) -> void:
 
 func _go_page(p: int) -> void:
 	if pages.size() > 0:
-		_show_page(clampi(p, 1, page_count))
+		_show_page(clampi(p, 1, pages.size()))
 	else:
-		current_page = clampi(p, 1, max(1, page_count))
-		_render()
+		# Render not ready yet (or non-paginated): remember the requested page so _on_pages_done shows it
+		# once the pages exist, instead of losing it to a stale page_count. Only kick a render if one is
+		# not already in flight (a paginated render is asynchronous; showPage may request a page before it
+		# lands, and the timer must not override a later explicit page nav).
+		current_page = maxi(1, p)
+		if not _pending:
+			_render()
 	reply_current_page()
 
 
