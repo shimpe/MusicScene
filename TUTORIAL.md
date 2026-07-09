@@ -8,6 +8,11 @@ client.
 > Same OSC API in both dimensions. The only difference is one project setting (`musicscene/space`)
 > and whether your main scene is a `Node2D` or a `Node3D`.
 
+> Looking to build a **software-instrument control surface** (knobs, keyboard, level meter) rather than
+> a score world? **[INSTRUMENT_UI_TUTORIAL.md](INSTRUMENT_UI_TUTORIAL.md)** exposes a
+> [MusicControls](https://github.com/shimpe/MusicControls) panel over OSC using `OscExposable`, with
+> no glue code — a practical tour of `bind` / `signal` / `prop` / `call`.
+
 - [0. Prerequisites](#0-prerequisites)
 - [1. Install the addon](#1-install-the-addon-into-a-new-project)
 - [2. A tiny OSC client](#2-a-tiny-osc-client)
@@ -957,6 +962,60 @@ You can also drive it from inside Godot (GDScript), e.g. after generating a file
 MusicSceneOSC.script_runner.run_text('/ms/scene/score notation svg "user://gen/score.svg"')
 ```
 
+### E. Panola in SuperCollider — MSScore does all of it
+
+Everything above is the manual route. If you work in SuperCollider, the
+**[MSScore](https://github.com/shimpe/msscore)** quark collapses this whole section into a few lines:
+you write the music as [Panola](https://github.com/shimpe/panola) strings, and MSScore engraves them to
+MEI, creates the notation object, shows it, plays the voices, and follows along with a note-accurate
+cursor — sending every `/ms/...` message on your behalf.
+
+```supercollider
+Quarks.install("https://github.com/shimpe/msscore");   // pulls in Panola too; then recompile
+```
+
+```supercollider
+s.waitForBoot({
+    SynthDef(\pnote, { |freq = 440, amp = 0.2, pan = 0|
+        var env = EnvGen.kr(Env.perc(0.005, 1.4, 1, -4), doneAction: 2);
+        Out.ar(0, Pan2.ar(SinOsc.ar(freq) * env * amp, pan));
+    }).add;
+    s.sync;
+
+    ~score = MSScore(
+        voices: [
+            "c5_4@dyn^mf^@art^staccato+accent^ e5 g5_4.@hairpin^cresc^ c6_8@slur^start^ g5_4@hairpin^end^ e5_2",
+            "c3_2 g3 c3_1"                    // left hand
+        ],
+        clefs:  [\treble, \bass],
+        meter:  "4/4",
+        key:    \Cmajor,
+        braces: [[1, 2]],                     // brace the two staves into a grand staff
+        tempo:  88,
+        instruments: [\pnote, \pnote],
+        space:  "2d"                          // must match your musicscene/space setting
+    );
+    ~score.play;                              // show + play + follow
+});
+```
+
+`.show` displays without playing, `.stop` halts, `.mei` returns the generated MEI as a string (handy
+when you want to see what Panola produced). For a score you only want to *look* at, `.showPage(2)`
+displays one page with no cursor and no playback, and `.page(n)` / `.nextPage` / `.prevPage` flip
+between pages.
+
+Panola has no barlines, key or clef. MSScore supplies a `meter:` (barlines are derived from it, and a
+note crossing one is **auto-tied**), a `key:`, and a `clef` per staff — so the strings above are just
+streams of notes, with no `|`. Duration carries over until changed, so `c5_4 e5 g5` is three quarters.
+Notes take per-note **dynamics** (`@dyn^mf^`), **articulations** (`@art^staccato+accent^` — combine
+several with `+`), **slurs** (`@slur^start^` … `@slur^end^`) and **hairpins** (`@hairpin^cresc^` …
+`@hairpin^end^`). Chords, tuplets, additive meters, mid-piece meter/key/clef changes (`changes:`) and
+forced breaks (`pageBreaks:` / `systemBreaks:`) are all supported.
+
+MSScore renders MEI, so it needs **Verovio** (`pip install verovio`) — and nothing else configured
+(section C). The full worked example is `examples/supercollider/example_panola_score.scd`; for rhythm
+specifically, see `example_panola_rhythms.scd`.
+
 ### Addressable scores — clickable measures (MuseScore)
 
 For MusicXML via MuseScore, MusicScene can make the score **addressable**: it reads MuseScore's measure
@@ -1036,6 +1095,7 @@ s("/ms/notation/cache","clear")
 | Generated image bytes | OSC blob: `notation png <bytes>` |
 | Symbolic music (file) | configure engraver, `notation musicxml "user://x.musicxml"` |
 | Symbolic music (inline) | `notationData musicxml "<…>"` |
+| Music you write in SuperCollider | the [MSScore](https://github.com/shimpe/msscore) quark — `MSScore(voices: […]).play` (E) |
 
 ## 10. Driving it from a `.ms` script
 

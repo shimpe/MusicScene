@@ -7,8 +7,19 @@ extends Node
 ## by default). To expose the node the script is attached to directly, set `target_path` to "."
 ## (self). The registry auto-binds every OscExposable whose `osc_auto_bind` is true on startup.
 ##
-## Only members listed here are reachable over OSC unless developer mode is enabled. This is
-## the primary safety mechanism for existing project nodes.
+## Being exposed at all is the primary safety mechanism for existing project nodes: without an
+## OscExposable (or an `osc_expose` meta) a node cannot be bound, so nothing can reach it.
+##
+## Once a node IS bound, the allow-lists gate WRITES and CALLS only:
+##   osc_methods    -> allow-list for `call`   (enforced)
+##   osc_properties -> allow-list for `prop`   (enforced; property SET)
+##   osc_allow_free -> permits `free`          (enforced)
+##   osc_signals    -> NOT enforced. Informational only: it feeds the `signals` and
+##                     `capabilities` queries. Any signal the node has can be forwarded with
+##                     `/ms/scene/<id>/signal`, listed here or not.
+## Reads are likewise ungated: `getProp` / `get` / `dump` return any property of a bound node.
+## Treat every readable property and every existing signal of a bound node as reachable.
+## Developer mode additionally relaxes the `call` / `prop` / `free` gates. See ADVANCED.md §5.
 
 @export var osc_id: String = ""
 @export var osc_auto_bind: bool = true

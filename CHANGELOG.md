@@ -3,6 +3,32 @@
 All notable changes to **MusicScene** are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Instrument-UI tutorial.** `INSTRUMENT_UI_TUTORIAL.md` builds a software-synth front panel (knobs,
+  piano keyboard, module toggle, level meter) from the
+  [MusicControls](https://github.com/shimpe/MusicControls) addon and exposes every control over OSC
+  with **no GDScript**: an `OscExposable` child per control, then the sound engine wires Godot signals
+  to musical addresses at runtime via `/ms/scene/<id>/signal … payload …`, and drives the UI back with
+  `call` / `prop`. A practical tour of `bind` / `discover` / `signal` / `prop` / `call` and the
+  `/ms/app/output` redirect. Two runnable engines ship with it:
+  `examples/supercollider/example_control_surface.scd` (a real subtractive synth) and
+  `examples/python/example_control_surface.py` (stdlib only, no audio).
+
+### Documentation
+- **Corrected the permission model in `README.md` and `OscExposable.gd`.** Both claimed "only members
+  listed here are reachable over OSC". They are not: the allow-lists gate *writes and calls* only.
+  `osc_methods` gates `call` and `osc_properties` gates `prop` (set), but `getProp` reads any property
+  of a bound node, and `osc_signals` gates **nothing** — it is informational, feeding only the
+  `signals` / `capabilities` queries, so any signal a bound node has can be forwarded. Behaviour is
+  unchanged and was already documented correctly in `ADVANCED.md` §5/§7; only the two contradicting
+  docs were wrong. Binding a node remains the real security decision.
+- **Corrected `call` argument coercion in `README.md`.** It claimed multi-value `prop`/`call` args
+  coerce by count (2 → `Vector2`, …). Only `prop` coerces; `call` passes arguments positionally
+  (which is why `call set_stereo_level 0.5 0.42` works). Consequence, now documented: a method taking a
+  `Vector2` is not reachable via `call` — set the property instead (`prop position 5 7`).
+
 ## [0.17.0] — 2026-07-08
 
 ### Added

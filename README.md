@@ -28,13 +28,19 @@ project setting; the same OSC API drives both (see [Dimensions](#dimensions-2d-a
 > the addon in a fresh project, in both 2D and 3D, with a copy-paste OSC client. For the mechanics and
 > edge cases behind the more advanced features, see **[ADVANCED.md](ADVANCED.md)**.
 
+> **Building a synth UI?** **[INSTRUMENT_UI_TUTORIAL.md](INSTRUMENT_UI_TUTORIAL.md)** builds a
+> software-instrument front panel (knobs, piano keyboard, toggle, level meter) from the
+> [MusicControls](https://github.com/shimpe/MusicControls) addon and exposes every control over OSC
+> with **no GDScript at all** — just an `OscExposable` node per control, and a SuperCollider or Python
+> engine that wires the signals up at runtime.
+
 ---
 
 ## Table of contents
 
 - [What it is](#what-it-is) · [Core principle](#core-principle) · [Install / start](#install--start) · [Dimensions (2D/3D)](#dimensions-2d-and-3d)
 - [Ports](#ports--networking) · [Coordinates](#coordinate-system) · [Creating objects](#creating-objects)
-- [Notation](#music-notation) (backends, cursor, regions, annotations) · [Binding nodes](#binding-existing-godot-nodes)
+- [Notation](#music-notation) (backends, [MSScore/Panola](#writing-scores-in-supercollider--the-msscore-quark), cursor, regions, annotations) · [Binding nodes](#binding-existing-godot-nodes)
 - [Instantiating scenes](#instantiating-packedscenes) · [Physics & collisions](#physics--collision-events)
 - [Physics joints](#physics-joints) · [Sensors & trigger zones](#sensors--trigger-zones) · [Volumetric & lighting](#volumetric-primitives--lighting-3d) · [Collision reactors](#collision-reactors-bouncers--portals)
 - [Camera control](#camera-control) · [Methods/props](#controlled-method--property-access) · [Signals](#signal-to-osc-forwarding)
@@ -331,6 +337,47 @@ Rendered pages are cached under `user://musicscene_cache/notation/`:
 /ms/notation/cache info
 ```
 
+### Writing scores in SuperCollider — the MSScore quark
+
+Hand-building MEI is no fun. The **[MSScore](https://github.com/shimpe/msscore)** quark lets you write
+a score as [Panola](https://github.com/shimpe/panola) strings, and does every OSC call on this page for
+you: it engraves the score to MEI, creates the notation object, shows it, plays the voices, and follows
+along with a note-accurate cursor.
+
+```supercollider
+Quarks.install("https://github.com/shimpe/msscore");   // pulls in Panola too; then recompile
+```
+
+```supercollider
+~score = MSScore(
+    voices: [
+        "c5_4@dyn^mf^@art^staccato+accent^ e5 g5_4.@hairpin^cresc^ c6_8@slur^start^ g5_4@hairpin^end^ e5_2",
+        "c3_2 g3 c3_1"                    // left hand
+    ],
+    clefs:  [\treble, \bass],
+    meter:  "4/4",
+    key:    \Cmajor,
+    braces: [[1, 2]],                     // brace the two staves into a grand staff
+    tempo:  88,
+    instruments: [\pnote, \pnote],
+    space:  "3d"                          // match your musicscene/space setting
+);
+~score.play;                              // show + play + follow.  .show / .stop / .mei
+~score.showPage(2);                       // display-only: no cursor, no playback
+~score.nextPage; ~score.prevPage; ~score.page(1);
+```
+
+Panola has no barlines, key or clef — MSScore supplies a `meter:` (barlines are derived from it, and a
+note crossing one is auto-tied), a `key:`, and a `clef` per staff. Durations carry over until changed
+(`c5_4 e5 g5` = three quarters). Notes carry per-note **dynamics** (`@dyn^mf^`), **articulations**
+(`@art^staccato+accent^` — combine several with `+`), **slurs** (`@slur^start^`), and **hairpins**
+(`@hairpin^cresc^`). Chords, tuplets, additive meters, and mid-piece meter/key/clef changes (`changes:`)
+all work, as do forced breaks (`pageBreaks:` / `systemBreaks:`).
+
+Needs Verovio (`pip install verovio`) — MSScore renders MEI. See
+[TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it) and
+`examples/supercollider/example_panola_score.scd`.
+
 ### Notation cursor
 
 A vertical playback cursor in page-normalized `[0,1]` coords:
@@ -461,6 +508,9 @@ osc_id, osc_auto_bind, osc_allow_bind, osc_allow_free, osc_methods, osc_properti
 node.set_meta("osc_expose", true)
 node.set_meta("osc_id", "mainCursor")
 ```
+
+`osc_methods` / `osc_properties` / `osc_allow_free` are enforced (they gate `call` / `prop` / `free`).
+`osc_signals` is **informational** — see [Signal-to-OSC forwarding](#signal-to-osc-forwarding).
 
 Nodes with `OscExposable` and `osc_auto_bind = true` are **auto-bound on startup**.
 
@@ -782,16 +832,22 @@ In 2D these material/light commands are no-ops and the volumetric names alias to
 
 ## Controlled method / property access
 
-Only members exposed via `OscExposable` / metadata are reachable (unless developer mode is on):
-
 ```
 /ms/scene/<id> prop <property> <value...>
 /ms/scene/<id> getProp <property>
 /ms/scene/<id> call <method> [args...]
 ```
 
-Multi-value `prop`/`call` args coerce by count: 2 → `Vector2`, 3 → `Vector3`, 4 → `Color`.
-Denied access replies `/ms/error permission_denied <address> <message>`.
+The allow-lists gate **writes and calls**, not reads: `prop` (set) requires the property in
+`osc_properties`, `call` requires the method in `osc_methods`. `getProp` is **not** gated — any
+property of a bound node can be read. Developer mode relaxes the two gates. Denied access replies
+`/ms/error permission_denied <address> <message>`.
+
+Multi-value **`prop`** args coerce by count: 2 → `Vector2`, 3 → `Vector3`, 4 → `Color`.
+**`call` does not coerce** — arguments are passed positionally, so
+`call set_stereo_level 0.5 0.42` really does arrive as two floats. A method that takes a `Vector2`
+is therefore not reachable via `call`; set the corresponding property instead
+(`prop position 5 7`, not `call set_position 5 7`).
 
 ---
 
@@ -808,6 +864,10 @@ Default payload: `<osc_id> <signal_name> <signal_args...>`. Payload tokens:
 /ms/scene/button/signal pressed /ui/buttonPressed
 # pressing the button -> /ui/buttonPressed button pressed
 ```
+
+> **No permission check.** Any signal the bound node has can be forwarded, developer mode or not.
+> `osc_signals` on `OscExposable` is **informational only** — it feeds the `signals` / `capabilities`
+> queries and gates nothing. See [ADVANCED.md](ADVANCED.md#5-safety--the-permission-model).
 
 ---
 
