@@ -1012,9 +1012,40 @@ several with `+`), **slurs** (`@slur^start^` … `@slur^end^`) and **hairpins** 
 `@hairpin^end^`). Chords, tuplets, additive meters, mid-piece meter/key/clef changes (`changes:`) and
 forced breaks (`pageBreaks:` / `systemBreaks:`) are all supported.
 
+**Making the printed marks audible.** By default the notation marks are just ink: a printed `mf` does
+not change the amplitude. MSScore builds each voice's pattern with Panola's `asPbind`, then hands it to
+your `wrap:` function — `{ |pattern, voiceIndex| newPattern }`, one entry per voice — so you can
+postprocess it with `Pbindf`. Every Panola `@property` arrives as a Pbind key of the same name
+(`@vol` → `\amp`, `@pdur` → `\legato`), and the marks come through as Symbols (`\dyn`, `\art`, `\slur`,
+`\hairpin`), so a printed dynamic can become a real amplitude:
+
+```supercollider
+~amp = ( pp: 0.15, p: 0.25, mp: 0.35, mf: 0.5, f: 0.7, ff: 0.9 );
+~score = MSScore(
+    voices: [ "c5_4@dyn[mf]@art^staccato^ e5@art^staccato^ g5_2 c6_4@dyn[ff]@art^staccato^ g5_2" ],
+    wrap: [
+        { |pat, i|
+            Pbindf(pat,
+                \amp,    Pfunc { |ev| ~amp[ev[\dyn]] ? 0.4 },
+                \legato, Pfunc { |ev| if (ev[\art] == \staccato) { 0.3 } { 0.9 } })
+        }
+    ]
+);
+~score.play;
+```
+
+Note the authoring: `@dyn[mf]` (static) engraves **one** `mf` — dynamics are printed on change — while
+also carrying `mf` to every later note in the pattern; a one-shot `@dyn^mf^` engraves the same single
+mark but leaves later notes at `\none`. Articulations are per-note, so `@art^staccato^` (one-shot) dots
+just that note. Never rewrite `\dur` in a `wrap` — the follow cursor times itself from the score, not
+from the pattern, so the cursor would drift away from the audio. `wrap` also runs for `\midi` voices,
+which is how you attach per-note CC or a sustain pedal:
+`examples/supercollider/example_msscore_midi.scd` reads `\art` and `\slur` to phrase a MIDI voice.
+
 MSScore renders MEI, so it needs **Verovio** (`pip install verovio`) — and nothing else configured
 (section C). The full worked example is `examples/supercollider/example_panola_score.scd`; for rhythm
-specifically, see `example_panola_rhythms.scd`.
+specifically, see `example_panola_rhythms.scd`. The MSScore quark's own help file
+(`MSScore.schelp`, section 12) covers `wrap` in more depth.
 
 ### Addressable scores — clickable measures (MuseScore)
 

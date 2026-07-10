@@ -374,6 +374,12 @@ note crossing one is auto-tied), a `key:`, and a `clef` per staff. Durations car
 (`@hairpin^cresc^`). Chords, tuplets, additive meters, and mid-piece meter/key/clef changes (`changes:`)
 all work, as do forced breaks (`pageBreaks:` / `systemBreaks:`).
 
+The printed marks are ink, not sound — until you postprocess the pattern. MSScore hands each voice's
+`Pbind` to your `wrap:` function (`{ |pattern, voiceIndex| newPattern }`), where the marks are readable
+as Pbind keys (`\dyn`, `\art`, `\slur`, `\hairpin`), so `Pbindf` can turn a printed `mf` into a real
+amplitude or a staccato dot into a short note. `examples/supercollider/example_msscore_midi.scd` uses it
+to phrase a MIDI voice from `\art` and `\slur`.
+
 Needs Verovio (`pip install verovio`) — MSScore renders MEI. See
 [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it) and
 `examples/supercollider/example_panola_score.scd`.
