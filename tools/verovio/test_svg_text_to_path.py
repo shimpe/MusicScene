@@ -85,3 +85,41 @@ def test_nested_indented_verovio_shape_converts_and_positions():
     # the dir syllable uses the italic face (its outlines differ from the regular face)
     reg = _load().svg_text_to_path(NESTED.replace('class="dir"', 'class="plain"'))
     assert re.findall(r'd="([^"]+)"', out) != re.findall(r'd="([^"]+)"', reg)
+
+import subprocess, tempfile, shutil, json
+SCLANG = os.environ.get("SCLANG", r"C:\Program Files\SuperCollider-3.14.1\sclang.exe")
+WRAP = os.path.join(os.path.dirname(__file__), "..", "..",
+                    "addons", "musicscene", "tools", "verovio_render.py")
+
+def _mei_with_lyrics(path):
+    """Write a 2-note lyric MEI via sclang; skip if sclang absent."""
+    script = ('(File.use("%s","w",{|f| f.write('
+              'PanolaMEI.scoreAsMEI([Panola("c5_4 d5")], [( measure: 1, meter: "4/4", key: \\Cmajor )],'
+              ' [\\treble], nil, nil, nil, [[ "morn-ing" ]]))}); 0.exit;)' % path.replace("\\", "/"))
+    f = tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8")
+    f.write(script); f.close()
+    try:
+        subprocess.run([SCLANG, f.name], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(f.name)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_flag_converts_text_but_default_does_not():
+    d = tempfile.mkdtemp(prefix="v2p_")
+    try:
+        mei = os.path.join(d, "s.mei"); _mei_with_lyrics(mei)
+        if not os.path.exists(mei):
+            pytest.skip("sclang did not produce MEI")
+        # default: SVG keeps <text>
+        subprocess.run(["py", WRAP, mei, os.path.join(d, "plain.svg"), "--page", "1"],
+                       capture_output=True, text=True)
+        plain = open(os.path.join(d, "plain.svg"), encoding="utf-8").read()
+        # with the flag: SVG has <path>, no <text>, and the "morn" glyphs
+        r = subprocess.run(["py", WRAP, mei, os.path.join(d, "p.svg"), "--page", "1", "--text-to-path"],
+                           capture_output=True, text=True)
+        conv = open(os.path.join(d, "p.svg"), encoding="utf-8").read()
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    assert "<text" in plain                      # default unchanged
+    assert "<text" not in conv and "<path" in conv
+    assert "(text→path)" in (r.stdout + r.stderr) or "text->path" in (r.stdout + r.stderr)
