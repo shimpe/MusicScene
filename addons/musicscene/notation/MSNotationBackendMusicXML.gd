@@ -149,7 +149,7 @@ static func _command_for(format: String) -> String:
 static func _builtin_default(format: String) -> String:
 	if format == "mei" or format == "abc":
 		var py := "py" if OS.get_name() == "Windows" else "python3"
-		return "%s \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page}" % py
+		return "%s \"res://addons/musicscene/tools/verovio_render.py\" {input} {output} --page {page} --text-to-path" % py
 	return ""
 
 
