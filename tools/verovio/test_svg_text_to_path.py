@@ -55,3 +55,33 @@ def test_no_text_is_noop():
              '<rect width="10" height="10"/></svg>')
     out = _load().svg_text_to_path(plain)
     assert "<rect" in out and "<text" not in out
+
+# a REALISTIC Verovio-shaped fragment: INDENTED, sized tspan nested inside <tspan class="text">
+# (this is what renderToSVG actually emits; the flat SVG above never occurs in practice).
+NESTED = (
+  '<?xml version="1.0" encoding="UTF-8"?>\n'
+  '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 4000 3000">\n'
+  '  <style type="text/css">#x g.dir {font-style:italic;}</style>\n'
+  '  <g class="verse">\n'
+  '    <text x="1193" y="2708" font-size="0px">\n'
+  '      <tspan class="text">\n'
+  '        <tspan font-size="405px">morn</tspan>\n'
+  '      </tspan>\n'
+  '    </text>\n'
+  '  </g>\n'
+  '  <g class="dir">\n'
+  '    <text x="500" y="300" font-size="0px"><tspan class="text"><tspan font-size="300px">dolce</tspan></tspan></text>\n'
+  '  </g>\n'
+  '</svg>\n'
+)
+
+def test_nested_indented_verovio_shape_converts_and_positions():
+    out = _load().svg_text_to_path(NESTED)
+    assert "<text" not in out and "<path" in out          # nested tspan size found -> converted
+    # the first glyph of "morn" must land near the text x=1193 (not shifted by indent whitespace)
+    m = re.search(r'<path[^>]*translate\((-?[0-9.]+) ', out)
+    assert m, out
+    assert abs(float(m.group(1)) - 1193.0) < 50.0          # at the text origin, not +indent advance
+    # the dir syllable uses the italic face (its outlines differ from the regular face)
+    reg = _load().svg_text_to_path(NESTED.replace('class="dir"', 'class="plain"'))
+    assert re.findall(r'd="([^"]+)"', out) != re.findall(r'd="([^"]+)"', reg)

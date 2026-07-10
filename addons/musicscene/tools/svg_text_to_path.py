@@ -76,8 +76,9 @@ def _parse_css(style_text):
 
 
 def _first_size(text_el):
-    """The real font-size: a tspan's (Verovio puts 0px on the outer <text>), else the text's."""
-    for el in list(text_el.findall("{%s}tspan" % _SVG_NS)) + [text_el]:
+    """The real font-size: a descendant tspan's (Verovio nests the sized tspan inside an outer
+    <tspan class="text">, and the outer <text> is 0px), else the text's."""
+    for el in list(text_el.iter("{%s}tspan" % _SVG_NS)) + [text_el]:
         n = _f(el.get("font-size"))
         if n > 0:
             return n
@@ -101,18 +102,26 @@ def _text_to_paths(text_el, is_bold, is_italic):
     fs = _first_size(text_el)
     if not fs or fs <= 0:
         return None
-    s = "".join(text_el.itertext())
-    if s.strip() == "":
+    # Verovio indents its SVG and nests the sized tspan inside <tspan class="text">, so itertext()
+    # carries pretty-print newlines/indent between tags. Collapse whitespace runs (keeping a single
+    # intra-syllable space, e.g. an escaped "Good bye") and strip the ends.
+    s = re.sub(r"\s+", " ", "".join(text_el.itertext())).strip()
+    if s == "":
         return None
-    x, y = _f(text_el.get("x")), _f(text_el.get("y"))
-    tsp = text_el.find("{%s}tspan" % _SVG_NS)
-    if tsp is not None:
-        if tsp.get("x") is not None:
-            x = _f(tsp.get("x"))
-        if tsp.get("y") is not None:
-            y = _f(tsp.get("y"))
+    # pen origin + anchor: the <text>'s, else the first descendant <tspan> that declares them
+    # (Verovio puts x/y on <text> for lyrics, but on a <tspan class="rend"> for some marks).
+    x = _f(text_el.get("x")); has_x = text_el.get("x") is not None
+    y = _f(text_el.get("y")); has_y = text_el.get("y") is not None
+    anchor = text_el.get("text-anchor")
+    for tsp in text_el.iter("{%s}tspan" % _SVG_NS):
+        if not has_x and tsp.get("x") is not None:
+            x = _f(tsp.get("x")); has_x = True
+        if not has_y and tsp.get("y") is not None:
+            y = _f(tsp.get("y")); has_y = True
+        if anchor is None and tsp.get("text-anchor") is not None:
+            anchor = tsp.get("text-anchor")
+    anchor = anchor or "start"
     scale = fs / face["upm"]
-    anchor = text_el.get("text-anchor") or "start"
     if anchor in ("middle", "end"):
         x -= _advance(s, face) * scale * (0.5 if anchor == "middle" else 1.0)
     from fontTools.pens.svgPathPen import SVGPathPen
@@ -171,12 +180,12 @@ def svg_text_to_path(svg):
         return svg
     if _load_face("regular") is None:        # no fonttools/fonts -> leave unchanged
         return svg
-    bold, italic = set(), set()
-    for st in root.iter("{%s}style" % _SVG_NS):
-        b, i = _parse_css(st.text)
-        bold |= b
-        italic |= i
     try:
+        bold, italic = set(), set()
+        for st in root.iter("{%s}style" % _SVG_NS):
+            b, i = _parse_css(st.text)
+            bold |= b
+            italic |= i
         _process(root, bold, italic, False, False)
         body = ET.tostring(root, encoding="unicode")
     except Exception as e:
