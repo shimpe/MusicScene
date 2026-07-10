@@ -39,6 +39,9 @@ TOK_CASES = {
     "escspace": (r'"two\\ words done"', "two words|-|- done|-|-"),
     "escunder": (r'"held\\_note"', "held_note|-|-"),
     "apos":     (r'"don\'t sayin\'"', "don't|-|- sayin'|-|-"),
+    "eschyphen": (r'"rock\\-n\\-roll done"', "rock-n-roll|-|- done|-|-"),
+    "dblunder":  (r'"__ end"', "__|-|- end|-|-"),
+    "crlf":      (r'"a\rb"', "a|-|- b|-|-"),
 }
 
 
@@ -47,3 +50,19 @@ TOK_CASES = {
 def test_tokenizer(key):
     sc_literal, expected = TOK_CASES[key]
     assert _tok(sc_literal) == expected
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_xml_escape():
+    script = (
+        "(\n"
+        '("XML:" ++ PanolaMEI.pr_xmlEscape("a & b < c > d")).postln; 0.exit;\n'
+        ")\n"
+    )
+    with tempfile.NamedTemporaryFile("w", suffix=".scd", delete=False, encoding="utf-8") as f:
+        f.write(script); path = f.name
+    try:
+        r = subprocess.run([SCLANG, path], capture_output=True, text=True, timeout=120)
+    finally:
+        os.unlink(path)
+    assert "XML:a &amp; b &lt; c &gt; d" in r.stdout, r.stdout[-1500:]
