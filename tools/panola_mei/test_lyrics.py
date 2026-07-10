@@ -88,6 +88,10 @@ CASES = {
   "escape":  r'PanolaMEI.scoreAsMEI([Panola("c5_4 d5")], %s, [\treble], nil, nil, nil, [[ "R\\&B \\\"Oh,\\\"" ]])' % CHG,
   # a chord gets its syllable INSIDE <chord> (after the note children, before </chord>)
   "chordlyr": r'PanolaMEI.scoreAsMEI([Panola("<c5_4 e5 g5> d5")], %s, [\treble], nil, nil, nil, [[ "chord next" ]])' % CHG,
+  # overflow: more syllables than notes -> the extras are dropped (a warn fires; we check the drop)
+  "overflow": r'PanolaMEI.scoreAsMEI([Panola("c5_4 d5")], %s, [\treble], nil, nil, nil, [[ "a b c d" ]])' % CHG,
+  # underflow: fewer syllables than notes -> the trailing notes stay blank (silent), still renders
+  "underflow": r'PanolaMEI.scoreAsMEI([Panola("c5_4 d5 e5 f5")], %s, [\treble], nil, nil, nil, [[ "a b" ]])' % CHG,
   # byte-identity control: same voice, NO lyrics
   "nolyr":   r'PanolaMEI.scoreAsMEI([%s], %s, [\treble], nil, nil, nil, nil)' % (V, CHG),
   "nolyr2":  r'PanolaMEI.scoreAsMEI([%s], %s, [\treble])' % (V, CHG),
@@ -104,7 +108,7 @@ def test_lyrics_render():
         shutil.rmtree(outdir, ignore_errors=True)
 
     # every lyric MEI must still render in Verovio
-    for k in ("basic", "rest", "melisma", "verses", "tied", "escape", "chordlyr"):
+    for k in ("basic", "rest", "melisma", "verses", "tied", "escape", "chordlyr", "overflow", "underflow"):
         assert render_props(meis[k])["ok"], k
 
     b = meis["basic"]
@@ -131,6 +135,14 @@ def test_lyrics_render():
 
     assert '<syl>R&amp;B</syl>' in meis["escape"]        # & escaped
     assert '<syl>"Oh,"</syl>' in meis["escape"]          # backslash-escaped quotes are literal
+
+    # overflow: 2 notes, 4 syllables -> only a,b engraved; c,d dropped
+    assert meis["overflow"].count("<syl") == 2
+    assert '<syl>a</syl>' in meis["overflow"] and '<syl>b</syl>' in meis["overflow"]
+    assert '<syl>c</syl>' not in meis["overflow"] and '<syl>d</syl>' not in meis["overflow"]
+
+    # underflow: 4 notes, 2 syllables -> the last two notes stay blank (silent)
+    assert meis["underflow"].count("<syl") == 2
 
     # byte-identity: lyrics nil renders exactly like the positional-default form
     assert meis["nolyr"] == meis["nolyr2"]

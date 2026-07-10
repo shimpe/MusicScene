@@ -10,7 +10,9 @@ var s = MSScore(voices: ["c5_4 d5 e5 f5", "c3_1"], clefs: [\treble, \bass],
 var m = s.mei;
 (m.contains("<syl wordpos=\"i\" con=\"d\">Twin</syl>")).if({ "SYL-OK".postln }, { "SYL-BAD".postln });
 (m.contains("<verse")).if({ "VERSE-OK".postln }, { "VERSE-BAD".postln });
-// staff 2 (nil) must carry no lyrics: its <staff n="2"> has no <syl>
+// staff 2 (nil) must carry no lyrics: the content after <staff n="2"> has no <syl>
+// (single measure here, so everything past the staff-2 marker belongs to staff 2)
+(m.copyRange(m.find("<staff n=\"2\">"), m.size - 1).contains("<syl")).if({ "STAFF2-BAD".postln }, { "STAFF2-CLEAN".postln });
 0.exit;
 )'''
 
@@ -29,6 +31,7 @@ def test_msscore_forwards_lyrics():
     assert "ERROR" not in r.stdout, r.stdout[-1500:]
     assert "SYL-OK" in r.stdout, r.stdout[-1500:]
     assert "VERSE-OK" in r.stdout, r.stdout[-1500:]
+    assert "STAFF2-CLEAN" in r.stdout, r.stdout[-1500:]   # the nil staff carries no <syl>
 
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
