@@ -6,6 +6,12 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 ## [Unreleased]
 
 ### Added
+- **Lyrics in Panola notation.** `MSScore(lyrics: [[ "Twin-kle lit-tle star" ], nil])` (and the new
+  `lyrics` arg on `Panola.asMEI` / `Panola.scoreAsMEI`) engrave sung text as MEI `<verse>/<syl>`,
+  authored as a separate line per staff. A space separates words, `-` splits syllables (drawing a
+  hyphen), `_` is a melisma, `\` escapes; several lines give several verses. Syllables align to the
+  non-rest notes and land on the first tied fragment; lyrics are notation only (they never affect the
+  sound). Example: `examples/supercollider/example_lyrics.scd`. (Panola + MSScore quarks.)
 - **Instrument-UI tutorial.** `INSTRUMENT_UI_TUTORIAL.md` builds a software-synth front panel (knobs,
   piano keyboard, module toggle, level meter) from the
   [MusicControls](https://github.com/shimpe/MusicControls) addon and exposes every control over OSC

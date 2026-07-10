@@ -1047,6 +1047,24 @@ MSScore renders MEI, so it needs **Verovio** (`pip install verovio`) — and not
 specifically, see `example_panola_rhythms.scd`. The MSScore quark's own help file
 (`MSScore.schelp`, section 12) covers `wrap` in more depth.
 
+**Adding lyrics.** Sung text is a separate line per staff, passed as `lyrics:` (parallel to
+`voices`). Each staff takes a list of verse lines (or a bare string, or `nil`):
+
+```supercollider
+~score = MSScore(
+    voices: [ "c5_4 d5 e5 f5 g5_2" ],
+    lyrics: [ [ "Twin-kle twin-kle star",     // verse 1
+               "Up a-bove the world" ] ]      // verse 2
+);
+~score.show;
+```
+
+Within a line: a space starts the next word, `-` splits a word into syllables (drawing a hyphen),
+`_` is a melisma (the note holds the previous syllable), and `\` escapes the next character (`\ ` = a
+literal space inside a syllable). Syllables align to the non-rest notes, a note tied across a barline
+carries its syllable on the first fragment, and lyrics never affect playback. Runnable:
+`examples/supercollider/example_lyrics.scd`.
+
 ### Addressable scores — clickable measures (MuseScore)
 
 For MusicXML via MuseScore, MusicScene can make the score **addressable**: it reads MuseScore's measure

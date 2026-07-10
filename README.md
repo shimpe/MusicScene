@@ -380,6 +380,13 @@ as Pbind keys (`\dyn`, `\art`, `\slur`, `\hairpin`), so `Pbindf` can turn a prin
 amplitude or a staccato dot into a short note. `examples/supercollider/example_msscore_midi.scd` uses it
 to phrase a MIDI voice from `\art` and `\slur`.
 
+**Lyrics.** Pass `lyrics:` — an array parallel to `voices`, one entry per staff (a list of verse
+lines, a bare string for one verse, or `nil`) — to engrave sung text as MEI `<verse>/<syl>`. In a
+line, a space starts the next word, `-` splits a word into syllables (a hyphen is drawn), `_` holds
+the previous syllable over a note (melisma), and `\` escapes the next character into a syllable.
+Syllables align to the non-rest notes; lyrics are notation only and never affect the sound.
+Example: `examples/supercollider/example_lyrics.scd`.
+
 Needs Verovio (`pip install verovio`) — MSScore renders MEI. See
 [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it) and
 `examples/supercollider/example_panola_score.scd`.
