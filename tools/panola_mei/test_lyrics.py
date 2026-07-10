@@ -135,3 +135,25 @@ def test_lyrics_render():
     # byte-identity: lyrics nil renders exactly like the positional-default form
     assert meis["nolyr"] == meis["nolyr2"]
     assert "<verse" not in meis["nolyr"]
+
+
+WRAP = {
+  # single-voice asMEI: lyrics is a LIST OF VERSE LINES for that one voice
+  "asmei":   r'Panola("c5_4 d5 e5 f5").asMEI("4/4", \Cmajor, \treble, [ "do re mi fa" ])',
+  # public Panola.scoreAsMEI wrapper forwards lyrics to PanolaMEI
+  "score":   r'Panola.scoreAsMEI([Panola("c5_4 d5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil, nil, nil, [[ "hel-lo" ]])',
+}
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_lyrics_panola_facade():
+    outdir = tempfile.mkdtemp(prefix="panola_lyrfac_")
+    try:
+        _dump(outdir, WRAP)
+        meis = {k: open(os.path.join(outdir, k + ".mei"), encoding="utf-8").read() for k in WRAP}
+    finally:
+        shutil.rmtree(outdir, ignore_errors=True)
+    assert meis["asmei"].count("<syl") == 4
+    assert '<syl>do</syl>' in meis["asmei"]
+    assert '<syl wordpos="i" con="d">hel</syl>' in meis["score"]
+    assert '<syl wordpos="t">lo</syl>' in meis["score"]
