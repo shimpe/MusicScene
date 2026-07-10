@@ -18,8 +18,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Verovio
-        run: python3 -m pip install verovio
+      - name: Install Verovio + fontTools (notation self-tests)
+        run: python3 -m pip install verovio fonttools
 
       - name: Download Godot 4.7
         run: |
@@ -139,6 +139,11 @@ jobs:
         run: |
           ./godot --headless --path . --script res://tools/test_notation_incremental.gd 2>&1 | tee notationinc.log
           grep -q "fail=0" notationinc.log && ! grep -q "FAIL:" notationinc.log
+
+      - name: Self-tests — lyrics text→path render
+        run: |
+          ./godot --headless --path . --script res://tools/test_notation_lyrics.gd 2>&1 | tee lyrics.log
+          grep -q "fail=0" lyrics.log && ! grep -q "FAIL:" lyrics.log
 
       - name: Boot check — no script/parse errors
         run: |

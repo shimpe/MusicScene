@@ -6,6 +6,12 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 ## [Unreleased]
 
 ### Added
+- **Lyrics (and all Verovio text) now render in the Godot notation preview.** Godot's ThorVG
+  SVG rasteriser draws paths but not `<text>`, so lyrics/tempo/directions were invisible. The
+  bundled `verovio_render.py` gained a `--text-to-path` flag (on by default for the built-in
+  Verovio engraver) that outlines every `<text>` to `<path>` glyphs via bundled Tinos
+  (Times-metric serif; bold/italic chosen per Verovio's CSS class). Note ids/geometry and the
+  timemap are untouched, so note addressing/following are unaffected.
 - **Lyrics in Panola notation.** `MSScore(lyrics: [[ "Twin-kle lit-tle star" ], nil])` (and the new
   `lyrics` arg on `Panola.asMEI` / `Panola.scoreAsMEI`) engrave sung text as MEI `<verse>/<syl>`,
   authored as a separate line per staff. A space separates words, `-` splits syllables (drawing a
