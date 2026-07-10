@@ -86,6 +86,8 @@ CASES = {
   "tied":    r'PanolaMEI.scoreAsMEI([Panola("c5_1.. d5_2")], %s, [\treble], nil, nil, nil, [[ "held done" ]])' % CHG,
   # XML-escape + literal quote via backslash: syllable  "Oh,"  contains quotes and needs no & but proves escaping path
   "escape":  r'PanolaMEI.scoreAsMEI([Panola("c5_4 d5")], %s, [\treble], nil, nil, nil, [[ "R\\&B \\\"Oh,\\\"" ]])' % CHG,
+  # a chord gets its syllable INSIDE <chord> (after the note children, before </chord>)
+  "chordlyr": r'PanolaMEI.scoreAsMEI([Panola("<c5_4 e5 g5> d5")], %s, [\treble], nil, nil, nil, [[ "chord next" ]])' % CHG,
   # byte-identity control: same voice, NO lyrics
   "nolyr":   r'PanolaMEI.scoreAsMEI([%s], %s, [\treble], nil, nil, nil, nil)' % (V, CHG),
   "nolyr2":  r'PanolaMEI.scoreAsMEI([%s], %s, [\treble])' % (V, CHG),
@@ -102,7 +104,7 @@ def test_lyrics_render():
         shutil.rmtree(outdir, ignore_errors=True)
 
     # every lyric MEI must still render in Verovio
-    for k in ("basic", "rest", "melisma", "verses", "tied", "escape"):
+    for k in ("basic", "rest", "melisma", "verses", "tied", "escape", "chordlyr"):
         assert render_props(meis[k])["ok"], k
 
     b = meis["basic"]
@@ -121,6 +123,11 @@ def test_lyrics_render():
     assert meis["verses"].count('<verse n="2">') == 5
 
     assert meis["tied"].count("<syl>held</syl>") == 1   # first fragment only, not on the tied continuation
+
+    assert meis["chordlyr"].count("<syl") == 2
+    assert '<syl>chord</syl>' in meis["chordlyr"]
+    assert '<verse n="1"><syl>chord</syl></verse></chord>' in meis["chordlyr"]   # verse nested in the chord, before </chord>
+    assert '<syl>next</syl>' in meis["chordlyr"]
 
     assert '<syl>R&amp;B</syl>' in meis["escape"]        # & escaped
     assert '<syl>"Oh,"</syl>' in meis["escape"]          # backslash-escaped quotes are literal
