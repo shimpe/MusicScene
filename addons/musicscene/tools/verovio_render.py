@@ -38,10 +38,6 @@ def _write_timemap(tk, path: str) -> None:
 
 
 def main() -> int:
-    try:  # so the "(text→path)" marker prints on Windows pipes/consoles (cp1252 can't encode it)
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
     ap = argparse.ArgumentParser()
     ap.add_argument("input")
     ap.add_argument("output")                 # .svg
@@ -104,7 +100,7 @@ def main() -> int:
             with open("%s-%d.svg" % (stem, pg), "w", encoding="utf-8") as f:
                 f.write(svg)
         _write_timemap(tk, a.timemap)
-        print("verovio: wrote %d page(s) %s-N.svg%s (breaks=%s)%s" % (n, stem, " + timemap" if a.timemap else "", breaks, " (text→path)" if convert is not None else ""))
+        print("verovio: wrote %d page(s) %s-N.svg%s (breaks=%s)%s" % (n, stem, " + timemap" if a.timemap else "", breaks, " (text->path)" if convert is not None else ""))
         return 0
 
     page = max(1, min(a.page, tk.getPageCount()))
@@ -114,7 +110,7 @@ def main() -> int:
     with open(a.output, "w", encoding="utf-8") as f:
         f.write(svg)
     _write_timemap(tk, a.timemap)
-    print("verovio: wrote " + a.output + (" + timemap" if a.timemap else "") + (" (breaks=%s)" % breaks) + (" (text→path)" if convert is not None else ""))
+    print("verovio: wrote " + a.output + (" + timemap" if a.timemap else "") + (" (breaks=%s)" % breaks) + (" (text->path)" if convert is not None else ""))
     return 0
 
 
