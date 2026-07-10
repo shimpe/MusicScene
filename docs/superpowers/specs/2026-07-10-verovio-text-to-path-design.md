@@ -26,7 +26,7 @@ Godot **display** gap, which affects all Verovio text, not only lyrics.
    tests byte-identical).
 2. **All text**, **faithful weights**: bundle Tinos Regular + Bold + Italic and pick
    per the element's Verovio CSS class.
-3. Font assets fetched during implementation (Apache-2.0 Tinos from Google Fonts/
+3. Font assets fetched during implementation (SIL OFL 1.1 Tinos from Google Fonts/
    GitHub); if no network, pause and the user drops the three `.ttf` files in.
 
 ## 1. Trigger & flow
@@ -82,8 +82,8 @@ The three Tinos faces are loaded once per process (`TTFont`, `getGlyphSet`,
 ## 3. Bundled fonts
 
 `addons/musicscene/tools/fonts/Tinos-Regular.ttf`, `-Bold.ttf`, `-Italic.ttf`
-(Apache-2.0) plus a short `addons/musicscene/tools/fonts/LICENSE` recording the
-source and license. Tinos is metric-compatible with Times New Roman, matching
+(SIL OFL 1.1) plus the bundled `addons/musicscene/tools/fonts/OFL.txt` license text
+and a short `README.txt` recording the source. Tinos is metric-compatible with Times New Roman, matching
 Verovio's `font-family="Times, serif"` so the converted layout matches the intended
 engraving. The converter resolves the font directory relative to its own file
 (`__file__`), so it works regardless of CWD.
@@ -129,7 +129,7 @@ like the other notation self-tests).
 
 - `addons/musicscene/tools/verovio_render.py` — `--text-to-path` flag + call the converter.
 - `addons/musicscene/tools/svg_text_to_path.py` — the converter (new; imported by the wrapper).
-- `addons/musicscene/tools/fonts/Tinos-{Regular,Bold,Italic}.ttf` + `LICENSE` (new).
+- `addons/musicscene/tools/fonts/Tinos-{Regular,Bold,Italic}.ttf` + `OFL.txt` + `README.txt` (new).
 - `addons/musicscene/notation/MSNotationBackendMusicXML.gd` — append `--text-to-path` to the command(s).
 - `tools/…/test_text_to_path.py` — Python unit test (new).
 - `tools/test_notation_lyrics.gd` — Godot headless self-test (new).
