@@ -388,6 +388,16 @@ Syllables align to the non-rest notes; lyrics are notation only and never affect
 Example: `examples/supercollider/example_lyrics.scd`. The Godot preview renders this text by outlining Verovio's SVG `<text>` to vector paths
 (Godot's ThorVG rasteriser doesn't draw SVG text) — bundled with a Times-metric serif.
 
+> **If you override the Verovio engraver command, you must pass `--text-to-path` yourself.**
+> The bundled `verovio_render.py` only outlines text when invoked with `--text-to-path`, and the
+> **built-in** command adds it automatically. But if you set `musicscene/notation/engraver/mei`
+> (or `/abc`) in Project Settings to a custom command — e.g. to run a project-local venv Python —
+> that override replaces the built-in, so append `--text-to-path` to it **and** ensure that
+> Python has both `verovio` and `fonttools` installed (`pip install verovio fonttools`).
+> Without the flag (or without fonttools) lyrics/tempo/other text stay invisible in the Godot
+> preview — they still render in any MEI viewer. After changing the setting, **restart the editor**
+> and clear the notation cache (`user://musicscene_cache/notation/`) to force a re-render.
+
 Needs Verovio (`pip install verovio`) — MSScore renders MEI. See
 [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it) and
 `examples/supercollider/example_panola_score.scd`.

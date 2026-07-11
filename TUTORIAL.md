@@ -1065,6 +1065,15 @@ literal space inside a syllable). Syllables align to the non-rest notes, a note 
 carries its syllable on the first fragment, and lyrics never affect playback. Runnable:
 `examples/supercollider/example_lyrics.scd`.
 
+Godot's ThorVG rasteriser doesn't draw SVG `<text>`, so the bundled `verovio_render.py` outlines
+Verovio's text to vector paths when invoked with `--text-to-path`. The **built-in** Verovio command
+adds this flag for you. **If you override the engraver command** (`musicscene/notation/engraver/mei`
+or `/abc` in Project Settings — e.g. to point at a project-local venv Python), you must append
+`--text-to-path` to your command yourself, and that Python needs both `verovio` and `fonttools`
+installed. Otherwise the lyrics (and tempo marks, directions, …) stay invisible in the Godot preview
+— they render fine in any MEI viewer. Restart the editor after changing the setting, and clear
+`user://musicscene_cache/notation/` to force a re-render. See the README's Lyrics note.
+
 ### Addressable scores — clickable measures (MuseScore)
 
 For MusicXML via MuseScore, MusicScene can make the score **addressable**: it reads MuseScore's measure
