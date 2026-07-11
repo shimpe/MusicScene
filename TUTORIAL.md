@@ -1013,7 +1013,9 @@ several with `+`), **slurs** (`@slur^start^` … `@slur^end^`) and **hairpins** 
 forced breaks (`pageBreaks:` / `systemBreaks:`) are all supported.
 
 **Making the printed marks audible.** By default the notation marks are just ink: a printed `mf` does
-not change the amplitude. MSScore builds each voice's pattern with Panola's `asPbind`, then hands it to
+not change the amplitude. (`wrap:` affects **playback only** — it transforms the sounding pattern, never
+the engraved notation, which is built from the Panola strings directly.) MSScore builds each voice's
+pattern with Panola's `asPbind`, then hands it to
 your `wrap:` function — `{ |pattern, voiceIndex| newPattern }`, one entry per voice — so you can
 postprocess it with `Pbindf`. Every Panola `@property` arrives as a Pbind key of the same name
 (`@vol` → `\amp`, `@pdur` → `\legato`), and the marks come through as Symbols (`\dyn`, `\art`, `\slur`,

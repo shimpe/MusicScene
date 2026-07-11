@@ -378,7 +378,8 @@ The printed marks are ink, not sound — until you postprocess the pattern. MSSc
 `Pbind` to your `wrap:` function (`{ |pattern, voiceIndex| newPattern }`), where the marks are readable
 as Pbind keys (`\dyn`, `\art`, `\slur`, `\hairpin`), so `Pbindf` can turn a printed `mf` into a real
 amplitude or a staccato dot into a short note. `examples/supercollider/example_msscore_midi.scd` uses it
-to phrase a MIDI voice from `\art` and `\slur`.
+to phrase a MIDI voice from `\art` and `\slur`. `wrap:` changes only what you **hear** — the engraved
+score is built from the Panola strings directly, so it never alters what is **printed**.
 
 **Lyrics.** Pass `lyrics:` — an array parallel to `voices`, one entry per staff (a list of verse
 lines, a bare string for one verse, or `nil`) — to engrave sung text as MEI `<verse>/<syl>`. In a
