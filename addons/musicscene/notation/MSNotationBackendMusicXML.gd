@@ -64,7 +64,11 @@ static func prepare(content: Dictionary, format: String, page: int, options: Dic
 
 	# Output format may be per-engraver (MuseScore -> png, Verovio -> svg).
 	var out_ext := str(_setting("notation/engraver_output/" + format, _default_output_ext(cmd_tmpl)))
-	var out_user := Cache.path_for(Cache.key(cid, format, page, BACKEND, options), out_ext)
+	# Fold the engraver command into the OUTPUT cache key (not the input) so a command change
+	# (e.g. adding --text-to-path) invalidates stale renders instead of reusing the old output.
+	var out_opts := options.duplicate()
+	out_opts["engraver_cmd"] = cmd_tmpl
+	var out_user := Cache.path_for(Cache.key(cid, format, page, BACKEND, out_opts), out_ext)
 	if Cache.has(out_user):
 		return {"ok": true, "cached": true, "out_user": out_user, "out_ext": out_ext}
 

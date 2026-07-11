@@ -163,7 +163,12 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 		notation_obj._on_render_failed("verovio: could not prepare input")
 		return
 	Cache.ensure_dir()
-	var key := Cache.key(ExternalBackend.content_id(content), format, page, "vrv", options)
+	# Fold the resolved engraver command into the cache key so a command change (e.g. adding
+	# --text-to-path) invalidates stale renders instead of reusing an SVG made by the old command.
+	var cmd := ExternalBackend.engraver_command(format)
+	var key_opts := options.duplicate()
+	key_opts["engraver_cmd"] = cmd
+	var key := Cache.key(ExternalBackend.content_id(content), format, page, "vrv", key_opts)
 	var svg_user := Cache.path_for(key, "svg")
 	var tm_user := Cache.path_for(key, "json")
 
@@ -178,7 +183,6 @@ func _submit_verovio(notation_obj, raw_content, format: String, page: int, optio
 		_finish_verovio(notation_obj, svg_user, tm_user, options)
 		return
 
-	var cmd := ExternalBackend.engraver_command(format)
 	var argv := ExternalBackend.build_argv(cmd, input_abs, ProjectSettings.globalize_path(svg_user), format, page)
 	argv.append("--timemap")
 	argv.append(ProjectSettings.globalize_path(tm_user))
