@@ -24,10 +24,10 @@ func _rasterize(svg_text: String) -> Image:
 
 func _init() -> void:
 	var fails := 0
-	var tmp := OS.get_environment("TEMP")
-	if tmp == "":
-		tmp = "user://"
-	var mei := tmp.path_join("mslyr_test.mei")
+	# A REAL filesystem dir (globalized user://): TEMP is unset on Linux CI, and an external python3
+	# process cannot resolve Godot's user://… virtual paths. FileAccess also accepts absolute paths.
+	var dir := ProjectSettings.globalize_path("user://")
+	var mei := dir.path_join("mslyr_test.mei")
 	# a minimal lyric MEI (single voice, two syllables) — no sclang needed
 	var mei_str := '<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="4.0.0"><music><body><mdiv><score><scoreDef meter.count="4" meter.unit="4" key.sig="0"><staffGrp><staffDef n="1" lines="5" clef.shape="G" clef.line="2"/></staffGrp></scoreDef><section><measure n="1"><staff n="1"><layer n="1"><note dur="4" oct="5" pname="c"><verse n="1"><syl>morn</syl></verse></note><note dur="4" oct="5" pname="d"><verse n="1"><syl>ing</syl></verse></note></layer></staff></measure></section></score></mdiv></body></music></mei>'
 	var f := FileAccess.open(mei, FileAccess.WRITE)
@@ -38,8 +38,8 @@ func _init() -> void:
 
 	var py := "py" if OS.get_name() == "Windows" else "python3"
 	var wrap := ProjectSettings.globalize_path("res://addons/musicscene/tools/verovio_render.py")
-	var svg_conv := tmp.path_join("mslyr_conv.svg")
-	var svg_plain := tmp.path_join("mslyr_plain.svg")
+	var svg_conv := dir.path_join("mslyr_conv.svg")
+	var svg_plain := dir.path_join("mslyr_plain.svg")
 	var out := []
 	OS.execute(py, [wrap, mei, svg_conv, "--page", "1", "--text-to-path"], out, true)
 	OS.execute(py, [wrap, mei, svg_plain, "--page", "1"], out, true)
