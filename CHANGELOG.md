@@ -5,6 +5,8 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-07-11
+
 ### Added
 - **Lyrics (and all Verovio text) now render in the Godot notation preview.** Godot's ThorVG
   SVG rasteriser draws paths but not `<text>`, so lyrics/tempo/directions were invisible. The
