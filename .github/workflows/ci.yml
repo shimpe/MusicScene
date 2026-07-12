@@ -24,8 +24,8 @@ jobs:
       - name: Install pytest (Panola->LilyPond + MSScore LilyPond suites)
         run: python3 -m pip install pytest
 
-      - name: Python tests — Panola->LilyPond + MSScore LilyPond wiring
-        run: python3 -m pytest tools/panola_lilypond tools/msscore/test_lilypond.py -q
+      - name: Python tests — Panola->LilyPond + MSScore LilyPond wiring + lily_render
+        run: python3 -m pytest tools/panola_lilypond tools/msscore/test_lilypond.py tools/verovio/test_lily_render.py -q
 
       - name: Download Godot 4.7
         run: |

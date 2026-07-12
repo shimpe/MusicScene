@@ -1,4 +1,4 @@
-"""MSScore notation:\\lilypond sends notationData ly and exposes .ly (msscore quark).
+"""MSScore notation:\\lilypond sends notationData lilypond and exposes .ly (msscore quark).
 Run: py -m pytest tools/msscore/test_lilypond.py -q   (skips if sclang absent)"""
 import os, pytest
 from tools.msscore.test_midi_routing import _run, SCLANG

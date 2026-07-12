@@ -18,6 +18,9 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 ### Changed
 - LilyPond addressable rendering is no longer forced to a single image; `MSScore.pr_emitSetup` sends
   `paginate` for both engines. Requires msscore ≥ 0.7.0.
+- With the default paged rendering, `notation: \lilypond` scores no longer create click-to-select note
+  regions (same as the Verovio paged path); the follow cursor and playback highlighting still work. Use
+  `paginate: false` for the single cropped image with clickable notes.
 
 ## [0.19.0] — 2026-07-12
 
