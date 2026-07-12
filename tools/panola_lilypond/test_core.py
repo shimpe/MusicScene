@@ -55,3 +55,20 @@ def test_core_chords_and_rest():
     assert "<c' e' g'>4" in ly and "<d' f' a'>4" in ly and "<e' g' c''>4" in ly
     assert "r4" in ly
     assert compiles(ly)
+
+
+TIE = 'PanolaLilypond.scoreAsLilypond([Panola("c5_2 c5_1 c5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
+SPLIT = 'PanolaLilypond.scoreAsLilypond([Panola("c5_4 d5_2. e5_2 f5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_tie_across_barline():
+    ly = gen(TIE)
+    assert "~" in ly                      # a tie is present
+    assert ly.count("|") >= 1             # at least one barline
+    assert compiles(ly)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_measures_split():
+    ly = gen(SPLIT)                       # 1 + 3 + 2 + 1 quarters = 7 quarters -> 2 bars (4+3)
+    assert ly.count("|") >= 1
+    assert compiles(ly)
