@@ -127,27 +127,41 @@ def main() -> int:
     lilypond, inp, stem = sys.argv[1], sys.argv[2], sys.argv[3]
     cropped = stem + ".cropped.svg"
 
-    # Path 1: full page (correct inter-system spacing) on one tall page, then crop the viewBox ourselves.
-    ok = False
+    # The preview is one image, so a page break is meaningless — turn each \pageBreak into a line break
+    # (\break) so the score stays on one page (otherwise it would render several pages and fall back to a
+    # clashing -dcrop). Standalone rendering does NOT go through this wrapper, so it keeps \pageBreak and
+    # paginates normally. If the source can't be read we render the original file directly.
+    src = None
+    preview = inp
     try:
         with open(inp, encoding="utf-8") as f:
-            src = f.read()
-        render_ly = stem + ".render.ly"
-        with open(render_ly, "w", encoding="utf-8") as f:
-            f.write(src + FULLPAGE_PAPER)
-        if _run(lilypond, ["-dbackend=svg", "-o", stem, render_ly]) == 0:
-            full = stem + ".svg"
-            if not os.path.exists(full) and os.path.exists(stem + "-1.svg"):
-                full = stem + "-1.svg"
-            if os.path.exists(full):
-                ok = _crop_to_content(full, cropped)
+            src = f.read().replace("\\pageBreak", "\\break")
+        preview = stem + ".preview.ly"
+        with open(preview, "w", encoding="utf-8") as f:
+            f.write(src)
     except Exception as e:
-        sys.stderr.write("lily_render: full-page crop failed (%s); using -dcrop\n" % e)
-        ok = False
+        sys.stderr.write("lily_render: could not preprocess source (%s)\n" % e)
+
+    # Path 1: full page (correct inter-system spacing) on one tall page, then crop the viewBox ourselves.
+    ok = False
+    if src is not None:
+        try:
+            render_ly = stem + ".render.ly"
+            with open(render_ly, "w", encoding="utf-8") as f:
+                f.write(src + FULLPAGE_PAPER)
+            if _run(lilypond, ["-dbackend=svg", "-o", stem, render_ly]) == 0:
+                full = stem + ".svg"
+                if not os.path.exists(full) and os.path.exists(stem + "-1.svg"):
+                    full = stem + "-1.svg"
+                if os.path.exists(full):
+                    ok = _crop_to_content(full, cropped)
+        except Exception as e:
+            sys.stderr.write("lily_render: full-page crop failed (%s); using -dcrop\n" % e)
+            ok = False
 
     # Path 2 (fallback): LilyPond's own crop. Systems may clash, but the render succeeds.
     if not ok:
-        rc = _run(lilypond, ["-dbackend=svg", "-dcrop=#t", "-o", stem, inp])
+        rc = _run(lilypond, ["-dbackend=svg", "-dcrop=#t", "-o", stem, preview])
         if rc != 0:
             return rc
         if not os.path.exists(cropped):
