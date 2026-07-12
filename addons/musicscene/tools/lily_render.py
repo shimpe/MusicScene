@@ -180,15 +180,15 @@ def _render_paged(lilypond, src, stem, paged_height):
     try:
         with open(render_ly, "w", encoding="utf-8") as f:
             f.write(src + paper)
+        if _run(lilypond, ["-dbackend=svg", "-o", stem, render_ly]) != 0:
+            return []
+        pages = _page_svgs(stem)
+        if not pages:
+            return []
+        return _crop_pages(pages, stem)
     except Exception as e:
-        sys.stderr.write("lily_render: could not write paged source (%s)\n" % e)
+        sys.stderr.write("lily_render: paged render failed (%s)\n" % e)
         return []
-    if _run(lilypond, ["-dbackend=svg", "-o", stem, render_ly]) != 0:
-        return []
-    pages = _page_svgs(stem)
-    if not pages:
-        return []
-    return _crop_pages(pages, stem)
 
 
 def _render_single(lilypond, raw, inp, stem):
