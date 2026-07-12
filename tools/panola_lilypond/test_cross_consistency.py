@@ -50,7 +50,6 @@ def test_structure_agreement():
         assert ("tie=" in mei) == ("~" in ly), (i, "tie agreement")
 
 
-@pytest.mark.xfail(reason="LilyPond tuplets land in Task 8", strict=True)
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
 def test_tuplet_structure_agreement():
     exprs = {}
