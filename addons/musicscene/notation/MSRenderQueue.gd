@@ -133,6 +133,10 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 		if FileAccess.file_exists(stem_user + "-1.cropped.svg"):
 			_finish_lily_paged(notation_obj, stem_user, options)
 			return
+		if FileAccess.file_exists(cropped_user):
+			# a prior paged render deterministically fell back to a single image — reuse it
+			_finish_lily(notation_obj, cropped_user, options)
+			return
 	elif FileAccess.file_exists(cropped_user):
 		_finish_lily(notation_obj, cropped_user, options)
 		return
