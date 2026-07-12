@@ -23,3 +23,17 @@ var s = MSScore(voices: ["c5_4 e5"], clefs: [\treble]);
 0.exit;
 )''')
     assert "DEF-VRV" in r.stdout, r.stdout[-1500:]
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_lilypond_paginate_int():
+    """LilyPond no longer forces pagination off: pr_paginateInt reflects the paginate flag for \\lilypond."""
+    r = _run(r'''(
+var on  = MSScore(voices: ["c5_4 e5"], clefs: [\treble], notation: \lilypond, paginate: true);
+var off = MSScore(voices: ["c5_4 e5"], clefs: [\treble], notation: \lilypond, paginate: false);
+("ON="  ++ on.pr_paginateInt.asString).postln;
+("OFF=" ++ off.pr_paginateInt.asString).postln;
+0.exit;
+)''')
+    assert "ERROR" not in r.stdout, r.stdout[-1500:]
+    assert "ON=1" in r.stdout, r.stdout[-1500:]
+    assert "OFF=0" in r.stdout, r.stdout[-1500:]
