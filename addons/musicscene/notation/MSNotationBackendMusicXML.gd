@@ -136,7 +136,10 @@ static func build_argv(template: String, input: String, output: String, format: 
 # --- command resolution --------------------------------------------------
 
 static func _command_for(format: String) -> String:
-	var c := str(_setting("notation/engraver/" + format, ""))
+	# "ly" and "lilypond" name the same engine; the documented setting key is /lilypond, so look
+	# up either alias under it (the routing in MSRenderQueue already treats them the same).
+	var key := "lilypond" if format == "ly" else format
+	var c := str(_setting("notation/engraver/" + key, ""))
 	if c != "":
 		return c
 	var exe := str(_setting("notation/external_renderer_path", ""))
