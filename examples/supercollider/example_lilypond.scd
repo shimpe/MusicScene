@@ -21,7 +21,7 @@
 (
 ~ly = Panola.scoreAsLilypond(
 	[ Panola("c5_4@dyn^mf^ e5@slur^start^ g5 c6@slur^end^ g5_8*2/3 e5 c5 d5_2"),
-	  Panola("c3_2 g3 c3_1") ],
+		Panola("c3_2 g3 c3_1") ],
 	[ ( measure: 1, meter: "4/4", key: \Cmajor ) ],
 	[ \treble, \bass ], [[1, 2]],
 	nil, nil,
@@ -62,28 +62,30 @@
 // =============================================================================
 
 (
-// Same feature spread as example_lyrics.scd / example_midpiece_changes.scd, through LilyPond:
-//   dyn 'mf'/'f', a slur, an eighth triplet, a mid-piece meter change (4/4 -> 3/4 at bar 3),
-//   a forced system break at bar 3, and a sung lyric line under the melody.
-~melody = "c5_4@dyn^mf^ d5@slur^start^ e5 f5@slur^end^ g5_8*2/3 a5 g5 f5_4 e5_4 d5_4 c6_4@dyn^f^ b5 a5 g5_2.";
-~bass   = "c3_1 g3_1 c3_2. g2_2.";
+s.waitForBoot {
+	// Same feature spread as example_lyrics.scd / example_midpiece_changes.scd, through LilyPond:
+	//   dyn 'mf'/'f', a slur, an eighth triplet, a mid-piece meter change (4/4 -> 3/4 at bar 3),
+	//   a forced system break at bar 3, and a sung lyric line under the melody.
+	~melody = "c5_4@dyn^mf^ d5@slur^start^ e5 f5@slur^end^ g5_8*2/3 a5 g5 f5_4 e5_4 d5_4 c6_4@dyn^f^ b5 a5 g5_2.";
+	~bass   = "c3_1 g3_1 c3_2. g2_2.";
 
-~score = MSScore(
-	voices:       [ ~melody, ~bass ],
-	clefs:        [ \treble, \bass ],
-	braces:       [ [1, 2] ],
-	changes:      [ ( measure: 1, meter: "4/4", key: \Cmajor ),   // bars 1-2: 4/4, C major
-	                 ( measure: 3, meter: "3/4" ) ],                // bars 3-4: METER -> 3/4
-	systemBreaks: [3],                                              // a new line/system starts at bar 3
-	tempo:        96,
-	scale:        1.0,
-	lyrics:       [ "Ly-ly-pond sings a bright new song to-day with a tu-plet", nil ],
-	notation:     \lilypond,                                        // render through LilyPond, not Verovio
-	space:        "3d"
-);
+	~score = MSScore(
+		voices:       [ ~melody, ~bass ],
+		clefs:        [ \treble, \bass ],
+		braces:       [ [1, 2] ],
+		changes:      [ ( measure: 1, meter: "4/4", key: \Cmajor ),   // bars 1-2: 4/4, C major
+			( measure: 3, meter: "3/4" ) ],                // bars 3-4: METER -> 3/4
+		systemBreaks: [3],                                              // a new line/system starts at bar 3
+		tempo:        96,
+		scale:        2.0,
+		lyrics:       [ "Ly-li-pond sings a bright new song to-day with a tu-plet", nil ],
+		notation:     \lilypond,                                        // render through LilyPond, not Verovio
+		space:        "3d"
+	);
 
-~score.play;
-"Part B: LilyPond engraving inside MusicScene — one cropped image; watch the system break at bar 3.".postln;
+	~score.play;
+	"Part B: LilyPond engraving inside MusicScene — one cropped image; watch the system break at bar 3.".postln;
+}
 )
 
 

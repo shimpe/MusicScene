@@ -30,7 +30,7 @@
 //   'Good\ bye' -> ONE syllable containing a space (the '\' escapes the space)
 //   'morn-ing'  -> a hyphen is drawn between the two syllables
 //   'sing _ _'  -> a melisma: 'sing' rings on across the next two notes (no new syllable)
-~melody = "c5_4 d5 e5_2 f5_4 g5 a5 g5 f5 e5_2.";
+~melody = "c5_4 d5 e5_2 f5_4@slur^begin^ g5 a5 g5@slur^end^ f5 e5_2.";
 ~bass   = "c3_1 g3_1 c3_1";
 
 ~score = MSScore(
@@ -38,6 +38,7 @@
 	clefs:   [ \treble, \bass ],
 	braces:  [ [1, 2] ],
 	meter:   "4/4", key: \Cmajor, tempo: 96,
+	scale: 1.0,
 	lyrics:  [
 		// melody: two verses. In a SuperCollider string a literal backslash is written "\\", so
 		// "Good\\ bye" reaches the lyric parser as  Good\ bye  -> ONE syllable "Good bye" (the '\'
@@ -46,7 +47,7 @@
 		  "Hel-lo eve glow _ _ till the end" ],        // verse 2
 		nil                                            // bass: no lyrics
 	],
-	space:   "2d"
+	space:   "3d"
 );
 
 ~score.show;
@@ -54,5 +55,5 @@
 )
 
 
-// ~score.play;    // hear it (lyrics do NOT affect the sound)
-// ~score.stop;    // clear the scene
+~score.play;    // hear it (lyrics do NOT affect the sound)
+~score.stop;    // clear the scene
