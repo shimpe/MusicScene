@@ -171,6 +171,16 @@ jobs:
           ./godot --headless --path . --script res://tools/test_lily_text2path.gd 2>&1 | tee lilyt2p.log
           grep -q "fail=0" lilyt2p.log && ! grep -q "FAIL:" lilyt2p.log
 
+      - name: Self-tests — LilyPond multi-page finalize_paged
+        run: |
+          ./godot --headless --path . --script res://tools/test_lily_paged.gd 2>&1 | tee lilypaged.log
+          grep -q "fail=0" lilypaged.log && ! grep -q "FAIL:" lilypaged.log
+
+      - name: Self-tests — LilyPond paged finish fallback
+        run: |
+          ./godot --headless --path . --script res://tools/test_lily_paged_finish.gd 2>&1 | tee lilypagedfin.log
+          grep -q "fail=0" lilypagedfin.log && ! grep -q "FAIL:" lilypagedfin.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
