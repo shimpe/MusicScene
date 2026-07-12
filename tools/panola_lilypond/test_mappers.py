@@ -48,3 +48,19 @@ def test_dur_and_clef():
     for exp in ["DA:4", "DB:4.", "DC:1", "DD:16..", "DE:\\breve",
                 "CA:treble", "CB:bass", "CC:alto", "CD:tenor"]:
         assert exp in out, (exp, out[-1500:])
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_key_and_meter():
+    r = _run(r'''
+["KA:" ++ PanolaLilypond.pr_keyLy(\Cmajor), "KB:" ++ PanolaLilypond.pr_keyLy(\Gmajor),
+ "KC:" ++ PanolaLilypond.pr_keyLy(\FsharpMinor), "KD:" ++ PanolaLilypond.pr_keyLy(\Bflatmajor),
+ "KE:" ++ PanolaLilypond.pr_keyLy(\Dminor),
+ "MA:" ++ PanolaLilypond.pr_meterLy("4/4"), "MB:" ++ PanolaLilypond.pr_meterLy("7/8"),
+ "MC:" ++ PanolaLilypond.pr_meterLy("2+2+3/8")
+].do({ |x| x.postln });''')
+    out = r.stdout
+    assert "ERROR" not in out, out[-1500:]
+    for exp in ["KA:c \\major", "KB:g \\major", "KC:fs \\minor", "KD:bf \\major", "KE:d \\minor",
+                "MA:\\time 4/4", "MB:\\time 7/8", "MC:\\compoundMeter #'((2 8) (2 8) (3 8))"]:
+        assert exp in out, (exp, out[-1500:])
