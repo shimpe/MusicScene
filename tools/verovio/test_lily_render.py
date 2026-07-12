@@ -86,3 +86,78 @@ def test_lily_render_paged_multipage():
         assert abs(_w(p1) - _w(p2)) < 0.01, "page widths differ (%s vs %s)" % (_w(p1), _w(p2))
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+
+# --- Pure tests (no LilyPond): argv parsing + paged-failure cleanup ------------------------------------
+
+def _import_wrapper():
+    import importlib
+    wdir = os.path.dirname(os.path.abspath(WRAPPER))
+    if wdir not in sys.path:
+        sys.path.insert(0, wdir)
+    return importlib.import_module("lily_render")
+
+
+def test_paged_arg_parsing_exits_2_on_bad_value():
+    """--paged with a non-numeric or missing value exits 2 before any LilyPond call (no LilyPond needed)."""
+    bogus = os.path.join("no", "such", "lilypond")
+    # Non-numeric page height -> ValueError -> exit 2.
+    r = subprocess.run([sys.executable, WRAPPER, bogus, "in.ly", "out", "--paged", "foo"],
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 2, (r.returncode, r.stderr)
+    # Missing page-height value -> IndexError -> exit 2.
+    r = subprocess.run([sys.executable, WRAPPER, bogus, "in.ly", "out", "--paged"],
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 2, (r.returncode, r.stderr)
+
+
+def test_crop_pages_removes_partial_writes_on_failure(monkeypatch):
+    """_crop_pages: a mid-run write failure returns [] and deletes the pages it already wrote."""
+    L = _import_wrapper()
+    d = tempfile.mkdtemp(prefix="lily_croppart_")
+    try:
+        stem = os.path.join(d, "out")
+        pages = [stem + "-1.svg", stem + "-2.svg"]
+        fake = ("tree", "root", 0.0, 0.0, 10.0, 10.0, 1.0)   # a truthy measurement; contents irrelevant
+        monkeypatch.setattr(L, "_measure", lambda sp: fake)
+        calls = {"n": 0}
+        def flaky_write(meas, out_path, view_width=None):
+            calls["n"] += 1
+            if calls["n"] == 1:                              # page 1 really gets written (partial success)
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.write("<svg/>")
+                return True
+            return False                                     # page 2 fails
+        monkeypatch.setattr(L, "_write_cropped", flaky_write)
+        outs = L._crop_pages(pages, stem)
+        assert outs == [], outs
+        assert not os.path.exists(stem + "-1.cropped.svg"), "partial page 1 was not cleaned up"
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def test_render_paged_parseerror_falls_back_and_cleans(monkeypatch):
+    """_render_paged: a ParseError in cropping yields [] and leaves NO <stem>-N.cropped.svg behind."""
+    import xml.etree.ElementTree as ET
+    L = _import_wrapper()
+    d = tempfile.mkdtemp(prefix="lily_cleanup_")
+    try:
+        stem = os.path.join(d, "out")
+        pages = [stem + "-1.svg", stem + "-2.svg"]
+        for p in pages:                                      # intermediate page SVGs LilyPond "produced"
+            with open(p, "w", encoding="utf-8") as f:
+                f.write("<svg/>")
+        with open(stem + "-1.cropped.svg", "w", encoding="utf-8") as f:  # a stale leftover cropped page
+            f.write("<svg/>")
+        def boom(_sp):
+            raise ET.ParseError("truncated SVG")
+        monkeypatch.setattr(L, "_run", lambda exe, args: 0)  # pretend LilyPond succeeded
+        monkeypatch.setattr(L, "_page_svgs", lambda s: pages)
+        monkeypatch.setattr(L, "_measure", boom)             # cropping blows up -> except -> []
+        outs = L._render_paged("lilypond-not-run", "dummy src", stem, 1200.0)
+        assert outs == [], outs
+        import glob
+        leftover = glob.glob(stem + "-*.cropped.svg")
+        assert leftover == [], "paged failure left cropped pages behind: %s" % leftover
+    finally:
+        shutil.rmtree(d, ignore_errors=True)

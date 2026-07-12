@@ -28,15 +28,15 @@ import sys
 import xml.etree.ElementTree as ET
 
 SVG_NS = "http://www.w3.org/2000/svg"
-# A page tall enough for any realistic single-image score (empty space below is cropped away), with a
-# controlled inter-system distance — full-page layout respects system-system-spacing (unlike -dcrop).
-FULLPAGE_PAPER = ("\n\\paper { page-count = #1 paper-height = 12000\\mm ragged-bottom = ##t"
-                  " ragged-last-bottom = ##t system-system-spacing.basic-distance = #12"
-                  " system-system-spacing.padding = #2 }\n")
+# Shared inter-system spacing for both modes (defined once so tuning one can't desync the other):
+# ragged bottoms and a controlled system-system distance — full-page layout respects
+# system-system-spacing (unlike -dcrop), giving a clear but not airy gap between systems.
+SPACING = ("ragged-bottom = ##t ragged-last-bottom = ##t"
+           " system-system-spacing.basic-distance = #12 system-system-spacing.padding = #2")
+# A page tall enough for any realistic single-image score (empty space below is cropped away).
+FULLPAGE_PAPER = "\n\\paper { page-count = #1 paper-height = 12000\\mm %s }\n" % SPACING
 # Paged mode uses a finite page height derived from the Verovio-style pageHeight (units). The default
 # 1200 maps to ~250 mm (A4-ish content height); smaller pageHeight => shorter pages => more pages.
-PAGED_SPACING = ("ragged-bottom = ##t ragged-last-bottom = ##t"
-                 " system-system-spacing.basic-distance = #12 system-system-spacing.padding = #2")
 CROP_MARGIN = 3.0   # viewBox units of slack so glyph/stem/ledger edges are never clipped
 
 
@@ -123,9 +123,29 @@ def _crop_to_content(svg_path, out_path):
     return bool(meas) and _write_cropped(meas, out_path)
 
 
+def _cleanup_paged(stem):
+    """Best-effort: remove every paged artefact (<stem>-N.cropped.svg and intermediate <stem>-N.svg) so a
+    failed paged render leaves NO paged output behind. Task 3's caller treats an existing
+    <stem>-1.cropped.svg as a complete cached paged render, so a truncated leftover set would be reused
+    forever — this guarantees the directory is clean on failure. Never raises."""
+    i = 1
+    while True:
+        existing = [p for p in ("%s-%d.cropped.svg" % (stem, i), "%s-%d.svg" % (stem, i))
+                    if os.path.exists(p)]
+        if not existing:            # pages are consecutive from 1, so the first empty index ends the run
+            break
+        for p in existing:
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+        i += 1
+
+
 def _crop_pages(page_svgs, stem):
     """Crop each page SVG to content at a uniform (max) width; write <stem>-<i>.cropped.svg (1-based).
-    Returns the list of written paths, or [] if any page could not be measured (caller falls back)."""
+    Returns the list of written paths, or [] if any page could not be measured/written (caller falls
+    back). On a mid-run write failure the already-written pages are removed so no truncated set is left."""
     measured = [_measure(sp) for sp in page_svgs]
     if any(m is None for m in measured):
         return []
@@ -134,6 +154,11 @@ def _crop_pages(page_svgs, stem):
     for i, meas in enumerate(measured, start=1):
         out = "%s-%d.cropped.svg" % (stem, i)
         if not _write_cropped(meas, out, view_width=common_w):
+            for p in out_paths:     # drop the partial writes so no truncated page set is left cached
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
             return []
         out_paths.append(out)
     return out_paths
@@ -175,20 +200,22 @@ def _render_paged(lilypond, src, stem, paged_height):
     """Render src (with \\pageBreak kept) onto finite pages and crop each. Returns written cropped paths,
     or [] on any failure (so the caller falls back to a single image)."""
     mm = max(80.0, paged_height * 250.0 / 1200.0)
-    paper = "\n\\paper { paper-height = %.1f\\mm %s }\n" % (mm, PAGED_SPACING)
+    paper = "\n\\paper { paper-height = %.1f\\mm %s }\n" % (mm, SPACING)
     render_ly = stem + ".render.ly"
+    outs = []
     try:
         with open(render_ly, "w", encoding="utf-8") as f:
             f.write(src + paper)
-        if _run(lilypond, ["-dbackend=svg", "-o", stem, render_ly]) != 0:
-            return []
-        pages = _page_svgs(stem)
-        if not pages:
-            return []
-        return _crop_pages(pages, stem)
+        if _run(lilypond, ["-dbackend=svg", "-o", stem, render_ly]) == 0:
+            pages = _page_svgs(stem)
+            if pages:
+                outs = _crop_pages(pages, stem)
     except Exception as e:
         sys.stderr.write("lily_render: paged render failed (%s)\n" % e)
-        return []
+        outs = []
+    if not outs:            # any failure: leave NO paged output so the caller's cache can't reuse a partial set
+        _cleanup_paged(stem)
+    return outs
 
 
 def _render_single(lilypond, raw, inp, stem):
