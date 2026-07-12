@@ -32,7 +32,7 @@ static func wrap_source(ly_text: String) -> String:
 
 
 ## After LilyPond produced the cropped SVG: rasterize it (for display) and parse note elements.
-## Returns {ok, texture, elements:[{index, when, line, char, u, v}], error}.
+## Returns {ok, texture, elements:[{index, when, line, char, u, v, sys}], systems:[{top, bottom}], error}.
 static func finalize(svg_path: String, options: Dictionary = {}) -> Dictionary:
 	if not FileAccess.file_exists(svg_path):
 		return {"ok": false, "error": "lily addressable: no SVG at " + svg_path}
@@ -40,7 +40,42 @@ static func finalize(svg_path: String, options: Dictionary = {}) -> Dictionary:
 	if not res.ok:
 		return {"ok": false, "error": "lily addressable: " + res.error}
 	var parsed := _parse(svg_path)
-	return {"ok": true, "texture": res.texture, "elements": parsed}
+	var systems := _build_systems(parsed)   # stamps each element's `sys`; padded band per staff-system
+	return {"ok": true, "texture": res.texture, "elements": parsed, "systems": systems}
+
+
+## Group the when-sorted note elements into staff-systems (lines) and return a padded vertical band
+## {top, bottom} per system, so the follow cursor stays within the current line instead of spanning the
+## whole page when several systems share one image. LilyPond's SVG has no system groups (unlike
+## Verovio's <g class="system">), so a new system is detected where the horizontal position `u` jumps
+## back to the left — within a system u only advances rightward (elements are when-sorted). Stamps each
+## element's `sys` (top system = 0). Band padding mirrors the Verovio path.
+static func _build_systems(elements: Array) -> Array:
+	if elements.is_empty():
+		return []
+	var sys := 0
+	var run_max_u: float = float(elements[0].u)
+	for e in elements:
+		if float(e.u) < run_max_u - 0.30:
+			sys += 1
+			run_max_u = float(e.u)
+		else:
+			run_max_u = maxf(run_max_u, float(e.u))
+		e["sys"] = sys
+	var n := sys + 1
+	var mn: Array = []
+	var mx: Array = []
+	mn.resize(n); mn.fill(1e20)
+	mx.resize(n); mx.fill(-1e20)
+	for e in elements:
+		var s: int = int(e.sys)
+		mn[s] = minf(mn[s], float(e.v))
+		mx[s] = maxf(mx[s], float(e.v))
+	var systems: Array = []
+	for i in n:
+		var pad: float = maxf(0.04, (mx[i] - mn[i]) * 0.15)
+		systems.append({"top": clampf(mn[i] - pad, 0.0, 1.0), "bottom": clampf(mx[i] + pad, 0.0, 1.0)})
+	return systems
 
 
 # --- SVG parsing ---------------------------------------------------------

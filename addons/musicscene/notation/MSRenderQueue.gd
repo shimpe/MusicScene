@@ -150,7 +150,7 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 func _finish_lily(obj, cropped_user: String, options: Dictionary, pid: int = -1) -> void:
 	var res := LilyPositions.finalize(cropped_user, options)
 	if res.ok:
-		obj._on_elements_done(res.texture, res.elements)
+		obj._on_elements_done(res.texture, res.elements, res.get("systems", []))
 	else:
 		obj._on_render_failed(res.error + _exit_note(pid))
 

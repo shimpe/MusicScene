@@ -161,6 +161,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_lily_engraver_alias.gd 2>&1 | tee lilyalias.log
           grep -q "fail=0" lilyalias.log && ! grep -q "FAIL:" lilyalias.log
 
+      - name: Self-tests — LilyPond per-system cursor bands
+        run: |
+          ./godot --headless --path . --script res://tools/test_lily_systems.gd 2>&1 | tee lilysys.log
+          grep -q "fail=0" lilysys.log && ! grep -q "FAIL:" lilysys.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log
