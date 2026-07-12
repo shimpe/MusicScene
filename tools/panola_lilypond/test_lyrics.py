@@ -22,6 +22,15 @@ def test_lyrics_melisma_and_multiverse():
     assert compiles(ly)
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_lyrics_inside_grand_staff():
+    # a verse must sit under its own staff INSIDE the group (like Verovio), not below the whole
+    # GrandStaff: v1's lyrics come before v2's staff.
+    ly = gen(r'Panola.scoreAsLilypond([Panola("c5_4 d5"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble, \bass], [[1, 2]], nil, nil, [ [ "one two" ], nil ])')
+    assert "\\new GrandStaff" in ly
+    assert ly.index('\\lyricsto "v1"') < ly.index('\\new Voice = "v2"'), ly
+    assert compiles(ly)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
 def test_lyrics_with_slur():
     ly = gen(r'Panola.scoreAsLilypond([Panola("c5_4@slur^start^ d5 e5 f5@slur^end^")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil, nil, nil, [ [ "one two three four" ] ])')
     assert "melismaBusyProperties" in ly
