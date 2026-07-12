@@ -44,6 +44,61 @@ static func finalize(svg_path: String, options: Dictionary = {}) -> Dictionary:
 	return {"ok": true, "texture": res.texture, "elements": parsed, "systems": systems}
 
 
+## Multi-page (paginated) variant. lily_render.py --paged already produced one cropped SVG per page
+## (<stem>-1.cropped.svg, <stem>-2.cropped.svg, ...); enumerate them in numeric order, rasterize + parse
+## each, group into per-page staff-systems, and tag every element with its 1-based `page`. Returns
+## {ok, pages:[{texture, systems}], elements:[{index, when, line, char, u, v, sys, page}], page_count}.
+## Mirrors MSNotationVerovioPositions.finalize_paged, but LilyPond carries its own data-when/textedit so
+## there is no timemap, and pages are pre-cropped so no raster re-crop/rescale is needed.
+static func finalize_paged(stem: String, options: Dictionary = {}) -> Dictionary:
+	var page_paths := _page_cropped_svgs(stem)
+	if page_paths.is_empty():
+		return {"ok": false, "error": "lily addressable: no page SVGs at " + stem + "-N.cropped.svg"}
+	var pages: Array = []
+	var elements: Array = []
+	for pi in page_paths.size():
+		var svg_path: String = page_paths[pi]
+		var res = SvgBackend.render({"kind": "path", "path": svg_path, "text": "", "bytes": PackedByteArray()}, 1, options)
+		if not res.ok:
+			return {"ok": false, "error": "lily addressable: " + res.error}
+		var page_elements := _parse(svg_path)
+		var systems := _build_systems(page_elements)   # stamps each element's `sys` within this page
+		for e in page_elements:
+			e["page"] = pi + 1
+		pages.append({"texture": res.texture, "systems": systems})
+		elements.append_array(page_elements)
+	elements.sort_custom(func(a, b): return a.when < b.when)
+	for i in elements.size():
+		elements[i].index = i
+	return {"ok": true, "pages": pages, "elements": elements, "page_count": pages.size()}
+
+
+## Enumerate <stem>-1.cropped.svg, <stem>-2.cropped.svg, ... in NUMERIC order (a lexical sort would put
+## -10 before -2). Returns absolute/user:// paths, or [] if none exist.
+static func _page_cropped_svgs(stem: String) -> Array:
+	var dir := stem.get_base_dir()
+	var base := stem.get_file()
+	var da := DirAccess.open(dir)
+	if da == null:
+		return []
+	var found: Array = []
+	da.list_dir_begin()
+	var fn := da.get_next()
+	while fn != "":
+		if fn.begins_with(base + "-") and fn.ends_with(".cropped.svg"):
+			var num := fn.substr((base + "-").length())
+			num = num.left(num.length() - ".cropped.svg".length())
+			if num.is_valid_int():
+				found.append({"n": int(num), "path": dir.path_join(fn)})
+		fn = da.get_next()
+	da.list_dir_end()
+	found.sort_custom(func(a, b): return a.n < b.n)
+	var out: Array = []
+	for f in found:
+		out.append(f.path)
+	return out
+
+
 ## Group the when-sorted note elements into staff-systems (lines) and return a padded vertical band
 ## {top, bottom} per system, so the follow cursor stays within the current line instead of spanning the
 ## whole page when several systems share one image. LilyPond's SVG has no system groups (unlike
