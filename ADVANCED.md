@@ -111,7 +111,9 @@ engraver to be configured (`musicscene/notation/engraver/lilypond` → your Lily
 LilyPond installed; there is no built-in fallback the way MEI/ABC have Verovio. The rendered preview
 **paginates into auto-turning pages** just like Verovio: `paginate`/`pageHeight` fill pages by height,
 `pageBreaks` force page boundaries, and `showPage`/`nextPage`/`prevPage` flip between them, while
-`systemBreaks` still controls where systems fall *within* auto-pagination. One pathological
+`systemBreaks` still controls where systems fall *within* auto-pagination. Note: for LilyPond,
+`pageBreaks` are forced breaks on top of height-based pagination — a very small `pageHeight` may still add
+extra pages; Verovio's `pageBreaks` instead disable auto page-fill entirely. One pathological
 edge case — a tuplet whose fragment straddles a barline in a way that isn't expressible at the tuplet's
 ratio — is kept as a single un-split tuplet with a warning, which can surface as a LilyPond bar-check
 warning at render time; it does not affect any other note.

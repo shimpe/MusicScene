@@ -145,8 +145,8 @@ With your Godot project **running**, in the `gosc.py` prompt:
 
 ```python
 s("/ms/ping")          # ->  <- /ms/pong []
-s("/ms/version")       # ->  <- /ms/reply ['version', '0.19.0']
-s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.19.0', ...]
+s("/ms/version")       # ->  <- /ms/reply ['version', '0.20.0']
+s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.20.0', ...]
 ```
 
 If you see `<- /ms/pong`, you're connected. If not, jump to [Troubleshooting](#13-troubleshooting).

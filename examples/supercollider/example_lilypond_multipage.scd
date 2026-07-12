@@ -5,6 +5,10 @@
 // by height, and `pageBreaks` force a new page at the listed bars. `nextPage` /
 // `prevPage` / `page(n)` flip pages; the follow cursor auto-turns across pages.
 //
+// Note: for LilyPond, `pageBreaks` are forced breaks on top of height-based
+// pagination — a very small `pageHeight` may still add extra pages; Verovio's
+// `pageBreaks` instead disable auto page-fill entirely.
+//
 // Requires the `musicscene/notation/engraver/lilypond` project setting pointing at
 // your LilyPond executable, and a fontTools-capable Python (reused from the Verovio
 // engraver) so LilyPond's text is outlined for ThorVG.
@@ -20,8 +24,10 @@ s.waitForBoot({
         paginate: true, pageHeight: 320,     // small page => multiple auto-turning pages
         tempo: 96, scale: 1.0, instruments: [\default]
     );
+    ~score.play;
 });
 )
+~score.stop;
 
 // Part B — explicit page breaks: a new PAGE at bars 3 and 5, still with the cursor.
 (
@@ -35,8 +41,10 @@ s.waitForBoot({
         pageBreaks:   [3, 5],                 // new page at bars 3 and 5
         tempo: 92, scale: 1.0, instruments: [\default]
     );
+    ~score.play;
 });
 )
+~score.stop;
 
 // Part C — display only (no cursor, no playback): show page 1, then flip pages.
 (
