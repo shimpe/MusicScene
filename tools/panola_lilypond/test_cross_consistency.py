@@ -16,6 +16,8 @@ CORPUS_PLAIN = [
 ]
 CORPUS_TUPLET = [
     'Panola("c5_8*2/3 d5 e5 c5_2 r_4")',
+    'Panola("c5_8*2/3 d5 c5_4 d5 e5 f5")',            # incomplete -> music21 completion
+    'Panola("c5_4 c5_4 c5_4 c5_2*2/3 d5 e5")',        # complete tuplet crossing the bar 1/2 line in 4/4
 ]
 
 
