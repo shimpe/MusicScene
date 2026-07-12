@@ -21,6 +21,12 @@ jobs:
       - name: Install Verovio + fontTools (notation self-tests)
         run: python3 -m pip install verovio fonttools
 
+      - name: Install pytest (Panola->LilyPond + MSScore LilyPond suites)
+        run: python3 -m pip install pytest
+
+      - name: Python tests — Panola->LilyPond + MSScore LilyPond wiring
+        run: python3 -m pytest tools/panola_lilypond tools/msscore/test_lilypond.py -q
+
       - name: Download Godot 4.7
         run: |
           set -e
@@ -144,6 +150,11 @@ jobs:
         run: |
           ./godot --headless --path . --script res://tools/test_notation_lyrics.gd 2>&1 | tee lyrics.log
           grep -q "fail=0" lyrics.log && ! grep -q "FAIL:" lyrics.log
+
+      - name: Self-tests — LilyPond addressable positions
+        run: |
+          ./godot --headless --path . --script res://tools/test_notation_lilypond.gd 2>&1 | tee lilypond.log
+          grep -q "fail=0" lilypond.log && ! grep -q "FAIL:" lilypond.log
 
       - name: Boot check — no script/parse errors
         run: |
