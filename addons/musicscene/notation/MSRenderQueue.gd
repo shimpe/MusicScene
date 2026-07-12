@@ -123,7 +123,17 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 	var stem_user := Cache.path_for(key, "svg").get_basename()   # cache dir + key (no ext)
 	var cropped_user := stem_user + ".cropped.svg"
 
-	if FileAccess.file_exists(cropped_user):
+	# Paged (turnable pages) needs the wrapper to render N pages, so it requires a Python interpreter.
+	# Without one, degrade to the single cropped image. paginate + page_height ride in `options`, which
+	# Cache.key already folds into the stem — so a changed flag/height yields fresh page files.
+	var paginate: bool = bool(options.get("paginate", false)) and t2p_py != ""
+	var page_height: int = int(options.get("page_height", 1200))
+
+	if paginate:
+		if FileAccess.file_exists(stem_user + "-1.cropped.svg"):
+			_finish_lily_paged(notation_obj, stem_user, options)
+			return
+	elif FileAccess.file_exists(cropped_user):
 		_finish_lily(notation_obj, cropped_user, options)
 		return
 
@@ -136,11 +146,15 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 
 	var pid: int
 	if t2p_py != "":
-		# Run LilyPond via lily_render.py, which renders the cropped SVG and then outlines its <text>
-		# to <path> so the lyrics/dynamics/tuplet numbers show (ThorVG cannot draw SVG <text>).
+		# Run LilyPond via lily_render.py, which renders the cropped SVG(s) and outlines their <text> to
+		# <path> so lyrics/dynamics/tuplet numbers show (ThorVG cannot draw SVG <text>). With paginate,
+		# --paged makes it emit one cropped SVG per page.
 		var wrapper := ProjectSettings.globalize_path("res://addons/musicscene/tools/lily_render.py")
-		pid = OS.create_process(t2p_py, [wrapper, exe,
-			ProjectSettings.globalize_path(in_user), ProjectSettings.globalize_path(stem_user)], false)
+		var wargs := [wrapper, exe, ProjectSettings.globalize_path(in_user), ProjectSettings.globalize_path(stem_user)]
+		if paginate:
+			wargs.append("--paged")
+			wargs.append(str(page_height))
+		pid = OS.create_process(t2p_py, wargs, false)
 	else:
 		# No fontTools Python available: render directly (LilyPond text stays invisible in ThorVG).
 		pid = OS.create_process(exe, ["-dbackend=svg", "-dcrop=#t",
@@ -149,11 +163,11 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 		notation_obj._on_render_failed("addressable: could not launch " + (t2p_py if t2p_py != "" else exe))
 		return
 	if ctx.verbose:
-		print("[MusicSceneOSC] analyzing '%s' (lilypond%s) in background, pid %d"
-			% [notation_obj.osc_id, (" +text2path" if t2p_py != "" else ""), pid])
+		print("[MusicSceneOSC] analyzing '%s' (lilypond%s%s) in background, pid %d"
+			% [notation_obj.osc_id, (" +text2path" if t2p_py != "" else ""), (" /paged" if paginate else ""), pid])
 	_jobs.append({
-		"kind": "lyaddr", "pid": pid, "obj": notation_obj,
-		"cropped_user": cropped_user, "options": options, "start": Time.get_ticks_msec(),
+		"kind": "lyaddr", "pid": pid, "obj": notation_obj, "paged": paginate,
+		"stem_user": stem_user, "cropped_user": cropped_user, "options": options, "start": Time.get_ticks_msec(),
 	})
 
 
@@ -161,6 +175,23 @@ func _finish_lily(obj, cropped_user: String, options: Dictionary, pid: int = -1)
 	var res := LilyPositions.finalize(cropped_user, options)
 	if res.ok:
 		obj._on_elements_done(res.texture, res.elements, res.get("systems", []))
+	else:
+		obj._on_render_failed(res.error + _exit_note(pid))
+
+
+func _finish_lily_paged(obj, stem_user: String, options: Dictionary, pid: int = -1) -> void:
+	# The paged wrapper writes <stem>-1.cropped.svg..; if it fell back to a single image there is only
+	# <stem>.cropped.svg — degrade to the single-image finish rather than reporting blank.
+	if not FileAccess.file_exists(stem_user + "-1.cropped.svg"):
+		var single := stem_user + ".cropped.svg"
+		if FileAccess.file_exists(single):
+			_finish_lily(obj, single, options, pid)
+			return
+		obj._on_render_failed("lily addressable: no pages at " + stem_user + "-N.cropped.svg" + _exit_note(pid))
+		return
+	var res := LilyPositions.finalize_paged(stem_user, options)
+	if res.ok:
+		obj._on_pages_done(res.pages, res.elements, res.page_count)
 	else:
 		obj._on_render_failed(res.error + _exit_note(pid))
 
@@ -294,7 +325,10 @@ func _process(_delta: float) -> void:
 		if j.get("kind", "engrave") == "addr":
 			_finish_addressable(j.obj, j.png_user, j.mpos_user, j.page, j.pid)
 		elif j.kind == "lyaddr":
-			_finish_lily(j.obj, j.cropped_user, j.options, j.pid)
+			if j.get("paged", false):
+				_finish_lily_paged(j.obj, j.stem_user, j.options, j.pid)
+			else:
+				_finish_lily(j.obj, j.cropped_user, j.options, j.pid)
 		elif j.kind == "vrv":
 			if j.get("paginate", false):
 				_finish_verovio_paged(j.obj, j.stem, j.tm_user, j.options, j.pid)
