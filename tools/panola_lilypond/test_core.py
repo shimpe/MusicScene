@@ -72,3 +72,19 @@ def test_measures_split():
     ly = gen(SPLIT)                       # 1 + 3 + 2 + 1 quarters = 7 quarters -> 2 bars (4+3)
     assert ly.count("|") >= 1
     assert compiles(ly)
+
+
+GRAND = 'PanolaLilypond.scoreAsLilypond([Panola("c5_4 e5 g5 c6"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble, \\bass], [[1,2]])'
+PAD = 'PanolaLilypond.scoreAsLilypond([Panola("c5_1 c5_1"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble, \\bass])'
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_grand_staff_and_barline():
+    ly = gen(GRAND)
+    assert "\\new GrandStaff" in ly
+    assert "\\bar \"|.\"" in ly
+    assert compiles(ly)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_short_voice_padded():
+    ly = gen(PAD)                          # voice 2 is 1 bar, voice 1 is 2 bars -> voice 2 padded with a bar rest
+    assert compiles(ly)                    # LilyPond bar-check passes only if every staff fills every bar
