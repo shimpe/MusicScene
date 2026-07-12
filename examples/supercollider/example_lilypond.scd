@@ -46,6 +46,12 @@
 //        musicscene/notation/engraver/lilypond = "C:/Program Files/lilypond-2.25.81/bin/lilypond.exe"
 //      (Project > Project Settings > musicscene/notation/engraver/lilypond, or set it via script.)
 //
+// TEXT (lyrics, dynamics, the tuplet number): LilyPond emits these as SVG <text>, which Godot's ThorVG
+// rasteriser cannot draw. MusicScene outlines them to paths automatically, reusing the SAME Python that
+// runs the Verovio engraver (musicscene/notation/engraver/mei) — that venv already needs `fonttools`
+// (pip install fonttools) for Verovio's --text-to-path. Without such a Python the notes/staff still
+// render; only the text stays invisible.
+//
 // CONSTRAINT: with notation: \lilypond the preview is a SINGLE cropped image — there is no
 // auto page-turn. `paginate` / `showPage` / `nextPage` are Verovio-only (the default
 // notation: \verovio engine). `systemBreaks` / `pageBreaks` still work — they lay out where

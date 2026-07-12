@@ -16,7 +16,9 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 - **`MSScore(..., notation: \lilypond)`** shows a score via the LilyPond engraver in the Godot app, with
   addressable note positions (highlight + follow cursor). Default `notation: \verovio` is unchanged.
   Requires the `musicscene/notation/engraver/lilypond` project setting and an installed LilyPond; the
-  LilyPond preview is a single cropped image (no auto page-turn).
+  LilyPond preview is a single cropped image (no auto page-turn). The follow cursor stays within the
+  current staff-system, and LilyPond's text (lyrics, dynamics, tuplet numbers) is outlined to paths so it
+  shows in Godot's ThorVG rasteriser — reusing the Verovio engraver's `fonttools` Python.
 
 ## [0.18.0] — 2026-07-11
 

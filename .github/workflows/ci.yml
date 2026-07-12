@@ -166,6 +166,11 @@ jobs:
           ./godot --headless --path . --script res://tools/test_lily_systems.gd 2>&1 | tee lilysys.log
           grep -q "fail=0" lilysys.log && ! grep -q "FAIL:" lilysys.log
 
+      - name: Self-tests — LilyPond text→path Python resolution
+        run: |
+          ./godot --headless --path . --script res://tools/test_lily_text2path.gd 2>&1 | tee lilyt2p.log
+          grep -q "fail=0" lilyt2p.log && ! grep -q "FAIL:" lilyt2p.log
+
       - name: Boot check — no script/parse errors
         run: |
           ./godot --headless --path . --quit-after 300 2>&1 | tee boot.log

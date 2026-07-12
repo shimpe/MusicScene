@@ -114,8 +114,11 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 		return
 
 	var wrapped := LilyPositions.wrap_source(ly_text)
+	# A fontTools-capable Python lets us outline LilyPond's <text> (lyrics/dynamics/tuplet numbers) to
+	# <path>, which ThorVG can draw; folded into the cache key so toggling it invalidates stale renders.
+	var t2p_py := _text_to_path_python()
 	Cache.ensure_dir()
-	var key := Cache.key(wrapped, format, page, "lyaddr", options)
+	var key := Cache.key(wrapped + "\n#t2p:" + t2p_py, format, page, "lyaddr", options)
 	var in_user := Cache.path_for(key, "ly")
 	var stem_user := Cache.path_for(key, "svg").get_basename()   # cache dir + key (no ext)
 	var cropped_user := stem_user + ".cropped.svg"
@@ -131,16 +134,23 @@ func _submit_lily(notation_obj, raw_content, format: String, page: int, options:
 	f.store_string(wrapped)
 	f.close()
 
-	var args := PackedStringArray([
-		"-dbackend=svg", "-dcrop=#t",
-		"-o", ProjectSettings.globalize_path(stem_user), ProjectSettings.globalize_path(in_user),
-	])
-	var pid := OS.create_process(exe, args, false)
+	var pid: int
+	if t2p_py != "":
+		# Run LilyPond via lily_render.py, which renders the cropped SVG and then outlines its <text>
+		# to <path> so the lyrics/dynamics/tuplet numbers show (ThorVG cannot draw SVG <text>).
+		var wrapper := ProjectSettings.globalize_path("res://addons/musicscene/tools/lily_render.py")
+		pid = OS.create_process(t2p_py, [wrapper, exe,
+			ProjectSettings.globalize_path(in_user), ProjectSettings.globalize_path(stem_user)], false)
+	else:
+		# No fontTools Python available: render directly (LilyPond text stays invisible in ThorVG).
+		pid = OS.create_process(exe, ["-dbackend=svg", "-dcrop=#t",
+			"-o", ProjectSettings.globalize_path(stem_user), ProjectSettings.globalize_path(in_user)], false)
 	if pid <= 0:
-		notation_obj._on_render_failed("addressable: could not launch " + exe)
+		notation_obj._on_render_failed("addressable: could not launch " + (t2p_py if t2p_py != "" else exe))
 		return
 	if ctx.verbose:
-		print("[MusicSceneOSC] analyzing '%s' (lilypond) in background, pid %d" % [notation_obj.osc_id, pid])
+		print("[MusicSceneOSC] analyzing '%s' (lilypond%s) in background, pid %d"
+			% [notation_obj.osc_id, (" +text2path" if t2p_py != "" else ""), pid])
 	_jobs.append({
 		"kind": "lyaddr", "pid": pid, "obj": notation_obj,
 		"cropped_user": cropped_user, "options": options, "start": Time.get_ticks_msec(),
@@ -153,6 +163,25 @@ func _finish_lily(obj, cropped_user: String, options: Dictionary, pid: int = -1)
 		obj._on_elements_done(res.texture, res.elements, res.get("systems", []))
 	else:
 		obj._on_render_failed(res.error + _exit_note(pid))
+
+
+## The Python interpreter used to outline LilyPond's <text> to <path> (via lily_render.py). Prefers an
+## explicit musicscene/notation/text_to_path_python; otherwise reuses the interpreter the Verovio
+## (mei/abc) engraver is configured with — it already has fontTools for verovio_render.py --text-to-path.
+## Returns "" when none is found, in which case LilyPond is run directly and its text stays invisible.
+func _text_to_path_python() -> String:
+	var explicit := str(ProjectSettings.get_setting("musicscene/notation/text_to_path_python", ""))
+	if explicit != "":
+		return ProjectSettings.globalize_path(explicit) if (explicit.begins_with("res://") or explicit.begins_with("user://")) else explicit
+	for fmt in ["mei", "abc"]:
+		var cmd: String = ExternalBackend.engraver_command(fmt)
+		# verovio_render.py is a Python script, so the interpreter that runs it is a Python that already
+		# has fontTools (Verovio's --text-to-path needs it) — reuse it for LilyPond's text→path.
+		if cmd.to_lower().contains("verovio_render"):
+			var argv := ExternalBackend.build_argv(cmd, "x", "x", fmt, 1)   # tokenized + res:// globalized
+			if argv.size() > 0:
+				return String(argv[0])
+	return ""
 
 
 ## Verovio addressable: run the wrapper to produce SVG + timemap, then join them into note elements.
