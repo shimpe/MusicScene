@@ -20,6 +20,30 @@ func _init() -> void:
 		fails += 1; print("FAIL: system bands overlap")
 	if systems.size() >= 1 and (float(systems[0].bottom) - float(systems[0].top)) > 0.8:
 		fails += 1; print("FAIL: system 0 band spans nearly the whole page (the original bug)")
+
+	# staff-line band: the cursor must span the STAFF (top line .. bottom line), not just the notes.
+	# Notes clustered near the middle line (v ~0.40); the 5 staff lines span 0.30..0.50.
+	var band_els := [
+		{"index": 0, "u": 0.10, "v": 0.40}, {"index": 1, "u": 0.50, "v": 0.41}, {"index": 2, "u": 0.90, "v": 0.40},
+	]
+	var staff := [
+		{"y": 0.30, "x0": 0.05, "x1": 0.95}, {"y": 0.35, "x0": 0.05, "x1": 0.95},
+		{"y": 0.40, "x0": 0.05, "x1": 0.95}, {"y": 0.45, "x0": 0.05, "x1": 0.95},
+		{"y": 0.50, "x0": 0.05, "x1": 0.95},
+	]
+	var note_only := Lily._build_systems(band_els.duplicate(true))            # no staff lines -> note extent
+	var with_staff := Lily._build_systems(band_els.duplicate(true), staff)    # staff lines -> staff extent
+	if with_staff.size() != 1:
+		fails += 1; print("FAIL: staff-band expected 1 system, got ", with_staff.size())
+	else:
+		if float(with_staff[0].top) > 0.31 or float(with_staff[0].bottom) < 0.49:
+			fails += 1; print("FAIL: staff band [", with_staff[0].top, ", ", with_staff[0].bottom,
+				"] does not span the staff 0.30..0.50")
+		var staff_h := float(with_staff[0].bottom) - float(with_staff[0].top)
+		var note_h := float(note_only[0].bottom) - float(note_only[0].top)
+		if staff_h <= note_h + 0.05:
+			fails += 1; print("FAIL: staff band (", staff_h, ") not clearly taller than note band (", note_h, ")")
+
 	print("systems=", systems.size(), " sys=", els.map(func(e): return int(e.sys)))
 	print("fail=", fails)
 	quit()
