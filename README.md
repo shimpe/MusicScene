@@ -423,10 +423,12 @@ path — tuplets, dynamics, articulations, slurs, hairpins, lyrics, mid-piece me
 Inside MusicScene, pass `notation: \lilypond` to `MSScore` (default is `notation: \verovio`, unchanged)
 to show the score through the **LilyPond engraver** in the Godot app, with the same addressable note
 positions (highlight / follow cursor) as the Verovio path. This needs the LilyPond engraver configured
-(`musicscene/notation/engraver/lilypond` project setting, pointing at an installed LilyPond) and the
-preview is a **single cropped image** — no auto page-turn (`paginate`/`showPage`/`nextPage` stay
-Verovio-only; `systemBreaks`/`pageBreaks` still lay out systems within that one image). See
-`examples/supercollider/example_lilypond.scd` and [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it).
+(`musicscene/notation/engraver/lilypond` project setting, pointing at an installed LilyPond); like Verovio,
+it **paginates into auto-turning pages** — `paginate`/`pageHeight` fill pages by height and `pageBreaks`
+force page boundaries, with `showPage`/`nextPage`/`prevPage` flipping between pages (`systemBreaks` still
+forces a line break while keeping auto-pagination). See
+`examples/supercollider/example_lilypond.scd`, `examples/supercollider/example_lilypond_multipage.scd`
+and [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it).
 
 ### Notation cursor
 

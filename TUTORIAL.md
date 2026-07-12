@@ -1092,10 +1092,11 @@ dynamics, articulations, slurs, hairpins, lyrics, mid-piece changes and breaks a
 ```
 
 **Prerequisites:** LilyPond must be installed, and the engraver configured — set the Project Settings
-key `musicscene/notation/engraver/lilypond` to your LilyPond executable (section C above). Unlike
-Verovio's auto-paginating preview, the LilyPond preview is a **single cropped image**: `paginate` /
-`showPage` / `nextPage` are Verovio-only, though `systemBreaks` / `pageBreaks` still control where
-systems fall within that one image. Runnable: `examples/supercollider/example_lilypond.scd`.
+key `musicscene/notation/engraver/lilypond` to your LilyPond executable (section C above). Like
+Verovio's preview, the LilyPond preview **paginates into auto-turning pages**: `paginate` / `pageHeight`
+fill pages by height and `pageBreaks` force page boundaries, and `showPage` / `nextPage` / `prevPage`
+flip between pages, while `systemBreaks` still forces a line break within auto-pagination. Runnable:
+`examples/supercollider/example_lilypond.scd`, `examples/supercollider/example_lilypond_multipage.scd`.
 
 ### Addressable scores — clickable measures (MuseScore)
 

@@ -5,6 +5,20 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-07-12
+
+### Added
+- **True multi-page LilyPond in the app.** `MSScore(..., notation: \lilypond)` now paginates into
+  auto-turning pages like the Verovio path — `pageHeight` fills pages by height and `pageBreaks` force
+  page boundaries. `lily_render.py --paged` renders one cropped SVG per page (uniform width) and
+  `MSNotationLilyPositions.finalize_paged` parses them into `_on_pages_done`, so `nextPage`/`prevPage`/
+  `page(n)` and the follow cursor work across LilyPond pages. `paginate: false` still shows one cropped
+  image.
+
+### Changed
+- LilyPond addressable rendering is no longer forced to a single image; `MSScore.pr_emitSetup` sends
+  `paginate` for both engines. Requires msscore ≥ 0.7.0.
+
 ## [0.19.0] — 2026-07-12
 
 ### Added

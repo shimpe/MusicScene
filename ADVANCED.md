@@ -108,9 +108,10 @@ remembering.
 side, see TUTORIAL §9E) engraves through the LilyPond source-tagging path described above — same
 `addressable`/`elements`/note-level following as raw `notation lilypond`. It requires the LilyPond
 engraver to be configured (`musicscene/notation/engraver/lilypond` → your LilyPond executable, §9C) and
-LilyPond installed; there is no built-in fallback the way MEI/ABC have Verovio. The rendered preview is a
-**single cropped image**: `paginate`/`showPage`/`nextPage` are Verovio-only and do not apply, though
-`systemBreaks`/`pageBreaks` still control where systems fall *within* that one image. One pathological
+LilyPond installed; there is no built-in fallback the way MEI/ABC have Verovio. The rendered preview
+**paginates into auto-turning pages** just like Verovio: `paginate`/`pageHeight` fill pages by height,
+`pageBreaks` force page boundaries, and `showPage`/`nextPage`/`prevPage` flip between them, while
+`systemBreaks` still controls where systems fall *within* auto-pagination. One pathological
 edge case — a tuplet whose fragment straddles a barline in a way that isn't expressible at the tuplet's
 ratio — is kept as a single un-split tuplet with a warning, which can surface as a LilyPond bar-check
 warning at render time; it does not affect any other note.
@@ -123,9 +124,10 @@ warning at render time; it does not affect any other note.
 >   without position data yields no regions.
 > - **Distinct from annotations** — addressable regions are auto-extracted, clickable, and time-tagged;
 >   annotations are hand-placed and inert. They share nothing but the word "overlay."
-> - **LilyPond notation has no auto-pagination.** Unlike Verovio's `paginate`, a LilyPond-engraved score
->   (including `MSScore notation: \lilypond`) is always one image; lay it out with `systemBreaks` /
->   `pageBreaks` instead of expecting page-turning.
+> - **LilyPond notation paginates like Verovio.** A LilyPond-engraved score (including
+>   `MSScore notation: \lilypond`) supports `paginate`/`pageHeight` to auto-fill pages and `pageBreaks` /
+>   `systemBreaks` to force page and line boundaries, with `showPage`/`nextPage`/`prevPage` page-turning
+>   just like the Verovio path.
 
 ---
 
