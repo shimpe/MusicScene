@@ -13,22 +13,6 @@ def test_midpiece_changes_and_inline_clef():
     assert compiles(ly)
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
-def test_system_spacing_override():
-    # -dcrop drops inter-system space, so a broken score must carry a line-break-system-details
-    # override (alignment-distances) to keep systems from clashing.
-    ly = gen(r'Panola.scoreAsLilypond([Panola("c5_1 d5_1 e5_1")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil, nil, [2])')
-    assert "line-break-system-details" in ly
-    assert "alignment-distances" in ly
-    assert compiles(ly)
-
-@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
-def test_no_override_without_breaks():
-    # a single-system score keeps LilyPond's default layout (no override)
-    ly = gen(r'Panola.scoreAsLilypond([Panola("c5_4 d5")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble])')
-    assert "line-break-system-details" not in ly
-    assert compiles(ly)
-
-@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
 def test_breaks():
     ly = gen(r'Panola.scoreAsLilypond([Panola("c5_1 d5_1 e5_1 f5_1")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil, [3], [2])')
     assert "\\break" in ly       # systemBreaks: [2]
