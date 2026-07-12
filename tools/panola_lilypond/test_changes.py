@@ -11,3 +11,10 @@ def test_midpiece_changes_and_inline_clef():
     assert "\\time 3/4" in ly                 # mid-piece meter change
     assert "\\clef bass" in ly                # inline clef change
     assert compiles(ly)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_breaks():
+    ly = gen(r'PanolaLilypond.scoreAsLilypond([Panola("c5_1 d5_1 e5_1 f5_1")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil, [3], [2])')
+    assert "\\break" in ly       # systemBreaks: [2]
+    assert "\\pageBreak" in ly   # pageBreaks: [3]
+    assert compiles(ly)
