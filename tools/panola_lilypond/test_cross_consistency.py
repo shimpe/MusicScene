@@ -42,7 +42,7 @@ def test_structure_agreement():
     exprs = {}
     for i, v in enumerate(CORPUS_PLAIN):
         exprs["mei%d" % i] = "Panola.scoreAsMEI([%s], %s)" % (v, CHG)
-        exprs["ly%d" % i] = "PanolaLilypond.scoreAsLilypond([%s], %s)" % (v, CHG)
+        exprs["ly%d" % i] = "Panola.scoreAsLilypond([%s], %s)" % (v, CHG)
     files = _gen(exprs)
     for i in range(len(CORPUS_PLAIN)):
         mei, ly = files["mei%d" % i], files["ly%d" % i]
@@ -57,7 +57,7 @@ def test_tuplet_structure_agreement():
     exprs = {}
     for i, v in enumerate(CORPUS_TUPLET):
         exprs["mei%d" % i] = "Panola.scoreAsMEI([%s], %s)" % (v, CHG)
-        exprs["ly%d" % i] = "PanolaLilypond.scoreAsLilypond([%s], %s)" % (v, CHG)
+        exprs["ly%d" % i] = "Panola.scoreAsLilypond([%s], %s)" % (v, CHG)
     files = _gen(exprs)
     for i in range(len(CORPUS_TUPLET)):
         mei, ly = files["mei%d" % i], files["ly%d" % i]

@@ -36,8 +36,8 @@ def compiles(ly_text):
         shutil.rmtree(d, ignore_errors=True)
 
 
-ONE = 'PanolaLilypond.scoreAsLilypond([Panola("c5_4 e5 g5 c6")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
-CH  = 'PanolaLilypond.scoreAsLilypond([Panola("<c4_4 e4 g4> <d4_4 f4 a4> r_4 <e4_4 g4 c5>")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
+ONE = 'Panola.scoreAsLilypond([Panola("c5_4 e5 g5 c6")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
+CH  = 'Panola.scoreAsLilypond([Panola("<c4_4 e4 g4> <d4_4 f4 a4> r_4 <e4_4 g4 c5>")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
 
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
@@ -57,8 +57,8 @@ def test_core_chords_and_rest():
     assert compiles(ly)
 
 
-TIE = 'PanolaLilypond.scoreAsLilypond([Panola("c5_2 c5_1 c5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
-SPLIT = 'PanolaLilypond.scoreAsLilypond([Panola("c5_4 d5_2. e5_2 f5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
+TIE = 'Panola.scoreAsLilypond([Panola("c5_2 c5_1 c5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
+SPLIT = 'Panola.scoreAsLilypond([Panola("c5_4 d5_2. e5_2 f5_4")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble])'
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
 def test_tie_across_barline():
@@ -74,8 +74,8 @@ def test_measures_split():
     assert compiles(ly)
 
 
-GRAND = 'PanolaLilypond.scoreAsLilypond([Panola("c5_4 e5 g5 c6"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble, \\bass], [[1,2]])'
-PAD = 'PanolaLilypond.scoreAsLilypond([Panola("c5_1 c5_1"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble, \\bass])'
+GRAND = 'Panola.scoreAsLilypond([Panola("c5_4 e5 g5 c6"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble, \\bass], [[1,2]])'
+PAD = 'Panola.scoreAsLilypond([Panola("c5_1 c5_1"), Panola("c3_1")], [( measure: 1, meter: "4/4", key: \\Cmajor )], [\\treble, \\bass])'
 
 @pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
 def test_grand_staff_and_barline():
