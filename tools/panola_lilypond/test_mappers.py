@@ -62,7 +62,7 @@ def test_key_and_meter():
     out = r.stdout
     assert "ERROR" not in out, out[-1500:]
     for exp in ["KA:c \\major", "KB:g \\major", "KC:fs \\minor", "KD:bf \\major", "KE:d \\minor",
-                "MA:\\time 4/4", "MB:\\time 7/8", "MC:\\compoundMeter #'((2 8) (2 8) (3 8))"]:
+                "MA:\\time 4/4", "MB:\\time 7/8", "MC:\\timeAbbrev #'((2 8) (2 8) (3 8))"]:
         assert exp in out, (exp, out[-1500:])
 
 

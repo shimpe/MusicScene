@@ -18,3 +18,9 @@ def test_breaks():
     assert "\\break" in ly       # systemBreaks: [2]
     assert "\\pageBreak" in ly   # pageBreaks: [3]
     assert compiles(ly)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_additive_meter_compiles():
+    ly = gen(r'Panola.scoreAsLilypond([Panola("c5_8 d5 e5 f5 g5 a5 b5")], [( measure: 1, meter: "2+2+3/8", key: \Cmajor )], [\treble])')
+    assert "\\timeAbbrev" in ly
+    assert compiles(ly)

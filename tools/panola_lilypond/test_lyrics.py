@@ -20,3 +20,10 @@ def test_lyrics_melisma_and_multiverse():
     assert ly.count("\\lyricsto \"v1\"") == 2   # two verses stacked on the same voice
     assert "men" in ly and "three" in ly
     assert compiles(ly)
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_lyrics_with_slur():
+    ly = gen(r'Panola.scoreAsLilypond([Panola("c5_4@slur^start^ d5 e5 f5@slur^end^")], [( measure: 1, meter: "4/4", key: \Cmajor )], [\treble], nil, nil, nil, [ [ "one two three four" ] ])')
+    assert "melismaBusyProperties" in ly
+    assert "(" in ly and ")" in ly and "four" in ly
+    assert compiles(ly)
