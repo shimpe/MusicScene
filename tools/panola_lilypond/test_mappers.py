@@ -32,3 +32,19 @@ def test_pitch():
     assert "ERROR" not in out, out[-1500:]
     for exp in ["PA:c'", "PB:c''", "PC:c\n", "PD:c,", "PE:fs''", "PF:bf", "PG:dss''", "PH:eff'"]:
         assert exp in out, (exp, out[-1500:])
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_dur_and_clef():
+    r = _run(r'''
+["DA:" ++ PanolaLilypond.pr_durLy("4", 0), "DB:" ++ PanolaLilypond.pr_durLy("4", 1),
+ "DC:" ++ PanolaLilypond.pr_durLy("1", 0), "DD:" ++ PanolaLilypond.pr_durLy("16", 2),
+ "DE:" ++ PanolaLilypond.pr_durLy("breve", 0),
+ "CA:" ++ PanolaLilypond.pr_clefLy(\treble), "CB:" ++ PanolaLilypond.pr_clefLy(\bass),
+ "CC:" ++ PanolaLilypond.pr_clefLy(\alto), "CD:" ++ PanolaLilypond.pr_clefLy(\tenor)
+].do({ |x| x.postln });''')
+    out = r.stdout
+    assert "ERROR" not in out, out[-1500:]
+    for exp in ["DA:4", "DB:4.", "DC:1", "DD:16..", "DE:\\breve",
+                "CA:treble", "CB:bass", "CC:alto", "CD:tenor"]:
+        assert exp in out, (exp, out[-1500:])
