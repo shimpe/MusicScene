@@ -403,6 +403,31 @@ Needs Verovio (`pip install verovio`) — MSScore renders MEI. See
 [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it) and
 `examples/supercollider/example_panola_score.scd`.
 
+### Panola → LilyPond
+
+Panola can also render as a **standalone LilyPond document** instead of MEI — a second, independent
+notation engine, not a replacement. `Panola.scoreAsLilypond(voices, changes, clefs, braces, pageBreaks,
+systemBreaks, lyrics)` (and `Panola("...").asLilypond(meter, key, clef, lyrics)` for one voice) return a
+`.ly` **String** that renders on its own with `lilypond file.ly`, at full feature parity with the MEI
+path — tuplets, dynamics, articulations, slurs, hairpins, lyrics, mid-piece meter/key changes, inline
+`@clef`, additive meters, page/system breaks, braces and multi-staff.
+
+```supercollider
+~ly = Panola.scoreAsLilypond(
+    [ Panola("c5_4@dyn^mf^ e5@slur^start^ g5 c6@slur^end^"), Panola("c3_2 g3 c3_1") ],
+    [ ( measure: 1, meter: "4/4", key: \Cmajor ) ],
+    [ \treble, \bass ], [[1, 2]]
+);
+```
+
+Inside MusicScene, pass `notation: \lilypond` to `MSScore` (default is `notation: \verovio`, unchanged)
+to show the score through the **LilyPond engraver** in the Godot app, with the same addressable note
+positions (highlight / follow cursor) as the Verovio path. This needs the LilyPond engraver configured
+(`musicscene/notation/engraver/lilypond` project setting, pointing at an installed LilyPond) and the
+preview is a **single cropped image** — no auto page-turn (`paginate`/`showPage`/`nextPage` stay
+Verovio-only; `systemBreaks`/`pageBreaks` still lay out systems within that one image). See
+`examples/supercollider/example_lilypond.scd` and [TUTORIAL.md §9E](TUTORIAL.md#e-panola-in-supercollider--msscore-does-all-of-it).
+
 ### Notation cursor
 
 A vertical playback cursor in page-normalized `[0,1]` coords:
@@ -968,7 +993,7 @@ Replies use `/ms/reply <topic> ...`. Compact map:
 ```
 # system
 /ms ping                         -> /ms/pong
-/ms/version | /ms version    -> /ms/reply version "0.18.0"
+/ms/version | /ms version    -> /ms/reply version "0.19.0"
 /ms/info    | /ms info       -> /ms/reply info ...
 /ms/app coord <mode>
 /ms/app root "<path>"

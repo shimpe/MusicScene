@@ -5,6 +5,19 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-07-12
+
+### Added
+- **Panola → LilyPond.** `Panola.scoreAsLilypond` / `Panola:asLilypond` render a voice or score as a
+  standalone LilyPond (`.ly`) document (renders with `lilypond file.ly`), at full feature parity with the
+  MEI path — tuplets (incl. music21-style completion and cross-barline splitting), dynamics, articulations,
+  slurs, hairpins, lyrics, mid-piece meter/key changes, inline `@clef`, additive meters, page/system breaks,
+  braces and multi-staff.
+- **`MSScore(..., notation: \lilypond)`** shows a score via the LilyPond engraver in the Godot app, with
+  addressable note positions (highlight + follow cursor). Default `notation: \verovio` is unchanged.
+  Requires the `musicscene/notation/engraver/lilypond` project setting and an installed LilyPond; the
+  LilyPond preview is a single cropped image (no auto page-turn).
+
 ## [0.18.0] — 2026-07-11
 
 ### Added

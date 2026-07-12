@@ -145,8 +145,8 @@ With your Godot project **running**, in the `gosc.py` prompt:
 
 ```python
 s("/ms/ping")          # ->  <- /ms/pong []
-s("/ms/version")       # ->  <- /ms/reply ['version', '0.18.0']
-s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.18.0', ...]
+s("/ms/version")       # ->  <- /ms/reply ['version', '0.19.0']
+s("/ms/info")          # ->  <- /ms/reply ['info', 'musicscene', '0.19.0', ...]
 ```
 
 If you see `<- /ms/pong`, you're connected. If not, jump to [Troubleshooting](#13-troubleshooting).
@@ -1075,6 +1075,27 @@ or `/abc` in Project Settings — e.g. to point at a project-local venv Python),
 installed. Otherwise the lyrics (and tempo marks, directions, …) stay invisible in the Godot preview
 — they render fine in any MEI viewer. Restart the editor after changing the setting, and clear
 `user://musicscene_cache/notation/` to force a re-render. See the README's Lyrics note.
+
+**Rendering as LilyPond instead of MEI.** Everything above defaults to Verovio/MEI. Pass
+`notation: \lilypond` to `MSScore` to engrave the same score through the **LilyPond** engraver instead —
+`Panola.scoreAsLilypond` / `.asLilypond` build the `.ly` behind the scenes, with the same tuplets,
+dynamics, articulations, slurs, hairpins, lyrics, mid-piece changes and breaks as the MEI path:
+
+```supercollider
+~score = MSScore(
+    voices: [ "c5_4@dyn^mf^ e5@slur^start^ g5 c6@slur^end^", "c3_2 g3 c3_1" ],
+    clefs:  [\treble, \bass],
+    braces: [[1, 2]],
+    notation: \lilypond                   // default is \verovio
+);
+~score.play;
+```
+
+**Prerequisites:** LilyPond must be installed, and the engraver configured — set the Project Settings
+key `musicscene/notation/engraver/lilypond` to your LilyPond executable (section C above). Unlike
+Verovio's auto-paginating preview, the LilyPond preview is a **single cropped image**: `paginate` /
+`showPage` / `nextPage` are Verovio-only, though `systemBreaks` / `pageBreaks` still control where
+systems fall within that one image. Runnable: `examples/supercollider/example_lilypond.scd`.
 
 ### Addressable scores — clickable measures (MuseScore)
 
