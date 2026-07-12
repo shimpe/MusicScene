@@ -22,6 +22,11 @@ All notable changes to **MusicScene** are documented here. Format loosely follow
   regions (same as the Verovio paged path); the follow cursor and playback highlighting still work. Use
   `paginate: false` for the single cropped image with clickable notes.
 
+### Fixed
+- The LilyPond follow cursor now spans the full staff / grand-staff height instead of only the current
+  notes' vertical extent — `MSNotationLilyPositions` reads the staff rules (the long horizontal `<line>`
+  elements) from the SVG to size each system's band. Applies to both paged and single-image LilyPond.
+
 ## [0.19.0] — 2026-07-12
 
 ### Added
