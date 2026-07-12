@@ -51,3 +51,38 @@ def test_lily_render_wrapper_outlines_text():
             assert "<path" in svg
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+
+@pytest.mark.skipif(not os.path.exists(LILYPOND), reason="LilyPond not installed (set $LILYPOND)")
+def test_lily_render_paged_multipage():
+    """--paged renders a score with an explicit \\pageBreak to one cropped SVG per page."""
+    d = tempfile.mkdtemp(prefix="lily_paged_")
+    try:
+        ly = (
+            '\\version "2.24.0"\n\\header { tagline = ##f }\n'
+            '\\score { <<\n'
+            '  \\new Staff \\new Voice = "v1" { c\'1 \\pageBreak d\'1 }\n'
+            '>> }\n'
+        )
+        ly_path = os.path.join(d, "s.ly")
+        with open(ly_path, "w", encoding="utf-8") as f:
+            f.write(ly)
+        stem = os.path.join(d, "out")
+        r = subprocess.run([sys.executable, WRAPPER, LILYPOND, ly_path, stem, "--paged", "1200"],
+                           capture_output=True, text=True, timeout=120)
+        assert r.returncode == 0, r.stderr[-1000:]
+        p1 = stem + "-1.cropped.svg"
+        p2 = stem + "-2.cropped.svg"
+        assert os.path.exists(p1), "no page 1 (%s)" % r.stdout
+        assert os.path.exists(p2), "no page 2 (\\pageBreak did not split): %s" % r.stdout
+        for p in (p1, p2):
+            svg = open(p, encoding="utf-8").read()
+            assert "viewBox" in svg
+            assert "textedit" in svg, "point-and-click links lost on " + p
+        import re as _re
+        def _w(path):
+            m = _re.search(r'width="([-\d.]+)mm"', open(path, encoding="utf-8").read())
+            return float(m.group(1)) if m else -1.0
+        assert abs(_w(p1) - _w(p2)) < 0.01, "page widths differ (%s vs %s)" % (_w(p1), _w(p2))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
