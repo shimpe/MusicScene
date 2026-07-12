@@ -64,3 +64,19 @@ def test_key_and_meter():
     for exp in ["KA:c \\major", "KB:g \\major", "KC:fs \\minor", "KD:bf \\major", "KE:d \\minor",
                 "MA:\\time 4/4", "MB:\\time 7/8", "MC:\\compoundMeter #'((2 8) (2 8) (3 8))"]:
         assert exp in out, (exp, out[-1500:])
+
+
+@pytest.mark.skipif(not os.path.exists(SCLANG), reason="sclang not installed")
+def test_dyn_and_art():
+    r = _run(r'''
+["YA:" ++ PanolaLilypond.pr_dynLy("mf"), "YB:" ++ PanolaLilypond.pr_dynLy("sffz"),
+ "AA:" ++ PanolaLilypond.pr_artLy("stacc"), "AB:" ++ PanolaLilypond.pr_artLy("acc stacc"),
+ "AC:" ++ PanolaLilypond.pr_artLy("")
+].do({ |x| x.postln });''')
+    out = r.stdout
+    assert "ERROR" not in out, out[-1500:]
+    assert "YA:\\mf" in out
+    assert 'YB:-\\markup \\dynamic "sffz"' in out
+    assert "AA:-." in out
+    assert "AB:" in out and "->" in out and "-." in out
+    assert "AC:\n" in out
