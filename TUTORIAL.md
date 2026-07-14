@@ -1356,6 +1356,13 @@ s("/ms/scene/p1/portal", "link", "p2")             # directional: p1 -> p2
 - **Generative pinball (SuperCollider):** `examples/supercollider/example_pinball.scd` — a self-contained
   pinball table using bouncers, portals, sensor-zone targets, bouncy walls and pins; all sound synthesised
   locally. Boot the project in 3D and evaluate the block.
+- **Three-body chaos (SuperCollider):** `examples/supercollider/example_three_body.scd` — a seeded,
+  bounded three-body gravitational system. sclang integrates the mutual gravity itself (velocity-Verlet,
+  softened so close passes stay finite, plus a gentle central well that keeps all three on-screen and
+  chaotic forever), streams the bodies to three coloured circles over OSC, and sonifies them self-contained:
+  one voice per body (distance → pitch in C lydian, x-position → stereo pan, speed → loudness/brightness),
+  a slingshot "whoosh" at each chaotic near-collision, and a reverb that breathes with the system's energy.
+  Every run starts differently; the printed seed replays it exactly (`~fixedSeed = <n>`).
 - **Live two-hand score (SuperCollider):** `examples/supercollider/example_two_hands.scd` — two random
   "patterns" (right hand / left hand) invent notes and rhythms; each cycle it builds a full four-measure
   **grand staff** (one MEI score: treble R.H. + bass L.H., braced), shows it, then plays it. Uses MEI
