@@ -48,10 +48,11 @@ s.waitForBoot({
     // pitch / brightness / pan glide smoothly as the body moves.
     SynthDef(\bodyVoice, { |out = 0, freq = 220, amp = 0.0, cutoff = 1500, pan = 0, gate = 1|
         var f, sig, env;
-        f   = Lag.kr(freq, 0.25);
-        sig = Saw.ar(f) + SinOsc.ar(f * 2, 0, 0.3);
-        env = EnvGen.kr(Env.asr(0.6, 1, 1.5), gate, doneAction: 2);
-        sig = RLPF.ar(sig, Lag.kr(cutoff, 0.15).clip(100, 18000), 0.4);
+        f   = Lag.kr(freq, 1.5);
+		f = f * (f/freq);
+		sig = LFCub.ar(f * (f/freq)) + SinOsc.ar(f * (freq/f) * 2, 0, 0.3);
+        env = EnvGen.kr(Env.asr(5.0, 1, 1.5), gate, doneAction: 2);
+		sig = RLPF.ar(sig, Lag.kr(cutoff, 0.15).clip(100, 3000), 0.4 * (freq/f));
         sig = sig * Lag.kr(amp, 0.2) * env;
         Out.ar(out, Pan2.ar(sig, Lag.kr(pan, 0.2)));
     }).add;
@@ -60,10 +61,10 @@ s.waitForBoot({
     // plus a sine glide; intensity is set by the pass speed at trigger time.
     SynthDef(\whoosh, { |out = 0, amp = 0.3, pan = 0, dur = 0.6, f0 = 300, f1 = 2000|
         var env, sweep, sig;
-        env   = EnvGen.kr(Env.perc(0.02, dur, 1, -2), doneAction: 2);
-        sweep = XLine.kr(f0, f1, dur * 0.6);
-        sig   = (BPF.ar(WhiteNoise.ar, sweep, 0.3) * 6) + SinOsc.ar(sweep, 0, 0.3);
-        sig   = sig * env * amp;
+        env   = EnvGen.kr(Env.perc(0.1, dur, 1, -2), doneAction: 2);
+		sweep = XLine.kr(f0, f1, LFNoise1.kr(0.01, dur) * 0.6);
+        sig   = (BPF.ar(WhiteNoise.ar, sweep, 0.1) * 6) + LFSaw.ar(sweep, 0, 0.3);
+		sig   = Lag.ar(0.5 * sig * env * amp, 0.001);
         Out.ar(out, Pan2.ar(sig, pan));
     }).add;
 
@@ -89,7 +90,7 @@ s.waitForBoot({
     ("three-body seed: " ++ ~seed ++ "   (set ~fixedSeed = " ++ ~seed ++ " and re-run to replay)").postln;
 
     // three bodies: random masses, positions in a disc, tangential + jittered speeds.
-    ~mass = Array.fill(3, { rrand(0.7, 1.4) });
+    ~mass = Array.fill(3, { rrand(0.7, 2.4) });
     ~pos  = Array.fill(3, {
         var ang, rad;
         ang = rrand(0, 2pi);
@@ -233,9 +234,10 @@ s.waitForBoot({
                     mx = (~pos[i][0] + ~pos[j][0]) * 0.5;
                     Synth(\whoosh, [
                         \out, ~fxbus,
-                        \amp, (0.12 + (intensity * 0.4)).clip(0.12, 0.6),
+                        \amp, (0.06 + (intensity * 0.4)).clip(0.12, 0.6),
                         \pan, mx.clip(-1, 1),
-                        \dur, 0.5, \f0, 320,
+                        \dur, 0.1,
+						\f0, 320,
                         \f1, (900 + (intensity * 2200)).clip(900, 5000)
                     ]);
                     ~cool[pidx] = ~encCool;
